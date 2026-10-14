@@ -30,7 +30,7 @@ Never work directly on `main` or `dev`. For every task:
 6. `git add .` then `git commit -m "Describe what you changed"`
 7. `git push -u origin feature/short-name`
 8. On GitHub, open a pull request into **`dev`** and fill in the template, including the Scrumwise user story.
-9. Wait for the green `ci` check and one teammate's approval. To fix something, just commit and push again.
+9. Wait for the green `ci` check. Reviews from teammates are welcome but not required. To fix something, just commit and push again.
 10. Click **Squash and merge**, then go back to step 1 for your next task.
 
 Releasing: open a pull request from `dev` into `main`. Merging it updates the live site automatically.
