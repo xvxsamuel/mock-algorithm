@@ -49,7 +49,7 @@ Steps for every task:
 4. Run the checks in [Before pushing](#before-pushing).
 5. `git push -u origin feature/short-name`
 6. Open a pull request **into `dev`** and fill in the template (see [Pull requests](#pull-requests)).
-7. When `ci` is green and one teammate has approved, **Squash and merge**. The branch is deleted automatically.
+7. When `ci` is green, **Squash and merge** your own PR (a teammate's review is optional). The branch is deleted automatically.
 
 To bring the latest `dev` into your branch: `git switch dev`, `git pull`,
 `git switch <your-branch>`, `git merge dev` (or click **Update branch** on the PR).
@@ -138,7 +138,7 @@ A PR cannot be merged until the `ci` check is green.
 - Fill in every section of the PR template. The description **must name the
   Scrumwise user story** this PR belongs to.
 - One user story/task per PR. Keep PRs small.
-- Needs 1 approval from a teammate and a green `ci` check.
+- Needs a green `ci` check before merging. Approval from a teammate is optional; anyone can merge their own PR.
 
 ## When unsure
 
