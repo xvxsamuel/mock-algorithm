@@ -1,0 +1,92 @@
+/* Deliberately lo-fi: plain monospace text, like a debug log. */
+.panel {
+  max-width: 760px;
+  padding: 24px 28px 48px;
+  font-family:
+    ui-monospace, "Cascadia Code", "SF Mono", Menlo, Consolas, monospace;
+  font-size: 13px;
+  line-height: 1.6;
+}
+
+.panel h1 {
+  margin: 0;
+  font-size: 16px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.panel p {
+  margin: 6px 0 0;
+}
+
+.panel-section {
+  margin-top: 24px;
+}
+
+.panel-section h2 {
+  margin: 0 0 8px;
+  padding-bottom: 4px;
+  border-bottom: 1px dashed var(--line);
+  color: var(--muted);
+  font-size: 12px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+.kv {
+  display: grid;
+  grid-template-columns: max-content 1fr;
+  gap: 0 20px;
+  margin: 0;
+}
+
+.kv dt {
+  color: var(--muted);
+}
+
+.kv dd {
+  margin: 0;
+}
+
+.panel-muted {
+  color: var(--muted);
+}
+
+.panel-state {
+  font-size: 15px;
+  font-weight: 700;
+}
+
+.panel-flag,
+.panel-true {
+  color: var(--accent);
+  font-weight: 700;
+}
+
+.panel-up {
+  color: var(--good);
+}
+
+.panel-down {
+  color: var(--accent);
+}
+
+.panel-bar {
+  letter-spacing: -0.05em;
+  white-space: pre;
+}
+
+.panel-list {
+  margin: 6px 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.panel-log {
+  padding: 6px 0;
+  border-bottom: 1px dotted var(--line);
+}
+
+.panel-indent {
+  padding-left: 2ch;
+}

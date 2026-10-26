@@ -1,0 +1,83 @@
+.share {
+  background: #fff;
+  color: #161823;
+}
+
+.share-header {
+  position: relative;
+  padding: 14px 44px 6px;
+  font-size: 13px;
+  font-weight: 700;
+  text-align: center;
+}
+
+.share-close {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  display: grid;
+  place-items: center;
+  padding: 2px;
+  border: 0;
+  background: none;
+  color: inherit;
+  cursor: pointer;
+}
+
+.share-row {
+  display: flex;
+  gap: 14px;
+  padding: 10px 16px;
+  overflow-x: auto;
+  border-bottom: 1px solid rgb(22 24 35 / 0.08);
+  scrollbar-width: none;
+}
+
+.share-row::-webkit-scrollbar {
+  display: none;
+}
+
+.share-item {
+  display: flex;
+  flex-direction: column;
+  flex-shrink: 0;
+  align-items: center;
+  gap: 6px;
+  width: 58px;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: inherit;
+  font: inherit;
+  font-size: 11px;
+  line-height: 1.2;
+  text-align: center;
+  cursor: pointer;
+}
+
+.share-circle {
+  display: grid;
+  place-items: center;
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  color: #fff;
+  font-size: 18px;
+  font-weight: 700;
+}
+
+.share-circle-plain {
+  background: #f1f1f2;
+  color: #161823;
+}
+
+.share-cancel {
+  width: 100%;
+  padding: 14px;
+  border: 0;
+  background: none;
+  color: inherit;
+  font: inherit;
+  font-size: 15px;
+  cursor: pointer;
+}
