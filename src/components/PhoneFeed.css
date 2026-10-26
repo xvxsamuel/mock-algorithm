@@ -1,0 +1,181 @@
+.phone {
+  --tiktok-red: #fe2c55;
+  --tiktok-cyan: #25f4ee;
+
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  height: min(100dvh - 48px, 860px);
+  aspect-ratio: 9 / 19.5;
+  overflow: hidden;
+  border: 10px solid #1d1d1f;
+  border-radius: 48px;
+  background: #000;
+  color: #fff;
+  font-family:
+    "TikTok Sans",
+    "Proxima Nova",
+    system-ui,
+    -apple-system,
+    "Segoe UI",
+    Roboto,
+    sans-serif;
+  box-shadow: 0 30px 80px rgb(0 0 0 / 0.45);
+}
+
+.phone-top {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 3;
+  display: flex;
+  justify-content: center;
+  gap: 18px;
+  padding: 18px 16px 24px;
+  background: linear-gradient(rgb(0 0 0 / 0.35), transparent);
+  font-size: 16px;
+  font-weight: 600;
+  pointer-events: none;
+}
+
+.phone-tab {
+  position: relative;
+  color: rgb(255 255 255 / 0.6);
+}
+
+.phone-tab.is-active {
+  color: #fff;
+}
+
+.phone-tab.is-active::after {
+  content: "";
+  position: absolute;
+  left: 50%;
+  bottom: -6px;
+  width: 28px;
+  height: 3px;
+  border-radius: 2px;
+  background: #fff;
+  transform: translateX(-50%);
+}
+
+.phone-search {
+  position: absolute;
+  top: 17px;
+  right: 16px;
+}
+
+.phone-feed {
+  flex: 1;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  scroll-snap-type: y mandatory;
+  scrollbar-width: none;
+}
+
+.phone-feed::-webkit-scrollbar {
+  display: none;
+}
+
+.phone-slot {
+  position: relative;
+  height: 100%;
+  scroll-snap-align: start;
+  scroll-snap-stop: always;
+}
+
+.phone-nav {
+  display: flex;
+  flex-shrink: 0;
+  justify-content: space-around;
+  align-items: center;
+  height: 56px;
+  border-top: 1px solid rgb(255 255 255 / 0.08);
+  background: #000;
+  font-size: 10px;
+}
+
+.phone-nav-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  color: rgb(255 255 255 / 0.6);
+}
+
+.phone-nav-item.is-active {
+  color: #fff;
+}
+
+.phone-nav-create {
+  display: grid;
+  place-items: center;
+  width: 44px;
+  height: 28px;
+  border-radius: 8px;
+  background: #fff;
+  color: #000;
+  box-shadow:
+    -3px 0 0 var(--tiktok-cyan),
+    3px 0 0 var(--tiktok-red);
+}
+
+/* Comment and share sheets slide up over the whole phone. */
+.phone-backdrop {
+  position: absolute;
+  inset: 0;
+  z-index: 10;
+  padding: 0;
+  border: 0;
+  background: rgb(0 0 0 / 0.25);
+  cursor: default;
+}
+
+.phone-sheet {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 11;
+  overflow: hidden;
+  border-radius: 12px 12px 0 0;
+  animation: phone-sheet-in 0.25s ease-out;
+}
+
+.phone-sheet.is-tall {
+  height: 70%;
+}
+
+@keyframes phone-sheet-in {
+  from {
+    transform: translateY(100%);
+  }
+}
+
+.phone-toast {
+  position: absolute;
+  top: 45%;
+  left: 50%;
+  z-index: 12;
+  padding: 10px 18px;
+  border-radius: 8px;
+  background: rgb(0 0 0 / 0.75);
+  font-size: 14px;
+  font-weight: 600;
+  white-space: nowrap;
+  transform: translate(-50%, -50%);
+  pointer-events: none;
+}
+
+/* On a real phone, drop the fake phone frame and go full screen. */
+@media (max-width: 600px) {
+  .phone {
+    width: 100%;
+    height: 100dvh;
+    aspect-ratio: auto;
+    border: 0;
+    border-radius: 0;
+    box-shadow: none;
+  }
+}

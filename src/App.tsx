@@ -1,12 +1,18 @@
+import AlgorithmPanel from "./components/AlgorithmPanel";
+import PhoneFeed from "./components/PhoneFeed";
+import { useFeed } from "./hooks/useFeed";
+
 function App() {
+  const feed = useFeed();
+
   return (
-    <main className="placeholder">
-      <h1>Mock Algorithm</h1>
-      <p>
-        An interactive look at how short-form video algorithms and endless
-        scrolling shape what we watch, and how we feel.
-      </p>
-      <p className="status">Work in progress.</p>
+    <main className="app">
+      <section className="app-feed" aria-label="Video feed">
+        <PhoneFeed feed={feed} />
+      </section>
+      <section className="app-panel" aria-label="What the algorithm sees">
+        <AlgorithmPanel feed={feed} />
+      </section>
     </main>
   );
 }
