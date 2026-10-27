@@ -7,36 +7,76 @@
     sans-serif;
   line-height: 1.5;
   color: #1a1a1a;
-  background-color: #fafafa;
+  background-color: var(--bg);
   color-scheme: light dark;
+
+  --bg: #fafafa;
+  --stage: #e8e8ed;
+  --line: #d6d6d6;
+  --muted: #6b6b6b;
+  --accent: #c2185b;
+  --good: #1b7f3b;
 }
 
 @media (prefers-color-scheme: dark) {
   :root {
     color: #f2f2f2;
-    background-color: #121212;
+
+    --bg: #121212;
+    --stage: #050505;
+    --line: #2e2e2e;
+    --muted: #9a9a9a;
+    --accent: #ff6b9a;
+    --good: #5fd38d;
   }
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
 }
 
 body {
   margin: 0;
 }
 
-.placeholder {
-  max-width: 40rem;
-  min-height: 100vh;
-  margin: 0 auto;
-  padding: 0 1rem;
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
+/* Left: the phone. Right: what the algorithm sees. */
+.app {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  height: 100dvh;
 }
 
-.placeholder h1 {
-  margin: 0 0 0.5rem;
-  font-size: clamp(2rem, 6vw, 3rem);
+.app-feed {
+  display: grid;
+  place-items: center;
+  padding: 24px;
+  background: var(--stage);
 }
 
-.placeholder .status {
-  opacity: 0.6;
+/* The panel never scrolls, so attention stays on the phone. */
+.app-panel {
+  overflow: hidden;
+  border-left: 1px solid var(--line);
+}
+
+/* Narrow screens: phone on top, panel underneath. */
+@media (max-width: 900px) {
+  .app {
+    grid-template-columns: 1fr;
+    height: auto;
+  }
+
+  .app-panel {
+    overflow: visible;
+    border-top: 1px solid var(--line);
+    border-left: 0;
+  }
+}
+
+@media (max-width: 600px) {
+  .app-feed {
+    padding: 0;
+  }
 }

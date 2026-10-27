@@ -1,12 +1,28 @@
+import AlgorithmPanel from "./components/AlgorithmPanel";
+import LinkLayer from "./components/LinkLayer";
+import PhoneFeed from "./components/PhoneFeed";
+import { useFeed } from "./hooks/useFeed";
+import { useLinks } from "./hooks/useLinks";
+
 function App() {
+  const feed = useFeed();
+  // Lines from the phone to whatever part of the panel just changed.
+  const { links, feedArea, trackPress, removeLink } = useLinks(feed);
+
   return (
-    <main className="placeholder">
-      <h1>Mock Algorithm</h1>
-      <p>
-        An interactive look at how short-form video algorithms and endless
-        scrolling shape what we watch, and how we feel.
-      </p>
-      <p className="status">Work in progress.</p>
+    <main className="app">
+      <section
+        className="app-feed"
+        aria-label="Video feed"
+        ref={feedArea}
+        onPointerDownCapture={trackPress}
+      >
+        <PhoneFeed feed={feed} />
+      </section>
+      <section className="app-panel" aria-label="What the algorithm sees">
+        <AlgorithmPanel feed={feed} />
+      </section>
+      <LinkLayer links={links} onDone={removeLink} />
     </main>
   );
 }

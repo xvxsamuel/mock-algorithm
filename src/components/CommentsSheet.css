@@ -1,0 +1,136 @@
+/* Light sheet like the classic TikTok comment section. */
+.comments {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  background: #fff;
+  color: #161823;
+}
+
+.comments-header {
+  position: relative;
+  padding: 14px 44px 10px;
+  font-size: 13px;
+  font-weight: 700;
+  text-align: center;
+}
+
+.comments-close {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  display: grid;
+  place-items: center;
+  padding: 2px;
+  border: 0;
+  background: none;
+  color: inherit;
+  cursor: pointer;
+}
+
+.comments-list {
+  flex: 1;
+  margin: 0;
+  padding: 4px 16px;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  list-style: none;
+  scrollbar-width: none;
+}
+
+.comment {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 8px 0;
+}
+
+.comment-avatar {
+  display: grid;
+  flex-shrink: 0;
+  place-items: center;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  color: #fff;
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.comment-avatar-me {
+  background: #161823;
+}
+
+.comment-body {
+  flex: 1;
+  min-width: 0;
+  font-size: 13px;
+  line-height: 1.35;
+}
+
+.comment-user,
+.comment-meta {
+  color: rgb(22 24 35 / 0.5);
+  font-size: 12px;
+}
+
+.comment-text {
+  margin: 2px 0 4px;
+  overflow-wrap: anywhere;
+}
+
+.comment-like {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1px;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: rgb(22 24 35 / 0.5);
+  font: inherit;
+  font-size: 11px;
+  cursor: pointer;
+}
+
+.comment-like.is-liked svg {
+  color: var(--tiktok-red);
+}
+
+.comments-input {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 12px 14px;
+  border-top: 1px solid rgb(22 24 35 / 0.12);
+}
+
+.comments-input input {
+  flex: 1;
+  min-width: 0;
+  padding: 9px 14px;
+  border: 0;
+  border-radius: 20px;
+  background: #f1f1f2;
+  color: inherit;
+  font: inherit;
+  font-size: 14px;
+}
+
+.comments-input input:focus {
+  outline: 2px solid rgb(22 24 35 / 0.2);
+}
+
+.comments-send {
+  display: grid;
+  flex-shrink: 0;
+  place-items: center;
+  width: 32px;
+  height: 32px;
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  background: var(--tiktok-red);
+  color: #fff;
+  cursor: pointer;
+}

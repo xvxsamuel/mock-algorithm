@@ -1,0 +1,100 @@
+.rail {
+  position: absolute;
+  right: 8px;
+  bottom: 20px;
+  z-index: 2;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 14px;
+}
+
+.rail-avatar {
+  position: relative;
+  display: grid;
+  place-items: center;
+  width: 46px;
+  height: 46px;
+  margin-bottom: 8px;
+  border: 2px solid #fff;
+  border-radius: 50%;
+  font-size: 18px;
+  font-weight: 700;
+}
+
+.rail-follow {
+  position: absolute;
+  left: 50%;
+  bottom: -10px;
+  display: grid;
+  place-items: center;
+  width: 20px;
+  height: 20px;
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  background: var(--tiktok-red);
+  color: #fff;
+  transform: translateX(-50%);
+  cursor: pointer;
+}
+
+.rail-follow.is-following {
+  background: #fff;
+  color: var(--tiktok-red);
+  cursor: default;
+}
+
+.rail-button {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: #fff;
+  font: inherit;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  filter: drop-shadow(0 1px 2px rgb(0 0 0 / 0.35));
+}
+
+.rail-button svg {
+  transition: transform 0.15s ease;
+}
+
+.rail-button:active svg {
+  transform: scale(0.85);
+}
+
+.rail-button.is-on[data-kind="like"] svg {
+  color: var(--tiktok-red);
+}
+
+.rail-button.is-on[data-kind="save"] svg {
+  color: #facd00;
+}
+
+.rail-disc {
+  display: grid;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  margin-top: 4px;
+  border: 9px solid #222;
+  border-radius: 50%;
+  font-size: 11px;
+  animation: rail-spin 4s linear infinite paused;
+}
+
+.rail-disc.is-spinning {
+  animation-play-state: running;
+}
+
+@keyframes rail-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
