@@ -1,0 +1,104 @@
+.links {
+  position: fixed;
+  inset: 0;
+  z-index: 50;
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+  pointer-events: none;
+}
+
+/* Holds, then fades out. Its duration is set per link and it ends last. */
+.link {
+  color: var(--good);
+  filter: drop-shadow(0 0 1.5px var(--bg));
+  animation-name: link-fade;
+  animation-timing-function: ease-in;
+  animation-fill-mode: forwards;
+}
+
+.link.is-down {
+  color: var(--accent);
+}
+
+/* Faint line that draws itself behind the dots. */
+.link-trail {
+  fill: none;
+  stroke: currentColor;
+  stroke-dasharray: 1;
+  stroke-dashoffset: 1;
+  animation-name: link-draw;
+  animation-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+  animation-fill-mode: forwards;
+}
+
+/* A short dash with round ends that travels along the path. */
+.link-dot {
+  fill: none;
+  stroke: currentColor;
+  stroke-linecap: round;
+  stroke-dasharray: 0.08 2;
+  stroke-dashoffset: 0.08;
+  animation-name: link-travel;
+  animation-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+  animation-fill-mode: both;
+}
+
+/* Passive updates (watch time) send a single round dot, no trail. */
+.link.is-dot .link-dot {
+  stroke-dasharray: 0.001 2;
+  stroke-dashoffset: 0.001;
+}
+
+.link-box {
+  fill: currentColor;
+  stroke: currentColor;
+  stroke-width: 1.5;
+  opacity: 0;
+  animation: link-show 0.2s ease-out forwards;
+}
+
+@keyframes link-fade {
+  0%,
+  65% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+  }
+}
+
+@keyframes link-draw {
+  to {
+    stroke-dashoffset: 0;
+  }
+}
+
+@keyframes link-travel {
+  to {
+    stroke-dashoffset: -1;
+  }
+}
+
+@keyframes link-show {
+  to {
+    opacity: 1;
+  }
+}
+
+/* Keep the lines and highlights, drop the moving parts. */
+@media (prefers-reduced-motion: reduce) {
+  .link-dot {
+    display: none;
+  }
+
+  .link-trail {
+    stroke-dashoffset: 0;
+    animation: none;
+  }
+
+  .link-box {
+    opacity: 1;
+    animation: none;
+  }
+}

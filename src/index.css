@@ -7,9 +7,10 @@
     sans-serif;
   line-height: 1.5;
   color: #1a1a1a;
-  background-color: #fafafa;
+  background-color: var(--bg);
   color-scheme: light dark;
 
+  --bg: #fafafa;
   --stage: #e8e8ed;
   --line: #d6d6d6;
   --muted: #6b6b6b;
@@ -20,8 +21,8 @@
 @media (prefers-color-scheme: dark) {
   :root {
     color: #f2f2f2;
-    background-color: #121212;
 
+    --bg: #121212;
     --stage: #050505;
     --line: #2e2e2e;
     --muted: #9a9a9a;
@@ -54,8 +55,9 @@ body {
   background: var(--stage);
 }
 
+/* The panel never scrolls, so attention stays on the phone. */
 .app-panel {
-  overflow-y: auto;
+  overflow: hidden;
   border-left: 1px solid var(--line);
 }
 
@@ -67,6 +69,7 @@ body {
   }
 
   .app-panel {
+    overflow: visible;
     border-top: 1px solid var(--line);
     border-left: 0;
   }
