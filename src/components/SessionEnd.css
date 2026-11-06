@@ -36,7 +36,8 @@
   letter-spacing: -0.02em;
 }
 
-/* Each part rises in after the one before. */
+/* One beat at a time: your time, then the tiles (and, once they are in,
+   their counts), then what it keeps and the year, then the way out. */
 .end-pane {
   animation: end-rise 0.6s var(--ease) both;
 }
@@ -45,12 +46,9 @@
   animation-delay: 0.2s;
 }
 
-.end-keeps {
-  animation-delay: 0.4s;
-}
-
+.end-keeps,
 .end-year {
-  animation-delay: 0.55s;
+  animation-delay: 1.8s;
 }
 
 @keyframes end-rise {
@@ -105,6 +103,22 @@
 
 .end-stat.is-early .end-clock {
   color: var(--you);
+}
+
+/* No limit: said beside the time, no bar under it. */
+.end-times:only-child {
+  margin-bottom: 0;
+}
+
+.end-open {
+  margin: 0 0 4px;
+  color: var(--muted);
+  font-size: 18px;
+  font-weight: 600;
+}
+
+.end-open b {
+  color: var(--take);
 }
 
 /* Cyan up to your plan, pink for what it took past it. */
@@ -255,6 +269,7 @@
   color: var(--muted);
   font-size: 12px;
   list-style: none;
+  animation: end-in 0.4s var(--ease) 1.9s both;
 }
 
 .end-counts li {
@@ -389,7 +404,7 @@
   justify-content: center;
   gap: 12px;
   padding-top: 6px;
-  animation: end-rise 0.6s var(--ease) 0.7s both;
+  animation: end-rise 0.6s var(--ease) 2.4s both;
 }
 
 .end-button {
@@ -430,6 +445,7 @@
   .end-pane,
   .end-bar-part,
   .end-tile,
+  .end-counts,
   .end-actions {
     animation: none;
   }
@@ -475,7 +491,12 @@
   }
 
   .end-times {
+    flex-wrap: wrap;
     gap: 18px;
+  }
+
+  .end-open {
+    font-size: 15px;
   }
 
   .end-verdict {

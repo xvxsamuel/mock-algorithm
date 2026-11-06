@@ -111,10 +111,8 @@ function SessionEnd({ feed, onBack, onRestart, returnTo }: SessionEndProps) {
               <span className="end-clock">{formatClock(sessionMs)}</span>
             </p>
             {intentMs === null ? (
-              <p className="end-stat is-right">
-                <span className="end-kicker">
-                  No limit set. Nothing stopped you.
-                </span>
+              <p className="end-open">
+                No limit set. <b>Nothing stopped you.</b>
               </p>
             ) : over > 0 ? (
               <p className="end-stat is-right is-over">
