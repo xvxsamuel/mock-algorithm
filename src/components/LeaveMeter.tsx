@@ -14,6 +14,10 @@ function LeaveMeter({ feed }: LeaveMeterProps) {
   const { exitRisk, upNext, current, currentItem, started } = feed;
   const queued = upNext.ranking.source === "rescue";
   const playing = current.source === "rescue";
+  // While a sure hit plays: the risk from the moment it started, and now.
+  const from = Math.round(currentItem.riskWhenPlayed * 100);
+  const to = Math.round(exitRisk.value * 100);
+  const comparing = playing && !queued && from !== to;
 
   let note: ReactNode;
   if (!started) {
@@ -26,13 +30,11 @@ function LeaveMeter({ feed }: LeaveMeterProps) {
       </>
     );
   } else if (playing) {
-    // From the moment it started: what the sure hit itself did to the risk.
-    const from = Math.round(currentItem.riskWhenPlayed * 100);
-    const to = Math.round(exitRisk.value * 100);
+    // What the sure hit itself did to the risk.
     note = (
       <>
         <span className="leave-emoji">{current.video.emoji}</span>
-        {from === to ? "sure hit playing" : `${from}% → ${to}%`}
+        {comparing ? `${from}% → ${to}%` : "sure hit playing"}
       </>
     );
   } else if (exitRisk.reason !== null) {
@@ -50,6 +52,8 @@ function LeaveMeter({ feed }: LeaveMeterProps) {
         value={started ? exitRisk.value : 0}
         threshold={RESCUE_AT}
         live={started}
+        // "97% → 24%" beside it is the number; the dial keeps only its arc.
+        showValue={!comparing}
       />
       <div className="leave-text">
         <h2 className="eyebrow">Chance you leave</h2>

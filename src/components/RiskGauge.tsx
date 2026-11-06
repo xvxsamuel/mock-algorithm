@@ -7,10 +7,17 @@ type RiskGaugeProps = {
   threshold: number;
   /** False before the session starts: the dial shows a dash, not a number. */
   live?: boolean;
+  /** False when the number is shown beside the dial instead. */
+  showValue?: boolean;
 };
 
 /** A half dial: how close you are to closing the app. */
-function RiskGauge({ value, threshold, live = true }: RiskGaugeProps) {
+function RiskGauge({
+  value,
+  threshold,
+  live = true,
+  showValue = true,
+}: RiskGaugeProps) {
   // A notch splits off the "sure hit" zone at the end of the track.
   const angle = Math.PI - threshold * Math.PI;
   const notch = {
@@ -53,9 +60,11 @@ function RiskGauge({ value, threshold, live = true }: RiskGaugeProps) {
         strokeDasharray={`${value * 100} 100`}
       />
       <line className="gauge-notch" {...notch} />
-      <text className="gauge-value" x={60} y={56} textAnchor="middle">
-        {live ? `${Math.round(value * 100)}%` : "–"}
-      </text>
+      {showValue && (
+        <text className="gauge-value" x={60} y={56} textAnchor="middle">
+          {live ? `${Math.round(value * 100)}%` : "–"}
+        </text>
+      )}
     </svg>
   );
 }

@@ -90,7 +90,7 @@ function PredictionChart({ finished, current, playing }: PredictionChartProps) {
                 className={sureHit ? "pchart-tag is-sure-hit" : "pchart-tag"}
                 style={{ bottom: pct(Math.max(guess, actual)) }}
               >
-                {sureHit ? "sure hit" : playing ? "now" : "paused"}
+                {!playing ? "paused" : sureHit ? "sure hit" : "now"}
               </span>
             )}
             <span className="pchart-emoji" aria-hidden="true">
