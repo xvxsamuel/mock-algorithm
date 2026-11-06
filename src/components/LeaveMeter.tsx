@@ -20,16 +20,14 @@ function LeaveMeter({ feed }: LeaveMeterProps) {
   const comparing = playing && !queued && from !== to;
 
   let note: ReactNode = null;
-  if (!started) {
-    note = null;
-  } else if (queued) {
+  if (started && queued) {
     note = (
       <>
         <span className="leave-emoji">{upNext.video.emoji}</span>
         sure hit queued
       </>
     );
-  } else if (playing) {
+  } else if (started && playing) {
     // What the sure hit itself did to the risk.
     note = (
       <>
@@ -37,8 +35,6 @@ function LeaveMeter({ feed }: LeaveMeterProps) {
         {comparing ? `${from}% → ${to}%` : "sure hit playing"}
       </>
     );
-  } else if (exitRisk.reason !== null) {
-    note = exitRisk.reason;
   }
 
   return (

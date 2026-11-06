@@ -99,9 +99,7 @@ function InfluenceLens({ feed }: InfluenceLensProps) {
           <p className="inf-label is-bots">
             {BOTS.toLocaleString("en")} fake accounts
           </p>
-          <p className="inf-label is-people">
-            engine picks the easiest to move
-          </p>
+          <p className="inf-label is-people">most persuadable</p>
 
           {/* Fan-out: the boosted video goes to the people it picked. */}
           <svg

@@ -258,13 +258,4 @@
   .swap-looks b {
     display: block;
   }
-
-  /* The quote stays in the footnote; the tile says the age. */
-  .swap-rule {
-    display: none;
-  }
-
-  .swap-age {
-    display: inline;
-  }
 }

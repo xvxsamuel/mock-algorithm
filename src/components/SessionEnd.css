@@ -201,7 +201,7 @@
   background: color-mix(in srgb, var(--tone) 30%, var(--bg));
   font-size: 17px;
   line-height: 1;
-  animation: end-pop 0.4s var(--ease) both;
+  animation: end-pop 0.3s var(--ease) both;
 }
 
 @keyframes end-pop {
@@ -265,7 +265,7 @@
   color: color-mix(in srgb, var(--muted), var(--text) 30%);
   font-size: 13.5px;
   list-style: none;
-  animation: end-in 0.4s var(--ease) 1.9s both;
+  animation: end-in 0.3s var(--ease) 1.75s both;
 }
 
 .end-counts li {

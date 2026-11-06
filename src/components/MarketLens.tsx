@@ -22,7 +22,6 @@ function MarketLens({ feed }: MarketLensProps) {
   const shown = sales.slice(-TILES).reverse();
   const earlier = sales.length - shown.length;
   const sold = sales.length > 0;
-  const hidden = sales.some((sale) => sale.kind === "paid");
   // While a sold thing is on the phone, the key gives way to who paid.
   const now = sales.find((sale) => sale.key === currentItem.key);
 
@@ -74,7 +73,7 @@ function MarketLens({ feed }: MarketLensProps) {
                   </>
                 ) : (
                   <>
-                    <b>{now.brand}</b> paid this creator. No label.
+                    <b>{now.brand}</b> paid this creator
                   </>
                 )}
               </p>
@@ -83,14 +82,6 @@ function MarketLens({ feed }: MarketLensProps) {
           <div className="mkt-total">
             <p className={sold ? "mkt-earned" : "mkt-earned is-zero"}>
               €{sold ? market.earned.toFixed(4) : "0"}
-              {hidden && (
-                <span
-                  className="mkt-unknown"
-                  title="Plus the paid posts: nobody says what they cost"
-                >
-                  +?
-                </span>
-              )}
             </p>
             <p className="mkt-for">
               for <b>{formatClock(sessionMs)}</b>

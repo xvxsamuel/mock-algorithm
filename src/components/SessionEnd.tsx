@@ -14,7 +14,7 @@ const YEAR_DAYS = Math.round((TEEN_MINUTES_A_DAY * 365) / (24 * 60));
 /** After the time bar has grown (pink last), the tiles come in one after
     another, all within TILES_MS; then the year fills. */
 const TILES_AT_MS = 1200;
-const TILES_MS = 700;
+const TILES_MS = 600;
 const YEAR_AT_MS = 2300;
 /** Fewer videos than this: bigger tiles. */
 const FEW = 25;

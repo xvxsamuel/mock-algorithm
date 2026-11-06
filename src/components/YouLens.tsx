@@ -94,6 +94,7 @@ function YouLens({ feed }: YouLensProps) {
             {video.emoji}
           </span>
           <WatchBar
+            key={feed.currentItem.key}
             watchMs={current.watchMs}
             predictedMs={current.predictedMs}
             durationMs={video.durationSec * 1000}
