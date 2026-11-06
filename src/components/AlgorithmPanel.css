@@ -165,6 +165,7 @@
   display: flex;
   align-items: flex-start;
   gap: 16px;
+  margin-top: 7px;
 }
 
 .panel-time-row > .intent,
@@ -173,9 +174,11 @@
   min-width: 0;
 }
 
+/* Centred on the bar's line. */
 .leave-button {
+  position: relative;
   flex-shrink: 0;
-  margin-top: -9px;
+  margin-top: -10px;
   padding: 4px 16px;
   border: 1px solid var(--line-strong);
   border-radius: 999px;
@@ -188,6 +191,12 @@
     border-color 0.25s var(--ease),
     box-shadow 0.25s var(--ease),
     color 0.25s var(--ease);
+}
+
+.leave-button::before {
+  content: "";
+  position: absolute;
+  inset: -10px -6px;
 }
 
 .leave-button:hover {

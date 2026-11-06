@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import AlgorithmPanel from "./components/AlgorithmPanel";
 import LinkLayer from "./components/LinkLayer";
 import PhoneFeed from "./components/PhoneFeed";
@@ -19,8 +19,11 @@ function App() {
     setSheetOpen(!sheetOpen);
     hold(!sheetOpen);
   }
+  // The Leave button, so focus goes back to it after.
+  const leftFrom = useRef<HTMLElement | null>(null);
   // Leaving closes the sheet first, so the video is where you left it.
-  function leave() {
+  function leave(button: HTMLElement) {
+    leftFrom.current = button;
     setSheetOpen(false);
     hold(false);
     end();
@@ -42,6 +45,7 @@ function App() {
       <section
         className="app-feed"
         aria-label="Video feed"
+        inert={feed.ended}
         ref={feedArea}
         onPointerDownCapture={trackPress}
       >
@@ -50,6 +54,7 @@ function App() {
       <section
         className={sheetOpen ? "app-panel is-open" : "app-panel"}
         aria-label="What the algorithm sees"
+        inert={feed.ended}
       >
         <SheetHandle feed={feed} open={sheetOpen} onToggle={toggleSheet} />
         <AlgorithmPanel feed={feed} onLeave={leave} />
@@ -59,6 +64,7 @@ function App() {
         <SessionEnd
           feed={feed}
           onBack={resume}
+          returnTo={leftFrom}
           onRestart={() => window.location.reload()}
         />
       )}

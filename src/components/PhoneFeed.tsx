@@ -63,14 +63,14 @@ function PhoneFeed({ feed }: PhoneFeedProps) {
         return;
       }
       if (event.key !== "ArrowDown" && event.key !== "ArrowUp") return;
-      if (!feed.started) return;
+      if (!feed.started || feed.ended) return;
       event.preventDefault();
       const step = event.key === "ArrowDown" ? 1 : -1;
       scrollToCard(scroller.current, activeIndex + step);
     }
     window.addEventListener("keydown", handleKey);
     return () => window.removeEventListener("keydown", handleKey);
-  }, [activeIndex, sheet, feed.started]);
+  }, [activeIndex, sheet, feed.started, feed.ended]);
 
   useEffect(() => {
     if (toast === null) return;

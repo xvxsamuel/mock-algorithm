@@ -34,8 +34,8 @@ const UNFOLD_AT = 4;
 
 type AlgorithmPanelProps = {
   feed: FeedController;
-  /** Pressing Leave: the session ends. */
-  onLeave: () => void;
+  /** Pressing Leave: the session ends. Focus comes back to the button. */
+  onLeave: (button: HTMLElement) => void;
 };
 
 /**
@@ -79,7 +79,11 @@ function AlgorithmPanel({ feed, onLeave }: AlgorithmPanelProps) {
           // Your time runs toward the one thing the app never offers.
           <div className="panel-time-row">
             {intentBar(sessionMs, intentMs)}
-            <button type="button" className="leave-button" onClick={onLeave}>
+            <button
+              type="button"
+              className="leave-button"
+              onClick={(event) => onLeave(event.currentTarget)}
+            >
               Leave
             </button>
           </div>
