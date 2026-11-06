@@ -67,6 +67,11 @@
   box-shadow: 0 0 10px rgb(254 44 85 / 0.35);
 }
 
+/* The video still playing: the gap to the guess is not decided yet. */
+.pchart-short.is-pending {
+  background: rgb(255 255 255 / 0.05);
+}
+
 /* Taller than the chart: it fades out at the top instead of stopping. */
 .pchart-extra.is-clipped {
   border-radius: 0;
@@ -101,35 +106,7 @@
 }
 
 /* The video playing now. */
-.pchart-col.is-live /* A sure hit, played to keep you: pink, like its tile in the strip. */
-.pchart-col.is-sure-hit .pchart-emoji {
-  padding: 2px 3px;
-  border-radius: 5px;
-  background: rgb(254 44 85 / 0.28);
-  box-shadow: 0 0 0 1px rgb(254 44 85 / 0.7);
-}
-
-.pchart-col.is-sure-hit .pchart-guess {
-  background: var(--take);
-  box-shadow: 0 0 8px rgb(254 44 85 / 0.7);
-}
-
-.pchart-tag {
-  position: absolute;
-  right: 0;
-  margin-bottom: 8px;
-  padding: 2px 6px;
-  border-radius: 999px;
-  background: var(--take);
-  color: #fff;
-  font-size: 10px;
-  font-weight: 700;
-  line-height: 1.3;
-  white-space: nowrap;
-  transition: bottom 0.25s linear;
-}
-
-.pchart-emoji {
+.pchart-col.is-live .pchart-emoji {
   padding: 2px 3px;
   border-radius: 5px;
   background: rgb(255 255 255 / 0.16);
@@ -148,19 +125,25 @@
   box-shadow: 0 0 8px rgb(254 44 85 / 0.7);
 }
 
+/* Above the live column: "now", or "sure hit" in pink. */
 .pchart-tag {
   position: absolute;
   right: 0;
   margin-bottom: 8px;
   padding: 2px 6px;
   border-radius: 999px;
-  background: var(--take);
-  color: #fff;
+  background: rgb(255 255 255 / 0.14);
+  color: var(--text);
   font-size: 10px;
   font-weight: 700;
   line-height: 1.3;
   white-space: nowrap;
   transition: bottom 0.25s linear;
+}
+
+.pchart-tag.is-sure-hit {
+  background: var(--take);
+  color: #fff;
 }
 
 .pchart-emoji {

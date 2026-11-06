@@ -47,7 +47,7 @@
 
 .leave-note.is-on {
   color: var(--take);
-  font-size: 13px;
+  font-size: 14px;
   font-weight: 650;
   animation: leave-pulse 1.4s ease-in-out infinite;
 }

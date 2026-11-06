@@ -282,21 +282,44 @@
 
   .you-radar .radar {
     flex: none;
-    height: 280px;
+    height: 220px;
   }
 }
 
+/* Phones: one column, and the identity stays on one row so the guesses
+   show up in the first view of the sheet. */
 @media (max-width: 560px) {
   .you-model-body {
     grid-template-columns: 1fr;
+    gap: 14px;
   }
 
   .you-id {
-    flex-wrap: wrap;
+    gap: 10px;
+    padding-bottom: 10px;
   }
 
-  .you-points {
-    margin-left: 0;
-    text-align: left;
+  .you-avatar {
+    width: 36px;
+    height: 36px;
+    font-size: 12px;
+  }
+
+  .you-name {
+    font-size: 15px;
+  }
+
+  .you-rec {
+    padding: 2px 7px;
+    font-size: 10px;
+  }
+
+  .you-id .figure {
+    font-size: 20px;
+  }
+
+  .you-points .eyebrow {
+    font-size: 9.5px;
+    letter-spacing: 0.08em;
   }
 }

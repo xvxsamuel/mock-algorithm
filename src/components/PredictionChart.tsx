@@ -77,18 +77,19 @@ function PredictionChart({ finished, current }: PredictionChartProps) {
                 style={{ bottom: pct(guess), height: pct(actual - guess) }}
               />
             ) : (
+              // Still playing, the gap is only "not yet", so no hatching.
               <span
-                className="pchart-short"
+                className={live ? "pchart-short is-pending" : "pchart-short"}
                 style={{ bottom: pct(actual), height: pct(guess - actual) }}
               />
             )}
             <span className="pchart-guess" style={{ bottom: pct(guess) }} />
-            {live && sureHit && (
+            {live && (
               <span
-                className="pchart-tag"
+                className={sureHit ? "pchart-tag is-sure-hit" : "pchart-tag"}
                 style={{ bottom: pct(Math.max(guess, actual)) }}
               >
-                sure hit
+                {sureHit ? "sure hit" : "now"}
               </span>
             )}
             <span className="pchart-emoji" aria-hidden="true">

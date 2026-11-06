@@ -138,7 +138,7 @@ function scoreVideo(
       label: "same topic in a row",
       value: sameTopicInARow * WEIGHTS.sameTopicInARow,
     },
-    { label: "random jitter", value: random() * WEIGHTS.jitter },
+    { label: "a bit of chance", value: random() * WEIGHTS.jitter },
   ];
 
   const score = parts.reduce((sum, part) => sum + part.value, 0);

@@ -36,6 +36,8 @@ function EngineLens({ feed }: EngineLensProps) {
               <b>{seconds(current.predictedMs)}</b>
               <span className="eng-key is-actual" /> you
               <b className="tone-you">{seconds(current.watchMs)}</b>
+              <span className="eng-key is-over" /> over
+              <span className="eng-key is-under" /> under
             </p>
           </div>
           {/* "2/5 → 9/10": how much better it got at guessing you. */}
@@ -57,7 +59,13 @@ function EngineLens({ feed }: EngineLensProps) {
 
       <div className="row">
         <section className="pane eng-why">
-          <h2 className="eyebrow">Why this video</h2>
+          {/* Who chose the video playing now; pink while a sure hit plays. */}
+          <div className="pane-head">
+            <h2 className="eyebrow">Why this video</h2>
+            <span className={`why-source is-${current.source}`}>
+              {SOURCE_LABELS[current.source]}
+            </span>
+          </div>
           <ul className="why" data-link="why">
             {parts.map((part) => (
               <li key={part.label} className="why-part">
