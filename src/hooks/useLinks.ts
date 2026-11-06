@@ -119,7 +119,8 @@ export function useLinks(feed: FeedController) {
       const card = element.closest(CARD);
       let entry = aim;
       let trace: string | null = null;
-      if (card !== null && card !== element) {
+      // A ping only lights its tab: no line, so no trace either.
+      if (shown !== null && card !== null && card !== element) {
         const edge = card.getBoundingClientRect();
         if (aim.x - edge.left > TRACE_FROM) {
           if (element.matches("[data-link-floor]")) {
