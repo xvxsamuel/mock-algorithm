@@ -52,16 +52,44 @@
 }
 
 .eng-hits {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
   white-space: nowrap;
 }
 
+/* A score with its window under it: "first 5", "latest 10". */
+.eng-hit {
+  display: inline-flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.eng-hit b {
+  font-weight: 600;
+}
+
+.eng-hit small {
+  margin-top: 1px;
+  color: var(--muted);
+  font-size: 10px;
+  font-weight: 500;
+}
+
 /* Its first guesses, before it knew you. */
-.eng-was {
-  margin-right: 6px;
+.eng-hit.is-was b {
   color: var(--muted);
   font-size: 18px;
-  font-weight: 600;
   font-variant-numeric: tabular-nums;
+}
+
+.eng-arrow {
+  color: var(--muted);
+  font-size: 16px;
+}
+
+.eng-hits .unit {
+  margin-left: 0;
 }
 
 .eng-of {
@@ -143,6 +171,11 @@
 }
 
 /* "You were about to leave" outweighs everything: the whole track, pink. */
+/* The reason that beat every other: its words get the room they need. */
+.why-part.is-rescue {
+  grid-template-columns: auto minmax(40px, 1fr);
+}
+
 .why-part.is-rescue .why-label {
   color: var(--take);
   font-weight: 650;

@@ -36,7 +36,7 @@ function SheetHandle({ feed, open, onToggle }: SheetHandleProps) {
           {Math.round(exitRisk.value * 100)}% chance you leave
           <span className="sheet-more">
             <span className="sheet-dot" aria-hidden="true" />
-            behind your feed ↑
+            <span className="sheet-more-words">behind your feed</span>↑
           </span>
         </span>
       )}

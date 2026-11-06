@@ -50,14 +50,19 @@
     font-weight: 500;
   }
 
+  .sheet-more-words {
+    margin-right: -4px;
+  }
+
   .sheet-handle:focus-visible {
     outline: 2px solid var(--you);
     outline-offset: -2px;
   }
 }
 
+/* Small phones: only the arrow says there is more. */
 @media (max-width: 400px) {
-  .sheet-more {
+  .sheet-more-words {
     display: none;
   }
 }

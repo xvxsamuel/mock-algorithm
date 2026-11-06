@@ -48,7 +48,9 @@ function WatchBar({
         </span>
       </div>
       <div className="watchbar-track">
-        <span className="watchbar-skip" style={{ width: `${skip * 100}%` }} />
+        {started && (
+          <span className="watchbar-skip" style={{ width: `${skip * 100}%` }} />
+        )}
         <span className="watchbar-fill" style={{ width: `${fill * 100}%` }} />
         <span
           className={passed ? "watchbar-mark is-passed" : "watchbar-mark"}

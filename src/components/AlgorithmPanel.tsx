@@ -53,6 +53,8 @@ function AlgorithmPanel({ feed }: AlgorithmPanelProps) {
               <p className="panel-kicker tone-take">Over your plan</p>
               <p className="clock is-over">
                 +{formatClock(sessionMs - intentMs)}
+                {/* Folded, the kicker is gone, so the clock says it. */}
+                <span className="clock-unit"> over</span>
               </p>
             </>
           ) : (

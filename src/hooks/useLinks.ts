@@ -210,6 +210,13 @@ export function useLinks(feed: FeedController) {
     return () => pending.forEach((timer) => window.clearTimeout(timer));
   }, []);
 
+  // A line drawn for the old layout would point at nothing after a resize.
+  useEffect(() => {
+    const clear = () => setLinks([]);
+    window.addEventListener("resize", clear);
+    return () => window.removeEventListener("resize", clear);
+  }, []);
+
   return {
     links,
     /** Attach to the element around the phone. */

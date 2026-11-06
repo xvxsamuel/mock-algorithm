@@ -371,20 +371,46 @@
   }
 }
 
+/* Only shown in the folded header, where the kicker is gone. */
+.clock-unit {
+  display: none;
+  margin-left: 2px;
+  font-size: 13px;
+  font-weight: 650;
+  letter-spacing: 0;
+  text-shadow: none;
+}
+
 /* Narrow screens, cards scrolled: the header folds to one row (time and
-   the dial), the strip drops its legend. The rescue note still shows. */
+   the dial) with short labels, the strip keeps only its colour key. The
+   rescue note still shows. */
 @media (max-width: 900px) {
   .panel.is-folded .panel-kicker,
   .panel.is-folded .intent-label,
   .panel.is-folded .intent-note,
-  .panel.is-folded .leave .eyebrow,
   .panel.is-folded .leave-note:not(.is-on),
-  .panel.is-folded .strip-head {
+  .panel.is-folded .strip-head .eyebrow {
     display: none;
   }
 
   .panel.is-folded .clock {
     font-size: 26px;
+  }
+
+  .panel.is-folded .clock-unit {
+    display: inline;
+  }
+
+  .panel.is-folded .leave .eyebrow {
+    font-size: 9.5px;
+  }
+
+  .panel.is-folded .strip-head {
+    margin-bottom: 6px;
+  }
+
+  .panel.is-folded .strip-legend {
+    font-size: 10.5px;
   }
 
   .panel.is-folded .intent {

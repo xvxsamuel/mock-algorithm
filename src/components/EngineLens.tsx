@@ -53,15 +53,28 @@ function EngineLens({ feed }: EngineLensProps) {
           {/* "2/5 → 9/10": how much better it got at guessing you. */}
           <p className="eng-hits">
             {first !== null && (
-              <span className="eng-was">
-                {first.hits}/{first.total} →
-              </span>
+              <>
+                <span className="eng-hit is-was">
+                  <b>
+                    {first.hits}/{first.total}
+                  </b>
+                  <small>first {first.total}</small>
+                </span>
+                <span className="eng-arrow" aria-hidden="true">
+                  →
+                </span>
+              </>
             )}
-            <span className="figure tone-you">
-              {recent.hits}
-              <span className="eng-of">/{recent.total}</span>
+            <span className="eng-hit">
+              <b className="figure tone-you">
+                {recent.hits}
+                <span className="eng-of">/{recent.total}</span>
+              </b>
+              <small>
+                {first === null ? "so far" : `latest ${recent.total}`}
+              </small>
             </span>
-            <span className="unit">within {HIT_MS / 1000} s</span>
+            <span className="unit">within ±{HIT_MS / 1000} s</span>
           </p>
         </div>
         <PredictionChart finished={finished} current={current} />
@@ -79,9 +92,11 @@ function EngineLens({ feed }: EngineLensProps) {
           <ul className="why" data-link="why">
             {sureHit && (
               <li className="why-part is-rescue">
+                {/* The chain: what you did → how close you were to leaving. */}
                 <span className="why-label">
-                  about to leave: {Math.round(currentItem.riskWhenQueued * 100)}
-                  %
+                  {currentItem.reasonWhenQueued !== null &&
+                    `${currentItem.reasonWhenQueued} → `}
+                  {Math.round(currentItem.riskWhenQueued * 100)}% about to leave
                 </span>
                 <span className="why-track">
                   <span className="why-bar is-rescue" />

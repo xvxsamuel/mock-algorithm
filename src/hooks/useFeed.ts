@@ -1,4 +1,4 @@
-import { useEffect, useReducer } from "react";
+import { useCallback, useEffect, useReducer } from "react";
 import {
   startImpression,
   watchRatio,
@@ -9,7 +9,12 @@ import { predictionHits, predictWatchMs } from "../algorithm/prediction";
 import { buildProfile } from "../algorithm/profile";
 import { createRandom } from "../algorithm/random";
 import { rankNext, type Ranking } from "../algorithm/ranking";
-import { exitRisk, isHit, RESCUE_AT } from "../algorithm/retention";
+import {
+  exitRisk,
+  isHit,
+  RESCUE_AT,
+  type ExitReason,
+} from "../algorithm/retention";
 import { readSignals } from "../algorithm/signals";
 import { summarizeSession } from "../algorithm/session";
 import { CATEGORIES } from "../data/categories";
@@ -32,6 +37,8 @@ export type FeedItem = {
   predictedMs: number;
   /** The exit risk when this video was picked, 0-1. */
   riskWhenQueued: number;
+  /** The biggest reason for that risk, e.g. "skipping". */
+  reasonWhenQueued: ExitReason | null;
 };
 
 export type ReactionKind =
@@ -61,6 +68,13 @@ type State = {
   current: Impression;
   /** When the current video last started playing, or null while paused. */
   playingSince: number | null;
+  /**
+   * True while the panel covers the video (the sheet on phones). It holds
+   * playback, and it is not a pause: reading the panel is not watching.
+   */
+  held: boolean;
+  /** The video was playing when it was held, so it plays again after. */
+  resumeAfterHold: boolean;
   sessionStart: number;
   now: number;
   nextKey: number;
@@ -75,6 +89,7 @@ type Action =
   | { type: "tick"; now: number }
   | { type: "view"; index: number; now: number; seed: number }
   | { type: "togglePause"; now: number }
+  | { type: "hold"; held: boolean; now: number }
   | { type: "react"; kind: ReactionKind; now: number; seed: number };
 
 function feedReducer(state: State, action: Action): State {
@@ -88,7 +103,8 @@ function feedReducer(state: State, action: Action): State {
         intentMs: action.intentMs,
         sessionStart: now,
         current: { ...state.current, startedAt: now },
-        playingSince: now,
+        playingSince: state.held ? null : now,
+        resumeAfterHold: state.held,
         now,
       };
     }
@@ -125,15 +141,38 @@ function feedReducer(state: State, action: Action): State {
         current,
         activeIndex: index,
         maxSeenIndex: Math.max(state.maxSeenIndex, index),
-        playingSince: now,
+        playingSince: state.held ? null : now,
+        resumeAfterHold: state.held,
         now,
       };
       return queueNextVideo(next, seed);
     }
 
+    case "hold": {
+      const { held, now } = action;
+      if (held === state.held) return state;
+      if (held) {
+        return {
+          ...state,
+          current: liveImpression(state, now),
+          playingSince: null,
+          held: true,
+          resumeAfterHold: state.playingSince !== null,
+          now,
+        };
+      }
+      return {
+        ...state,
+        playingSince: state.resumeAfterHold ? now : state.playingSince,
+        held: false,
+        resumeAfterHold: false,
+        now,
+      };
+    }
+
     case "togglePause": {
       const { now } = action;
-      if (!state.started) return state;
+      if (!state.started || state.held) return state;
       if (state.playingSince === null) {
         return { ...state, playingSince: now, now };
       }
@@ -241,6 +280,7 @@ function queueNextVideo(state: State, seed: number): State {
           ranking.source === "rescue",
         ),
         riskWhenQueued: risk.value,
+        reasonWhenQueued: risk.reason,
       },
     ],
     nextKey: state.nextKey + 1,
@@ -289,6 +329,7 @@ function createInitialState(): State {
     ranking,
     predictedMs,
     riskWhenQueued: 0,
+    reasonWhenQueued: null,
   };
   const state: State = {
     started: false,
@@ -306,6 +347,8 @@ function createInitialState(): State {
       ranking.source,
     ),
     playingSince: null,
+    held: false,
+    resumeAfterHold: false,
     sessionStart: now,
     now,
     nextKey: 1,
@@ -331,6 +374,12 @@ export function useFeed() {
     );
     return () => window.clearInterval(timer);
   }, []);
+
+  // Stable, so the page can hold playback from an effect.
+  const hold = useCallback(
+    (held: boolean) => dispatch({ type: "hold", held, now: Date.now() }),
+    [],
+  );
 
   const current = liveImpression(state, state.now);
   const impressions = [...state.history, current];
@@ -395,6 +444,8 @@ export function useFeed() {
     view: (index: number) =>
       dispatch({ type: "view", index, now: Date.now(), seed: Math.random() }),
     togglePause: () => dispatch({ type: "togglePause", now: Date.now() }),
+    /** Holds playback while the panel covers the video, without a pause. */
+    hold,
     react: (kind: ReactionKind) =>
       dispatch({ type: "react", kind, now: Date.now(), seed: Math.random() }),
   };
