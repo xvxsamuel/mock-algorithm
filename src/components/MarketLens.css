@@ -6,7 +6,7 @@
   font-size: 11px;
 }
 
-/* On tall screens the receipt takes the spare height, not the auction. */
+/* On tall screens the receipt takes the spare height, below its content. */
 .lens > .mkt-sold {
   display: flex;
   flex: 1 0 auto;
@@ -17,7 +17,7 @@
   display: grid;
   flex: 1;
   grid-template-columns: minmax(0, 1fr) auto;
-  align-content: center;
+  align-content: start;
   align-items: center;
   gap: 24px;
 }
@@ -114,10 +114,6 @@
 .mkt-sale.is-now {
   outline: 2px solid var(--text);
   outline-offset: 2px;
-}
-
-.mkt-sale.is-empty {
-  background: var(--line);
 }
 
 .mkt-earlier {
@@ -444,8 +440,18 @@
     text-align: left;
   }
 
+  /* The bar key right under the auction's title, before the bars. */
+  .mkt-auction > .pane-head {
+    order: -2;
+  }
+
+  .mkt-key.is-bars {
+    order: -1;
+    margin-bottom: 12px;
+  }
+
   /* Two lines kept for the key or who paid, so nothing below jumps. */
-  .mkt-key,
+  .mkt-sold .mkt-key,
   .mkt-now {
     min-height: 34px;
     align-content: flex-start;

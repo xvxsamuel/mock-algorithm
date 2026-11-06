@@ -366,6 +366,11 @@
     );
   }
 
+  /* Never shorter than its cards, so the page scrolls to the last one. */
+  .lens {
+    flex: 1 0 auto;
+  }
+
   .lens > * {
     flex: none;
   }

@@ -7,8 +7,6 @@ import "./MarketLens.css";
 const SCALE = 12;
 /** Sold things shown as tiles; older ones fold into "+N". */
 const TILES = 14;
-/** Only the top bids say what about you they are paying for. */
-const EXPLAINED = 3;
 
 type MarketLensProps = { feed: FeedController };
 
@@ -57,9 +55,6 @@ function MarketLens({ feed }: MarketLensProps) {
                 </li>
               ))}
               {earlier > 0 && <li className="mkt-earlier">+{earlier}</li>}
-              {!sold && (
-                <li className="mkt-sale is-empty" aria-label="Nothing yet" />
-              )}
             </ol>
             {now === undefined ? (
               <p className="mkt-key">
@@ -123,7 +118,6 @@ function MarketLens({ feed }: MarketLensProps) {
         <ol key={auction.slot} className="mkt-bids">
           {auction.bids.map((bid, i) => {
             const won = i === 0 && stage !== "open";
-            const reasons = i < EXPLAINED ? bid.because : [];
             const classes = ["mkt-bid"];
             if (i === 0) classes.push(won ? "is-won" : "is-lead");
             return (
@@ -153,12 +147,12 @@ function MarketLens({ feed }: MarketLensProps) {
                 </span>
                 <span className="mkt-price">€{bid.total.toFixed(2)}</span>
                 {won && <span className="mkt-chip is-sold">sold</span>}
-                {reasons.length > 0 && (
+                {bid.because.length > 0 && (
                   <span
                     className="mkt-because"
                     style={{ paddingLeft: `${share(bid.anyone)}%` }}
                   >
-                    {reasons.map((reason) => (
+                    {bid.because.map((reason) => (
                       <span key={reason} className="mkt-chip">
                         {reason}
                       </span>

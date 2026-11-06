@@ -7,11 +7,13 @@ import type { FeedSource } from "./sources";
 
 /** One ad after every this many videos (TikTok shows one every few). */
 export const AD_EVERY = 6;
-/** Your interest in its topic can raise a bid by up to this many times its base. */
+/** Your favourite topic can raise a bid by up to this many times its base. */
 const INTEREST_PULL = 2;
+/** How sure it is of your taste from the first video; it grows from there. */
+const SURE_FROM = 0.15;
 /** It is sure of your taste after this many videos; before that, it bids less on it. */
 const LEARNED_AFTER = 18;
-/** A topic is named as a reason once it adds at least this much, in €. */
+/** Less than this (€) for a topic is not worth bidding on, so every cyan part has a name. */
 const NAMED_FROM = 0.3;
 /** Bids wobble by up to ±this share, the same way for the same slot. */
 const JITTER = 0.16;
@@ -55,27 +57,43 @@ export function runAuction({
   seen,
   slot,
 }: AuctionInput): Auction {
-  const liked = [...topics.values()].reduce(
-    (sum, score) => sum + Math.max(score, 0),
-    0,
-  );
+  // Measured against your favourite topic, so watching something else does
+  // not make you worth less to the brands you already like.
+  const top = Math.max(0, ...topics.values());
   // The same slot always wobbles the same way, so live bids do not flicker.
   const random = createRandom((slot * 0.618034) % 1);
-  const sure = Math.min(seen / LEARNED_AFTER, 1);
+  const sure = Math.min(SURE_FROM + seen / LEARNED_AFTER, 1);
   const bids = ADVERTISERS.map((advertiser): Bid => {
     const score = Math.max(topics.get(advertiser.category) ?? 0, 0);
-    const share = liked === 0 ? 0 : score / liked;
+    const pull = top === 0 ? 0 : score / top;
     const weak = weaknesses.has(advertiser.extra.weakness);
-    const anyone = advertiser.base * (1 + (random() - 0.5) * JITTER);
-    const interest = advertiser.base * INTEREST_PULL * share * sure;
+    const offer = advertiser.base * INTEREST_PULL * pull * sure;
+    const interest = offer >= NAMED_FROM ? offer : 0;
     const premium = weak ? advertiser.extra.premium : 0;
     const because: string[] = [];
-    if (interest >= NAMED_FROM) because.push(advertiser.category);
+    if (interest > 0) because.push(advertiser.category);
     if (weak) because.push(advertiser.extra.weakness);
-    const total = anyone + interest + premium;
+    // Whole cents, as shown; the rest is what it would pay for anyone.
+    const total = cents(
+      advertiser.base * (1 + (random() - 0.5) * JITTER) + interest + premium,
+    );
+    const anyone = total - interest - premium;
     return { advertiser, anyone, interest, premium, total, because };
   });
-  return { bids: bids.sort((a, b) => b.total - a.total), slot };
+  bids.sort((a, b) => b.total - a.total);
+  // No ties on screen: each bid is at least a cent under the one above.
+  for (let i = 1; i < bids.length; i++) {
+    const cap = cents(bids[i - 1].total - 0.01);
+    const bid = bids[i];
+    if (bid.total > cap) {
+      bids[i] = { ...bid, anyone: bid.anyone - (bid.total - cap), total: cap };
+    }
+  }
+  return { bids, slot };
+}
+
+function cents(euros: number): number {
+  return Math.round(euros * 100) / 100;
 }
 
 /** The bid that won. */
