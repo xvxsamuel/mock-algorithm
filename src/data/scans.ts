@@ -78,23 +78,16 @@ export function scanOf(video: Video): VideoScan {
   return SCANS[video.id] ?? { sees: video.category, sure: 0.8, face: null };
 }
 
-/**
- * The same video with someone else on camera. The last one is cut from For
- * You by a rule quoted from leaked TikTok moderation guidelines (The
- * Intercept, 2020): "senior people with too many wrinkles".
- */
+/** The same video with someone else on camera. */
 export type FaceSwap = {
-  face: string;
-  /** Its mock "attractiveness", or null when a rule cuts the video. */
-  looks: number | null;
-  /** The rule that cut it, in the leaked guidelines' words. */
-  rule: string | null;
+  emoji: string;
+  face: FaceReading;
 };
 
 export const FACE_SWAPS: readonly FaceSwap[] = [
-  { face: "👩", looks: 8.6, rule: null },
-  { face: "🧔", looks: 6.2, rule: null },
-  { face: "👴", looks: null, rule: "too many wrinkles" },
+  { emoji: "👱‍♀️", face: f("18–24", 8.6) },
+  { emoji: "🧔", face: f("35–44", 6.2) },
+  { emoji: "👴", face: f("65+", 6.0) },
 ];
 
 /** A stand-in for the creator's face: an older one for 65+. */

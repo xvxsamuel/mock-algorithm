@@ -15,6 +15,8 @@
  * So the score is shown as the reach a video of this frame would get.
  */
 
+import type { FaceReading } from "../data/scans";
+
 /** RGBA pixels of one camera frame, the same shape as the browser's ImageData. */
 export type Frame = {
   data: ArrayLike<number>;
@@ -230,6 +232,23 @@ function fromFactors(
     factors,
     reach: reachOf(score),
   };
+}
+
+/**
+ * Leaked 2019-20 TikTok moderation rules told moderators to keep "senior
+ * people with too many wrinkles" out of For You (The Intercept, 2020).
+ */
+export const WRINKLES_RULE = "too many wrinkles";
+
+/** The leaked rule a face breaks, if any. */
+export function faceRule(face: FaceReading): string | null {
+  return face.age === "65+" ? WRINKLES_RULE : null;
+}
+
+/** For You reach of a video with this face on camera (null: nobody). */
+export function faceReach(face: FaceReading | null): number {
+  if (face === null) return 1;
+  return faceRule(face) === null ? reachOf(face.looks) : FOLLOWERS_ONLY;
 }
 
 /**

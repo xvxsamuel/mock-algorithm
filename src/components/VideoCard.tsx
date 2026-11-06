@@ -1,5 +1,6 @@
 import { useRef, useState, type MouseEvent } from "react";
 import { CATEGORY_COLORS } from "../data/categories";
+import { faceEmoji, scanOf } from "../data/scans";
 import type { Video } from "../data/videos";
 import type { ReactionKind } from "../hooks/useFeed";
 import ActionRail from "./ActionRail";
@@ -47,6 +48,7 @@ function VideoCard({
   const tapTimer = useRef<number | undefined>(undefined);
   const [from, to] = CATEGORY_COLORS[video.category];
   const sound = video.sound ?? `original sound - ${video.creator}`;
+  const { face } = scanOf(video);
   const isPlaying = active && playing;
 
   // Single tap pauses, double tap likes (like on TikTok).
@@ -77,6 +79,12 @@ function VideoCard({
       <p className="card-overlay">
         <span>{video.overlay}</span>
       </p>
+      {/* The creator, on camera: the face the engine reads. */}
+      {face !== null && (
+        <div className="card-face" aria-hidden="true">
+          {faceEmoji(face)}
+        </div>
+      )}
 
       <button
         type="button"

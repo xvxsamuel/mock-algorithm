@@ -45,6 +45,23 @@
   }
 }
 
+/* The creator, on camera, in the corner of their own video. */
+.card-face {
+  position: absolute;
+  top: 64%;
+  left: 16px;
+  display: grid;
+  place-items: center;
+  width: 68px;
+  height: 68px;
+  border: 3px solid #fff;
+  border-radius: 50%;
+  background: rgb(0 0 0 / 0.2);
+  box-shadow: 0 6px 18px rgb(0 0 0 / 0.3);
+  font-size: 44px;
+  line-height: 1;
+}
+
 /* TikTok-style text sticker: black text on a white highlight. */
 .card-overlay {
   position: absolute;

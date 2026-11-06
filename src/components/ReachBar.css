@@ -31,6 +31,16 @@
   background: rgb(255 255 255 / 0.5);
 }
 
+/* "×1": an ordinary video. Only where there is room for it. */
+.reach-tick-label {
+  position: absolute;
+  bottom: calc(100% + 4px);
+  left: 50%;
+  color: var(--muted);
+  font-size: 10px;
+  transform: translateX(-50%);
+}
+
 .reach-value {
   font-size: 13px;
   font-weight: 650;
@@ -46,6 +56,15 @@
 
 .reach.is-cut .reach-value {
   color: var(--take);
+}
+
+/* Your own reach: cyan, like everything that is you. */
+.reach.is-you .reach-fill {
+  background: var(--you);
+}
+
+.reach.is-you .reach-value {
+  color: var(--you);
 }
 
 @media (prefers-reduced-motion: reduce) {

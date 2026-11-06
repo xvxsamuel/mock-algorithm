@@ -1,4 +1,4 @@
-import { reachOf } from "../algorithm/appearance";
+import { faceReach, faceRule } from "../algorithm/appearance";
 import { CATEGORY_COLORS } from "../data/categories";
 import { faceEmoji, scanOf } from "../data/scans";
 import type { FeedController } from "../hooks/useFeed";
@@ -16,7 +16,8 @@ function ContentLens({ feed }: ContentLensProps) {
   const { current, currentItem } = feed;
   const { video } = current;
   const scan = scanOf(video);
-  const reach = scan.face === null ? 1 : reachOf(scan.face.looks);
+  const { face } = scan;
+  const rule = face === null ? null : faceRule(face);
   const [from, to] = CATEGORY_COLORS[video.category];
 
   return (
@@ -24,6 +25,7 @@ function ContentLens({ feed }: ContentLensProps) {
       <section className="pane con-scan">
         <div className="pane-head">
           <h2 className="eyebrow">It reads every video</h2>
+          <p className="con-note">simulated scores</p>
         </div>
         <div className="con-body">
           {/* The video playing now, scanned again each time it changes. */}
@@ -46,45 +48,42 @@ function ContentLens({ feed }: ContentLensProps) {
                 {video.emoji}
               </span>
             </span>
-            {scan.face !== null && (
-              <span className="con-box is-face">
+            {face !== null && (
+              <span
+                className={
+                  rule === null ? "con-box is-face" : "con-box is-face is-cut"
+                }
+              >
                 <span className="con-tag">face</span>
                 <span className="con-face" aria-hidden="true">
-                  {faceEmoji(scan.face)}
+                  {faceEmoji(face)}
                 </span>
               </span>
             )}
             <span className="con-sweep" aria-hidden="true" />
           </div>
 
-          <div className="con-read">
-            <dl className="con-facts">
-              <div>
-                <dt>sees</dt>
-                <dd>{scan.sees}</dd>
-              </div>
-              <div>
-                <dt>reads</dt>
-                <dd className="con-quote">{video.overlay}</dd>
-              </div>
-              <div>
-                <dt>face</dt>
-                <dd>
-                  {scan.face === null ? (
-                    <span className="tone-muted">nobody on camera</span>
-                  ) : (
-                    <>
-                      {scan.face.age} · looks{" "}
-                      <b className="con-looks">{scan.face.looks.toFixed(1)}</b>
-                      <span className="tone-muted">/10</span>
-                    </>
-                  )}
-                </dd>
-              </div>
-            </dl>
+          {/* What the face says, then how far that lets the video go. */}
+          <div key={`read-${currentItem.key}`} className="con-read">
+            {face === null ? (
+              <p className="con-who is-none">nobody on camera</p>
+            ) : rule === null ? (
+              <p className="con-who">
+                <span className="con-who-big">
+                  {face.looks.toFixed(1)}
+                  <span className="con-who-of">/10</span>
+                </span>
+                <span className="con-who-small">looks · age {face.age}</span>
+              </p>
+            ) : (
+              <p className="con-who is-cut">
+                <span className="con-who-big">{face.age}</span>
+                <q className="con-who-small">{rule}</q>
+              </p>
+            )}
             <div className="con-reach">
               <p className="eyebrow">For You reach</p>
-              <ReachBar reach={reach} />
+              <ReachBar reach={faceReach(face)} tickLabel />
             </div>
           </div>
         </div>

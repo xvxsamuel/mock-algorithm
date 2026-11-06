@@ -1,4 +1,4 @@
-import { FOLLOWERS_ONLY, reachOf } from "../algorithm/appearance";
+import { faceReach, faceRule } from "../algorithm/appearance";
 import { CATEGORY_COLORS } from "../data/categories";
 import { FACE_SWAPS } from "../data/scans";
 import type { Video } from "../data/videos";
@@ -19,7 +19,7 @@ function FaceSwap({ video }: FaceSwapProps) {
   const [from, to] = CATEGORY_COLORS[video.category];
   const background = `linear-gradient(160deg, ${from}, ${to})`;
   const on = status === "on";
-  const scored = on && reading !== null && reading.scorable;
+  const score = on && reading !== null && reading.scorable ? reading : null;
 
   return (
     <section className="pane con-swap">
@@ -27,39 +27,44 @@ function FaceSwap({ video }: FaceSwapProps) {
         <h2 className="eyebrow">Same video, different face</h2>
       </div>
       <ul className="swap">
-        {FACE_SWAPS.map((swap) => (
-          <li
-            key={swap.face}
-            className={swap.rule === null ? "swap-tile" : "swap-tile is-cut"}
-          >
-            <span
-              className="swap-thumb"
-              style={{ backgroundImage: background }}
+        {FACE_SWAPS.map((swap) => {
+          const rule = faceRule(swap.face);
+          return (
+            <li
+              key={swap.emoji}
+              className={rule === null ? "swap-tile" : "swap-tile is-cut"}
             >
-              <span className="swap-art" aria-hidden="true">
-                {video.emoji}
+              <span
+                className="swap-thumb"
+                style={{ backgroundImage: background }}
+              >
+                <span className="swap-art" aria-hidden="true">
+                  {video.emoji}
+                </span>
+                <span className="swap-face" aria-hidden="true">
+                  {swap.emoji}
+                </span>
               </span>
-              <span className="swap-face" aria-hidden="true">
-                {swap.face}
+              <span className="swap-looks">
+                {rule === null ? (
+                  <>
+                    looks <b>{swap.face.looks.toFixed(1)}</b>
+                  </>
+                ) : (
+                  <q>{rule}</q>
+                )}
               </span>
-            </span>
-            <span className="swap-looks">
-              {swap.looks === null ? (
-                <q>{swap.rule}</q>
-              ) : (
-                <>
-                  looks <b>{swap.looks.toFixed(1)}</b>
-                </>
-              )}
-            </span>
-            <ReachBar
-              reach={swap.looks === null ? FOLLOWERS_ONLY : reachOf(swap.looks)}
-            />
-          </li>
-        ))}
+              <ReachBar reach={faceReach(swap.face)} />
+            </li>
+          );
+        })}
 
         {/* You, if you posted this. Off until you ask for it. */}
-        <li className="swap-tile is-you">
+        <li
+          className={
+            score === null ? "swap-tile is-you" : "swap-tile is-you is-scored"
+          }
+        >
           <span className="swap-thumb" style={{ backgroundImage: background }}>
             <span className="swap-art" aria-hidden="true">
               {video.emoji}
@@ -86,36 +91,40 @@ function FaceSwap({ video }: FaceSwapProps) {
               </button>
             )}
             {on && (
-              <button
-                type="button"
-                className="swap-off"
-                onClick={stop}
-                aria-label="Turn off the camera"
-              >
-                ×
-              </button>
+              <>
+                <button
+                  type="button"
+                  className="swap-off"
+                  onClick={stop}
+                  aria-label="Turn off the camera"
+                >
+                  ×
+                </button>
+                <span className="swap-local">stays on device</span>
+              </>
             )}
           </span>
           <span className="swap-looks">
-            {scored && reading !== null ? (
-              <>
-                you <b>{reading.score.toFixed(1)}</b>
-              </>
-            ) : (
+            {score === null ? (
               <span className="tone-you">
                 {youNote(status, reading === null)}
               </span>
+            ) : (
+              <>
+                your frame <b>{score.score.toFixed(1)}</b>
+              </>
             )}
           </span>
-          {scored && reading !== null ? (
-            <ReachBar reach={reading.reach} />
-          ) : (
+          {score === null ? (
             <span className="swap-private">stays on this device</span>
+          ) : (
+            <ReachBar reach={score.reach} you />
           )}
         </li>
       </ul>
       <p className="swap-source">
         <q>too many wrinkles</q>: leaked TikTok moderation rules, 2019–20
+        (TikTok says no longer used)
       </p>
     </section>
   );
@@ -127,7 +136,7 @@ function youNote(status: CamStatus, waiting: boolean): string {
   if (status === "starting") return "allow camera…";
   if (status === "blocked") return "camera blocked";
   if (status === "unavailable") return "no camera";
-  return "you?";
+  return "if you posted it";
 }
 
 export default FaceSwap;
