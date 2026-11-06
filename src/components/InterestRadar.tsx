@@ -1,4 +1,6 @@
+import { useRef } from "react";
 import { CATEGORIES, type Category } from "../data/categories";
+import { useElementSize } from "../hooks/useElementSize";
 import "./InterestRadar.css";
 
 /** The shape never shrinks below this, so a new profile is a small dot. */
@@ -10,6 +12,8 @@ const CENTER = SIZE / 2;
 const RADIUS = 92;
 /** Extra room left and right so the labels stay inside the picture. */
 const SIDE = 46;
+/** The labels' smallest size on screen, in px, however small it is drawn. */
+const LABEL_PX = 12;
 
 type InterestRadarProps = {
   topics: { name: Category; score: number }[];
@@ -21,6 +25,14 @@ type InterestRadarProps = {
  * reject collapse to the middle and their names turn pink.
  */
 function InterestRadar({ topics, current }: InterestRadarProps) {
+  const ref = useRef<SVGSVGElement>(null);
+  const { width, height } = useElementSize(ref);
+  // How big one unit of the drawing is on screen.
+  const scale =
+    width > 0 && height > 0
+      ? Math.min(width / (SIZE + SIDE * 2), height / SIZE)
+      : 1;
+  const labelSize = Math.max(LABEL_PX, LABEL_PX / scale);
   const scores = new Map(topics.map((topic) => [topic.name, topic.score]));
   const max = Math.max(FULL, ...topics.map((topic) => topic.score));
   const points = CATEGORIES.map((name, i) => {
@@ -34,6 +46,7 @@ function InterestRadar({ topics, current }: InterestRadarProps) {
 
   return (
     <svg
+      ref={ref}
       className="radar"
       viewBox={`${-SIDE} 0 ${SIZE + SIDE * 2} ${SIZE}`}
       role="img"
@@ -81,6 +94,7 @@ function InterestRadar({ topics, current }: InterestRadarProps) {
           <text
             key={name}
             className={`radar-label ${tone}`}
+            style={{ fontSize: labelSize }}
             x={label.x}
             y={label.y}
             textAnchor={anchor(label.x)}

@@ -2,6 +2,7 @@
   flex-shrink: 0;
   padding-top: 12px;
   border-top: 1px solid var(--line);
+  container: strip / inline-size;
 }
 
 .strip-head {
@@ -140,6 +141,21 @@
 
 .strip-cell.is-now::after {
   color: var(--text);
+}
+
+/* Small tiles: "now" ends at its tile's right edge and "next" starts at its
+   tile's left edge, so the two never run together. */
+@container strip (400px < width < 640px) {
+  .strip-cell.is-now::after {
+    left: auto;
+    right: 0;
+    transform: none;
+  }
+
+  .strip-cell.is-next::after {
+    left: 0;
+    transform: none;
+  }
 }
 
 .strip-cell.is-now {

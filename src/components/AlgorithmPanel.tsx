@@ -1,6 +1,7 @@
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { formatClock } from "../algorithm/clock";
 import type { FeedController } from "../hooks/useFeed";
+import { useMoreBelow } from "../hooks/useMoreBelow";
 import ContentLens from "./ContentLens";
 import EngineLens from "./EngineLens";
 import FeedStrip from "./FeedStrip";
@@ -49,6 +50,8 @@ type AlgorithmPanelProps = {
 function AlgorithmPanel({ feed, onLeave }: AlgorithmPanelProps) {
   const [lens, setLens] = useState<Lens>("you");
   const [folded, setFolded] = useState(false);
+  const body = useRef<HTMLDivElement>(null);
+  const moreBelow = useMoreBelow(body, lens);
   const { sessionMs, intentMs, started } = feed;
   const over = intentMs !== null && sessionMs > intentMs;
   const classes = ["panel"];
@@ -106,7 +109,8 @@ function AlgorithmPanel({ feed, onLeave }: AlgorithmPanelProps) {
 
       {/* Only scrolls on narrow screens, where the header folds away. */}
       <div
-        className="panel-body"
+        ref={body}
+        className={moreBelow ? "panel-body has-more" : "panel-body"}
         key={lens}
         onScroll={(event) => {
           const top = event.currentTarget.scrollTop;

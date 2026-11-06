@@ -13,6 +13,8 @@ const CLEARLY_CLOSER = 0.8;
 const UNDER_RESCUE = 0.6;
 /** Score parts shown in "why this video", biggest first. */
 const WHY_PARTS = 3;
+/** The thinnest a bar is drawn when its part is not zero, in px. */
+const MIN_BAR_PX = 6;
 
 type EngineLensProps = { feed: FeedController };
 
@@ -121,7 +123,10 @@ function EngineLens({ feed }: EngineLensProps) {
                   <span
                     className={`why-bar ${barClass(part)}`}
                     style={{
-                      width: `${(Math.abs(part.value) / widest) * 50}%`,
+                      width:
+                        part.value === 0
+                          ? 0
+                          : `max(${MIN_BAR_PX}px, ${(Math.abs(part.value) / widest) * 50}%)`,
                     }}
                   />
                 </span>

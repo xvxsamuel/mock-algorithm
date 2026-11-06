@@ -27,7 +27,7 @@
 
 .swap-tile > * {
   width: 100%;
-  max-width: 180px;
+  max-width: 156px;
 }
 
 /* The same video each time; only the face changes. */
