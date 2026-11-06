@@ -21,6 +21,9 @@ const MAX_LINKS = 24;
 const CARD = ".pane, .leave, .lens-tabs";
 /** A target this far (px) inside its card gets a trace from the card edge. */
 const TRACE_FROM = 24;
+/** Through a hub, the way in stays at least this far (px) from its centre's
+    height, so it passes between the labels on the near side. */
+const HUB_CLEAR = 40;
 
 export type Point = { x: number; y: number };
 export type Box = { x: number; y: number; width: number; height: number };
@@ -123,10 +126,26 @@ export function useLinks(feed: FeedController) {
       if (shown !== null && card !== null && card !== element) {
         const edge = card.getBoundingClientRect();
         if (aim.x - edge.left > TRACE_FROM) {
+          const hub = element.closest("[data-link-hub]");
+          const centre = hub === null ? null : middleOf(hub);
           if (element.matches("[data-link-floor]")) {
             // Charts: run along the bottom of the card, not through the bars.
             entry = { x: edge.left, y: edge.bottom - 8 };
             trace = `M ${entry.x} ${entry.y} H ${box.x + box.width / 2}`;
+          } else if (centre !== null && box.x > centre.x) {
+            // The far side of the radar: in through its centre, then out
+            // along the topic's spoke, so no other label is crossed.
+            const off = aim.y - centre.y;
+            const y =
+              Math.abs(off) < HUB_CLEAR
+                ? centre.y + (off < 0 ? -HUB_CLEAR : HUB_CLEAR)
+                : aim.y;
+            entry = { x: edge.left, y };
+            const end = {
+              x: clamp(centre.x, box.x, box.x + box.width),
+              y: clamp(centre.y, box.y, box.y + box.height),
+            };
+            trace = `M ${entry.x} ${y} L ${centre.x} ${centre.y} L ${end.x} ${end.y}`;
           } else {
             const y = Math.min(
               Math.max(aim.y, edge.top + 12),
@@ -319,4 +338,13 @@ function outset(rect: DOMRect, by: number): Box {
 function curve(from: Point, to: Point): string {
   const bend = (to.x - from.x) / 2;
   return `M ${from.x} ${from.y} C ${from.x + bend} ${from.y}, ${to.x - bend} ${to.y}, ${to.x} ${to.y}`;
+}
+
+function middleOf(element: Element): Point {
+  const rect = element.getBoundingClientRect();
+  return { x: rect.x + rect.width / 2, y: rect.y + rect.height / 2 };
+}
+
+function clamp(value: number, min: number, max: number): number {
+  return Math.min(Math.max(value, min), max);
 }

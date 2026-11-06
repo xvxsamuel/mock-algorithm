@@ -38,6 +38,7 @@ function InterestRadar({ topics, current }: InterestRadarProps) {
       viewBox={`${-SIDE} 0 ${SIZE + SIDE * 2} ${SIZE}`}
       role="img"
       aria-label="Interest profile"
+      data-link-hub=""
     >
       {[0.33, 0.66, 1].map((ring) => (
         <path
