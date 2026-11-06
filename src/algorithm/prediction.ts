@@ -15,6 +15,8 @@ const MAX_LOOPS = 1.6;
 const MOOD_WEIGHTS = [1, 0.4, 0.16];
 /** ...once it has seen this many. */
 const MOOD_FROM = 3;
+/** Watching this share of your usual or more is just normal variation. */
+const MOOD_NORMAL = 0.7;
 /** Restless, it guesses you will give each video as little as this share. */
 const MOOD_MIN = 0.2;
 /** The hit count compares your first videos with your latest ones. */
@@ -67,7 +69,7 @@ function moodOf(finished: readonly Impression[]): number {
     sum += Math.min(ratio, 1) * w;
     weight += w;
   });
-  return Math.max(sum / weight, MOOD_MIN);
+  return Math.min(Math.max(sum / weight / MOOD_NORMAL, MOOD_MIN), 1);
 }
 
 /** Close guesses among some videos. */
