@@ -26,6 +26,11 @@
 }
 
 .link.is-down {
+  color: var(--less);
+}
+
+/* The engine acting to keep you: pink. */
+.link.is-keep {
   color: var(--take);
 }
 
@@ -57,6 +62,29 @@
 .link-head.is-core {
   stroke: #fff;
   stroke-opacity: 1;
+}
+
+/* Where a line enters a card: a short bright notch on its edge. */
+.link-notch {
+  stroke: currentColor;
+  stroke-width: 3;
+  stroke-linecap: round;
+  opacity: 0;
+  filter: drop-shadow(0 0 4px currentColor);
+  animation: link-show 0.15s ease-out forwards;
+}
+
+/* Inside the card, a thin trace runs on to the target. */
+.link-trace {
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.5;
+  stroke-opacity: 0.7;
+  stroke-dasharray: 1;
+  stroke-dashoffset: 1;
+  animation-name: link-draw;
+  animation-timing-function: ease-out;
+  animation-fill-mode: both;
 }
 
 .link-box {
@@ -126,8 +154,14 @@
   }
 
   .link-box,
-  .link-chip {
+  .link-chip,
+  .link-notch {
     opacity: 1;
+    animation: none;
+  }
+
+  .link-trace {
+    stroke-dashoffset: 0;
     animation: none;
   }
 }

@@ -9,8 +9,10 @@ const PRIOR_WEIGHT = 1.5;
 const RECENCY = 0.85;
 /** Nobody gets predicted to loop a video more than this often. */
 const MAX_LOOPS = 1.6;
-/** How many recent videos the accuracy figure looks at. */
-const ACCURACY_WINDOW = 6;
+/** How many recent videos the hit count looks at: the chart's finished columns. */
+export const ACCURACY_WINDOW = 15;
+/** A guess this close (ms) to the real watch time counts as a hit. */
+export const HIT_MS = 2000;
 
 /**
  * Predicts how long you will watch a video before it plays, from how long you
@@ -31,16 +33,21 @@ export function predictWatchMs(
   return Math.min(topic, video.durationSec * 1000 * MAX_LOOPS);
 }
 
-/** 0-1: how close the guesses were for the last few videos. */
-export function predictionAccuracy(finished: readonly Impression[]): number {
+/** How often the guess was close, over the videos the chart shows. */
+export type PredictionHits = { hits: number; total: number };
+
+/**
+ * Counts the recent videos where the guess was within `HIT_MS` of what you
+ * really watched. A count you can check by eye on the chart.
+ */
+export function predictionHits(
+  finished: readonly Impression[],
+): PredictionHits {
   const recent = finished.slice(-ACCURACY_WINDOW);
-  if (recent.length === 0) return 0;
-  const errors = recent.map((i) => {
-    const scale = Math.max(i.watchMs, i.predictedMs, 1000);
-    return Math.abs(i.watchMs - i.predictedMs) / scale;
-  });
-  const mean = errors.reduce((sum, e) => sum + e, 0) / errors.length;
-  return Math.max(0, 1 - mean);
+  const hits = recent.filter(
+    (i) => Math.abs(i.watchMs - i.predictedMs) <= HIT_MS,
+  ).length;
+  return { hits, total: recent.length };
 }
 
 /** Mean of `values` (oldest first), newest weighted most, pulled towards `prior`. */

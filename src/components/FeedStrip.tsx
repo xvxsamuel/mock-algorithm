@@ -1,4 +1,4 @@
-import { watchRatio, type Impression } from "../algorithm/impression";
+import type { Impression } from "../algorithm/impression";
 import {
   SOURCE_LABELS,
   SOURCE_ORDER,
@@ -17,8 +17,11 @@ type FeedStripProps = { feed: FeedController };
  * The last tile is the one already lined up before you swipe.
  */
 function FeedStrip({ feed }: FeedStripProps) {
+  // When the strip is full, the first tile counts the videos before it.
+  const full = feed.history.length > CELLS - 2;
+  const earlier = full ? feed.history.length - (CELLS - 3) : 0;
   const past = feed.history
-    .slice(-(CELLS - 2))
+    .slice(full ? -(CELLS - 3) : -(CELLS - 2))
     .map((entry) => entry.impression);
   const seen = new Set(
     [...past, feed.current].map((impression) => impression.source),
@@ -38,6 +41,11 @@ function FeedStrip({ feed }: FeedStripProps) {
         </ul>
       </div>
       <ol className="strip-cells" data-link="strip">
+        {earlier > 0 && (
+          <li className="strip-earlier" title={`${earlier} earlier videos`}>
+            +{earlier}
+          </li>
+        )}
         {past.map((impression) => cell(impression))}
         {cell(feed.current, "is-now", "now")}
         <li
@@ -55,7 +63,6 @@ function FeedStrip({ feed }: FeedStripProps) {
 
 function cell(impression: Impression, extra = "", tag?: string) {
   const source: FeedSource = impression.source;
-  const ratio = Math.min(watchRatio(impression), 1);
   return (
     <li
       key={impression.index}
@@ -64,9 +71,6 @@ function cell(impression: Impression, extra = "", tag?: string) {
       data-tag={tag}
     >
       <span className="strip-emoji">{impression.video.emoji}</span>
-      <span className="strip-watch">
-        <span style={{ width: `${ratio * 100}%` }} />
-      </span>
     </li>
   );
 }

@@ -5,7 +5,7 @@ import {
   type Impression,
 } from "../algorithm/impression";
 import { inferTraits } from "../algorithm/inference";
-import { predictionAccuracy, predictWatchMs } from "../algorithm/prediction";
+import { predictionHits, predictWatchMs } from "../algorithm/prediction";
 import { buildProfile } from "../algorithm/profile";
 import { createRandom } from "../algorithm/random";
 import { rankNext, type Ranking } from "../algorithm/ranking";
@@ -363,7 +363,7 @@ export function useFeed() {
     })),
     session: summarizeSession(impressions, state.sessionStart, state.now),
     exitRisk: riskOf(state),
-    accuracy: predictionAccuracy(state.history),
+    predictionHits: predictionHits(state.history),
     traits: inferTraits(impressions, profile.topics),
     counters: {
       autoplays: state.started ? impressions.length : 0,

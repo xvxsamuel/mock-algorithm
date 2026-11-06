@@ -28,8 +28,8 @@
   width: 5px;
   height: 5px;
   border-radius: 50%;
-  background: var(--take);
-  box-shadow: 0 0 6px var(--take);
+  background: var(--engine);
+  box-shadow: 0 0 6px rgb(185 185 200 / 0.6);
   transform: translate(-50%, -50%);
   transition:
     width 0.4s var(--ease),
@@ -41,16 +41,16 @@
   height: 9px;
   background: #fff;
   box-shadow:
-    0 0 0 4px rgb(254 44 85 / 0.35),
-    0 0 14px var(--take);
+    0 0 0 4px rgb(255 255 255 / 0.18),
+    0 0 14px rgb(255 255 255 / 0.7);
 }
 
 .xfield-name {
   display: flex;
   align-items: baseline;
-  gap: 8px;
+  gap: 10px;
   overflow: hidden;
-  font-size: 12px;
+  font-size: 12.5px;
   white-space: nowrap;
   animation: xfield-in 0.4s var(--ease);
 }
@@ -61,15 +61,6 @@
   font-size: 12.5px;
   font-weight: 550;
   text-overflow: ellipsis;
-}
-
-.xfield-variant {
-  padding: 0 5px;
-  border: 1px solid var(--line-strong);
-  border-radius: 4px;
-  color: var(--muted);
-  font-size: 10px;
-  font-weight: 700;
 }
 
 @keyframes xfield-in {

@@ -5,8 +5,12 @@ import "./LinkLayer.css";
 const TRAVEL_MS = 550;
 /** How long a tab glows when its lens is not open. */
 const PING_MS = 900;
+/** How long the trace inside a card takes to reach its target. */
+const TRACE_MS = 260;
 /** Rough width of one character of a label, for its background. */
 const CHAR_PX = 6.6;
+/** Targets bigger than this (px²) are whole cards: outline only, no fill. */
+const CARD_AREA = 30_000;
 
 type LinkLayerProps = {
   links: Link[];
@@ -63,7 +67,11 @@ function LinkLayer({ links, onDone }: LinkLayerProps) {
         {links.map((link) => {
           const { box, strength, label } = link;
           const isPing = link.style === "ping";
-          const arrive = isPing ? 0 : TRAVEL_MS - 80;
+          const isCard = box.width * box.height > CARD_AREA;
+          const enter = TRAVEL_MS - 80;
+          const arrive = isPing
+            ? 0
+            : enter + (link.trace === null ? 0 : TRACE_MS);
           return (
             <g
               key={link.id}
@@ -74,6 +82,27 @@ function LinkLayer({ links, onDone }: LinkLayerProps) {
                 if (event.target === event.currentTarget) onDone(link.id);
               }}
             >
+              {link.trace !== null && (
+                <>
+                  <line
+                    className="link-notch"
+                    x1={link.entry.x}
+                    y1={link.entry.y - 7}
+                    x2={link.entry.x}
+                    y2={link.entry.y + 7}
+                    style={{ animationDelay: `${enter}ms` }}
+                  />
+                  <path
+                    className="link-trace"
+                    d={link.trace}
+                    pathLength={1}
+                    style={{
+                      animationDelay: `${enter}ms`,
+                      animationDuration: `${TRACE_MS}ms`,
+                    }}
+                  />
+                </>
+              )}
               <rect
                 className="link-box"
                 x={box.x}
@@ -81,8 +110,12 @@ function LinkLayer({ links, onDone }: LinkLayerProps) {
                 width={box.width}
                 height={box.height}
                 rx={isPing ? box.height / 2 : 10}
-                strokeOpacity={isPing ? 0.7 : 0.5 + strength * 0.5}
-                fillOpacity={isPing ? 0.12 : 0.08 + strength * 0.14}
+                strokeOpacity={
+                  isPing ? 0.7 : isCard ? 0.45 : 0.5 + strength * 0.5
+                }
+                fillOpacity={
+                  isPing ? 0.12 : isCard ? 0 : 0.08 + strength * 0.14
+                }
                 style={{ animationDelay: `${arrive}ms` }}
               />
               {label !== null && (
@@ -119,7 +152,8 @@ function LinkLayer({ links, onDone }: LinkLayerProps) {
 /** How long a link stays on screen before it is removed. */
 function lifetime(link: Link): number {
   if (link.style === "ping") return PING_MS;
-  const extra = link.label === null ? 0 : 500;
+  const extra =
+    (link.label === null ? 0 : 500) + (link.trace === null ? 0 : TRACE_MS);
   return TRAVEL_MS + 700 + link.strength * 1100 + extra;
 }
 

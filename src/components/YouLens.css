@@ -168,15 +168,6 @@
   font-variant-numeric: tabular-nums;
 }
 
-.you-creators {
-  margin-top: auto;
-  overflow: hidden;
-  color: var(--muted);
-  font-size: 12px;
-  white-space: nowrap;
-  text-overflow: ellipsis;
-}
-
 /* --- Right now: the live video and what it is sending --- */
 
 .you-now {
@@ -195,36 +186,31 @@
   font-size: 24px;
 }
 
-/* One cell per signal: dim until the video sends it. */
+/* The signals this video has sent: chips that pop in as they happen. */
 .signals {
-  display: grid;
-  grid-template-columns: repeat(9, minmax(0, 1fr));
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
   gap: 6px;
-  margin-top: 14px;
+  min-height: 30px;
+  margin-top: 12px;
+}
+
+.signal-none {
+  color: var(--faint);
+  font-size: 12px;
 }
 
 .signal {
   display: flex;
-  flex-direction: column;
   align-items: center;
-  gap: 4px;
-  min-width: 0;
-  padding: 8px 2px 6px;
-  border: 1px solid var(--line);
-  border-radius: var(--radius-sm);
-  color: var(--faint);
-  font-size: 10.5px;
-  transition:
-    color 0.3s var(--ease),
-    border-color 0.3s var(--ease),
-    background 0.3s var(--ease);
-}
-
-.signal span {
-  max-width: 100%;
-  overflow: hidden;
-  white-space: nowrap;
-  text-overflow: ellipsis;
+  gap: 6px;
+  padding: 5px 11px 5px 9px;
+  border: 1px solid;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 600;
+  animation: signal-in 0.35s var(--ease);
 }
 
 .signal.is-up {
@@ -234,13 +220,21 @@
 }
 
 .signal.is-down {
-  border-color: rgb(254 44 85 / 0.5);
-  background: rgb(254 44 85 / 0.1);
-  color: var(--take);
+  border-color: rgb(214 214 224 / 0.45);
+  background: rgb(214 214 224 / 0.08);
+  color: var(--less);
+}
+
+@keyframes signal-in {
+  from {
+    opacity: 0;
+    transform: scale(0.7);
+  }
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .you-rec-dot {
+  .you-rec-dot,
+  .signal {
     animation: none;
   }
 }
@@ -273,15 +267,6 @@
     grid-column: 3;
   }
 
-  /* Signals as icons only. */
-  .signal {
-    padding: 7px 2px;
-  }
-
-  .signal span {
-    display: none;
-  }
-
   .you-thumb {
     width: 36px;
     height: 48px;
@@ -304,10 +289,6 @@
 @media (max-width: 560px) {
   .you-model-body {
     grid-template-columns: 1fr;
-  }
-
-  .signals {
-    grid-template-columns: repeat(5, minmax(0, 1fr));
   }
 
   .you-id {

@@ -7,7 +7,7 @@ import InterestRadar from "./InterestRadar";
 import WatchBar from "./WatchBar";
 import "./YouLens.css";
 
-/** The signals shown as icons for the live video. Watch time has its own bar. */
+/** Signals that show up as chips when the live video sends them. Watch time has its own bar. */
 const SIGNALS: { code: SignalCode; icon: IconName; label: string }[] = [
   { code: "LIKE", icon: "heart", label: "like" },
   { code: "COMMENTS_OPEN", icon: "comment", label: "comments" },
@@ -27,6 +27,10 @@ function YouLens({ feed }: YouLensProps) {
   const { current, currentSignals, counters, traits } = feed;
   const { video } = current;
   const [from, to] = CATEGORY_COLORS[video.category];
+  const fired = currentSignals.flatMap((signal) => {
+    const shown = SIGNALS.find((s) => s.code === signal.code);
+    return shown === undefined ? [] : [{ ...shown, up: signal.topic >= 0 }];
+  });
 
   return (
     <div className="lens">
@@ -57,7 +61,11 @@ function YouLens({ feed }: YouLensProps) {
             <InterestRadar topics={feed.topicScores} current={video.category} />
           </div>
           <div className="you-guesses">
-            <h2 className="eyebrow">Guessed, never asked</h2>
+            <h2 className="eyebrow">
+              {feed.started
+                ? "Guessed, never asked"
+                : "Guessed before you pressed anything"}
+            </h2>
             <ul className="traits">
               {traits.map((trait) => (
                 <li
@@ -76,14 +84,6 @@ function YouLens({ feed }: YouLensProps) {
                 </li>
               ))}
             </ul>
-            <p className="you-creators" data-link="creators">
-              {feed.creatorScores.length === 0
-                ? "No favourite creators yet"
-                : `You linger on ${feed.creatorScores
-                    .slice(0, 3)
-                    .map((creator) => `@${creator.name}`)
-                    .join(" · ")}`}
-            </p>
           </div>
         </div>
       </section>
@@ -112,27 +112,22 @@ function YouLens({ feed }: YouLensProps) {
             playing={feed.playing}
           />
         </div>
+        {/* Only what this video has sent so far, as it happens. */}
         <ul className="signals">
-          {SIGNALS.map(({ code, icon, label }) => {
-            const signal = currentSignals.find((s) => s.code === code);
-            const tone =
-              signal === undefined
-                ? ""
-                : signal.topic >= 0
-                  ? "is-up"
-                  : "is-down";
-            return (
+          {fired.length === 0 ? (
+            <li className="signal-none">sending watch time only</li>
+          ) : (
+            fired.map(({ code, icon, label, up }) => (
               <li
                 key={code}
-                className={`signal ${tone}`}
+                className={up ? "signal is-up" : "signal is-down"}
                 data-link={`signal:${code}`}
-                title={signal?.label ?? label}
               >
-                <Icon name={icon} size={16} />
-                <span>{label}</span>
+                <Icon name={icon} size={14} />
+                {label}
               </li>
-            );
-          })}
+            ))
+          )}
         </ul>
       </section>
     </div>

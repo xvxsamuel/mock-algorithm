@@ -27,13 +27,14 @@ function LeaveMeter({ feed }: LeaveMeterProps) {
     note = (
       <>
         <span className="leave-emoji">{current.video.emoji}</span>
-        sure hit · was {Math.round(currentItem.riskWhenQueued * 100)}%
+        {Math.round(currentItem.riskWhenQueued * 100)}% →{" "}
+        {Math.round(exitRisk.value * 100)}%
       </>
     );
   } else if (exitRisk.reason !== null) {
     note = <>why: {exitRisk.reason}</>;
   } else {
-    note = <>at {Math.round(RESCUE_AT * 100)}% it plays a sure hit</>;
+    note = <>you're settled in</>;
   }
 
   return (

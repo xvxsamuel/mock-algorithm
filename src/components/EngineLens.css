@@ -19,7 +19,14 @@
   align-items: center;
   gap: 6px;
   color: var(--muted);
-  font-size: 11px;
+  font-size: 12px;
+}
+
+.eng-legend b {
+  min-width: 34px;
+  color: var(--text);
+  font-weight: 650;
+  font-variant-numeric: tabular-nums;
 }
 
 .eng-key {
@@ -34,8 +41,15 @@
   margin-left: 0;
 }
 
-.eng-key.is-predicted {
-  border: 1.5px dashed rgb(243 243 246 / 0.6);
+.eng-key.is-guess {
+  height: 2px;
+  border-radius: 1px;
+  background: #fff;
+}
+
+.eng-of {
+  color: var(--muted);
+  font-size: 18px;
 }
 
 .eng-key.is-actual {
@@ -97,7 +111,8 @@
 
 .why-bar.is-down {
   right: 50%;
-  background: var(--take);
+  background: var(--less);
+  opacity: 0.55;
 }
 
 .why-next {

@@ -1,0 +1,63 @@
+/* Only used on narrow screens, where the panel is a sheet. */
+.sheet-handle {
+  display: none;
+}
+
+@media (max-width: 900px) {
+  .sheet-handle {
+    display: flex;
+    flex-direction: column;
+    flex-shrink: 0;
+    align-items: center;
+    gap: 6px;
+    width: 100%;
+    padding: 8px 12px 10px;
+    border: 0;
+    background: transparent;
+    color: var(--text);
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+  }
+
+  .sheet-grip {
+    width: 36px;
+    height: 4px;
+    border-radius: 2px;
+    background: var(--line-strong);
+  }
+
+  .sheet-peek {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-variant-numeric: tabular-nums;
+    white-space: nowrap;
+  }
+
+  .sheet-dot {
+    width: 3px;
+    height: 3px;
+    border-radius: 50%;
+    background: var(--faint);
+  }
+
+  .sheet-more {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    color: var(--muted);
+    font-weight: 500;
+  }
+
+  .sheet-handle:focus-visible {
+    outline: 2px solid var(--you);
+    outline-offset: -2px;
+  }
+}
+
+@media (max-width: 400px) {
+  .sheet-more {
+    display: none;
+  }
+}

@@ -54,7 +54,6 @@ function ExperimentField({ sessionMs }: ExperimentFieldProps) {
         ))}
       </div>
       <p className="xfield-name" key={experiment.name}>
-        <span className="xfield-variant">{experiment.variant}</span>
         <span className="xfield-text">{experiment.name}</span>
         <span className="tone-take">{experiment.lift}</span>
       </p>

@@ -46,8 +46,10 @@
   font-weight: 700;
 }
 
+/* A topic you turned away from: struck out, not alarmed. */
 .radar-label.is-down {
-  fill: var(--take);
+  fill: var(--faint);
+  text-decoration: line-through;
 }
 
 @media (prefers-reduced-motion: reduce) {

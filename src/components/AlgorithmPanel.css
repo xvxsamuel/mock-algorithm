@@ -8,14 +8,35 @@
   max-width: 880px;
   padding: 20px 26px 16px;
   font-size: 13px;
+}
+
+/* Before you start, everything is dim except the guesses about you,
+   which are already there. */
+.panel.is-idle > :not(.panel-body),
+.panel.is-idle .lens > :not(.you-model),
+.panel.is-idle .you-id,
+.panel.is-idle .you-radar {
+  opacity: 0.3;
+  filter: saturate(0.3);
+}
+
+.panel.is-idle .you-guesses {
+  animation: idle-guess 2.4s ease-in-out infinite;
+}
+
+@keyframes idle-guess {
+  50% {
+    opacity: 0.55;
+  }
+}
+
+.panel > *,
+.lens > *,
+.you-id,
+.you-radar {
   transition:
     opacity 0.8s var(--ease),
     filter 0.8s var(--ease);
-}
-
-.panel.is-idle {
-  opacity: 0.45;
-  filter: saturate(0.3);
 }
 
 /* Passing your plan: one pink flash over the whole panel, then it carries on. */
@@ -283,11 +304,17 @@
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .panel,
+  .panel > *,
+  .lens > *,
   .panel-body,
-  .clock {
+  .clock,
+  .panel.is-idle .you-guesses {
     transition: none;
     animation: none;
+  }
+
+  .panel.is-over::before {
+    display: none;
   }
 }
 
@@ -310,8 +337,24 @@
    needs to stretch. */
 @media (max-width: 900px) {
   .panel {
+    flex: 1;
+    gap: 10px;
     height: auto;
-    padding: 2px 16px 28px;
+    min-height: 0;
+    padding: 0 16px 12px;
+  }
+
+  /* Soft edges where the cards scroll under the header and the strip. */
+  .panel-body {
+    overflow-y: auto;
+    padding-block: 10px;
+    overscroll-behavior: contain;
+    mask-image: linear-gradient(
+      transparent,
+      #000 10px,
+      #000 calc(100% - 10px),
+      transparent
+    );
   }
 
   .lens > * {
@@ -324,7 +367,11 @@
     grid-template-columns: 1fr;
   }
 
+  .clock {
+    font-size: 32px;
+  }
+
   .panel-head {
-    grid-template-columns: 1fr;
+    gap: 8px 10px;
   }
 }

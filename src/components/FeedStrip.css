@@ -57,7 +57,7 @@
   display: grid;
   place-items: center;
   aspect-ratio: 1;
-  border: 1px solid color-mix(in srgb, var(--tone) 45%, transparent);
+  border: 1.5px solid color-mix(in srgb, var(--tone) 80%, transparent);
   border-radius: 7px;
   background: color-mix(in srgb, var(--tone) 30%, var(--bg));
   animation: strip-in 0.5s var(--ease);
@@ -75,21 +75,14 @@
   line-height: 1;
 }
 
-/* How much of the video you watched, as a thin bar along the bottom. */
-.strip-watch {
-  position: absolute;
-  left: 3px;
-  right: 3px;
-  bottom: 2px;
-  height: 3px;
-  overflow: hidden;
-  border-radius: 2px;
-}
-
-.strip-watch span {
-  display: block;
-  height: 100%;
-  background: var(--tone);
+.strip-earlier {
+  display: grid;
+  place-items: center;
+  aspect-ratio: 1;
+  color: var(--muted);
+  font-size: 11px;
+  font-weight: 650;
+  font-variant-numeric: tabular-nums;
 }
 
 /* "now" and "next" under the last two tiles. */
@@ -99,7 +92,7 @@
   top: calc(100% + 2px);
   left: 50%;
   color: var(--muted);
-  font-size: 9.5px;
+  font-size: 10.5px;
   font-weight: 600;
   letter-spacing: 0.04em;
   transform: translateX(-50%);
@@ -142,7 +135,8 @@
     grid-template-columns: repeat(11, minmax(0, 1fr));
   }
 
-  .strip-cell:nth-last-child(n + 12) {
+  .strip-cell:nth-last-child(n + 12),
+  .strip-earlier {
     display: none;
   }
 }

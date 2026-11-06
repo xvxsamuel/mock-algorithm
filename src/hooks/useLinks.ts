@@ -17,6 +17,10 @@ const MIN_CHANGE = 0.05;
 const SWIPE_CHANGE = 0.5;
 /** Safety cap, in case a finished link never reports back. */
 const MAX_LINKS = 24;
+/** Lines enter the card around a target; these hold a whole card. */
+const CARD = ".pane, .leave, .lens-tabs";
+/** A target this far (px) inside its card gets a trace from the card edge. */
+const TRACE_FROM = 24;
 
 export type Point = { x: number; y: number };
 export type Box = { x: number; y: number; width: number; height: number };
@@ -24,8 +28,11 @@ export type Box = { x: number; y: number; width: number; height: number };
 /** One animated line from the side of the phone to an element in the panel. */
 export type Link = {
   id: number;
-  /** up = the algorithm now likes this more, down = less. */
-  tone: "up" | "down";
+  /**
+   * up = the algorithm now likes this more, down = less,
+   * keep = the engine acting to keep you in the app.
+   */
+  tone: "up" | "down" | "keep";
   /** 0-1: how big the change was. Sets thickness, brightness and lifetime. */
   strength: number;
   /**
@@ -33,10 +40,15 @@ export type Link = {
    * glow, for a target on a lens that is not open.
    */
   style: "line" | "ping";
-  /** A short note shown where the line lands, e.g. "+0.4 comedy". */
+  /** A short note shown where the line lands, e.g. "more". */
   label: string | null;
   from: Point;
+  /** The line, from the phone to where it enters the card. */
   d: string;
+  /** Inside the card: from the entry point to the target, or null. */
+  trace: string | null;
+  /** Where the line enters the card. */
+  entry: Point;
   box: Box;
 };
 
@@ -46,6 +58,8 @@ type Pulse = {
   change: number;
   delay: number;
   label?: string;
+  /** Overrides the tone that follows from the sign of `change`. */
+  tone?: Link["tone"];
 };
 
 /** What the panel showed at the previous render. */
@@ -79,7 +93,7 @@ export function useLinks(feed: FeedController) {
     lastPress.current = { y, time: performance.now() };
   }
 
-  function send({ target, change, delay, label }: Pulse) {
+  function send({ target, change, delay, label, tone }: Pulse) {
     const timer = window.setTimeout(() => {
       timers.current.delete(timer);
       // The phone is the only element inside the feed area.
@@ -99,18 +113,42 @@ export function useLinks(feed: FeedController) {
         recent ? press.y : null,
       );
       const box = outset(element.getBoundingClientRect(), 3);
-      const to = { x: box.x, y: box.y + box.height / 2 };
+      const aim = { x: box.x, y: box.y + box.height / 2 };
+      // Lines run behind the cards, so a target deep inside a card gets the
+      // line to the card's edge at the target's height, then a trace inside.
+      const card = element.closest(CARD);
+      let entry = aim;
+      let trace: string | null = null;
+      if (card !== null && card !== element) {
+        const edge = card.getBoundingClientRect();
+        if (aim.x - edge.left > TRACE_FROM) {
+          if (element.matches("[data-link-floor]")) {
+            // Charts: run along the bottom of the card, not through the bars.
+            entry = { x: edge.left, y: edge.bottom - 8 };
+            trace = `M ${entry.x} ${entry.y} H ${box.x + box.width / 2}`;
+          } else {
+            const y = Math.min(
+              Math.max(aim.y, edge.top + 12),
+              edge.bottom - 12,
+            );
+            entry = { x: edge.left, y };
+            trace = `M ${entry.x} ${y} L ${aim.x} ${aim.y}`;
+          }
+        }
+      }
       // Only draw when the panel is beside the phone, not stacked below it.
-      if (to.x <= from.x) return;
+      if (entry.x <= from.x) return;
 
       const link: Link = {
         id: nextId.current++,
-        tone: change >= 0 ? "up" : "down",
+        tone: tone ?? (change >= 0 ? "up" : "down"),
         strength: Math.min(Math.sqrt(Math.abs(change) / FULL_CHANGE), 1),
         style: shown === null ? "ping" : "line",
         label: shown === null ? null : (label ?? null),
         from,
-        d: curve(from, to),
+        d: curve(from, entry),
+        trace,
+        entry,
         box,
       };
       setLinks((all) => {
@@ -186,12 +224,9 @@ function changesWhileWatching(
         target: topic,
         change,
         delay: STEP_MS,
-        label: delta(change, category),
+        label: delta(change),
       },
     );
-    if (Math.abs(creator) >= 1) {
-      pulses.push({ target: "creators", change: creator, delay: STEP_MS });
-    }
   }
 
   // Reacting re-ranks the queued video.
@@ -218,19 +253,20 @@ function changesOnSwipe(before: Snapshot, feed: FeedController): Pulse[] {
       target: `topic:${category}`,
       change: settled,
       delay: STEP_MS,
-      label: delta(settled, category),
+      label: delta(settled),
     });
   }
   pulses.push(
     { target: "why", change: SWIPE_CHANGE, delay: 2 * STEP_MS },
     { target: "predict", change: SWIPE_CHANGE, delay: 3 * STEP_MS },
   );
+  // About to lose you: the engine swaps a sure hit into the queue.
   if (feed.upNext.ranking.source === "rescue") {
     pulses.push({
-      target: "risk",
-      change: -FULL_CHANGE,
+      target: "queue",
+      change: FULL_CHANGE,
       delay: 3 * STEP_MS,
-      label: "sure hit queued",
+      tone: "keep",
     });
   }
   if (feed.current.revisit) {
@@ -243,18 +279,15 @@ function changesOnSwipe(before: Snapshot, feed: FeedController): Pulse[] {
   return pulses;
 }
 
-/** "+0.4 comedy" or "−1.2 finance". */
-function delta(change: number, category: Category): string {
-  const sign = change >= 0 ? "+" : "−";
-  return `${sign}${Math.abs(change).toFixed(1)} ${category}`;
+/** Shown above the topic's own label on the radar, so it reads "more cooking". */
+function delta(change: number): string {
+  return change >= 0 ? "more" : "less";
 }
 
 /** Which lens shows a target, for when that lens is not on screen. */
 function lensOf(target: string): string {
   const [kind] = target.split(":");
-  return ["topic", "signal", "creators", "trait"].includes(kind)
-    ? "you"
-    : "engine";
+  return ["topic", "signal", "trait"].includes(kind) ? "you" : "engine";
 }
 
 function topicDelta(signals: Signal[]): number {

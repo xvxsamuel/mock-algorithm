@@ -14,8 +14,10 @@ type PredictionChartProps = {
 };
 
 /**
- * One column per video: the outline is how long the app predicted you would
- * watch, the solid bar is how long you did. Watch them line up.
+ * One column per video. The white cap is how long the app guessed you would
+ * watch, decided before the video started. The bar is how long you did:
+ * pink above the cap where you gave it more than it guessed, a hatched gap
+ * where you gave less. Watch the caps and bars line up.
  */
 function PredictionChart({ finished, current }: PredictionChartProps) {
   const shown = [...finished.slice(-(COLUMNS - 1)), current];
@@ -26,13 +28,12 @@ function PredictionChart({ finished, current }: PredictionChartProps) {
     ),
     CAP_MS,
   );
-
   // One reference line, at a round number of seconds.
   const tickMs = scale > 12_000 ? 10_000 : 5000;
   const tick = tickMs / scale;
 
   return (
-    <ol className="pchart" aria-label="Predicted against actual watch time">
+    <ol className="pchart" aria-label="Guessed against actual watch time">
       <li
         className="pchart-grid"
         aria-hidden="true"
@@ -47,22 +48,32 @@ function PredictionChart({ finished, current }: PredictionChartProps) {
         if (impression === undefined) {
           return <li key={`empty-${slot}`} className="pchart-col is-empty" />;
         }
-        const predicted = Math.min(impression.predictedMs / scale, 1);
+        const guess = Math.min(impression.predictedMs / scale, 1);
         const actual = Math.min(impression.watchMs / scale, 1);
         const live = impression === current;
         return (
           <li
             key={impression.index}
             className={live ? "pchart-col is-live" : "pchart-col"}
+            data-link={live ? "predict" : undefined}
+            data-link-floor={live ? "" : undefined}
           >
             <span
-              className="pchart-predicted"
-              style={{ height: `${predicted * 100}%` }}
+              className="pchart-you"
+              style={{ height: pct(Math.min(actual, guess)) }}
             />
-            <span
-              className="pchart-actual"
-              style={{ height: `${actual * 100}%` }}
-            />
+            {actual > guess ? (
+              <span
+                className="pchart-extra"
+                style={{ bottom: pct(guess), height: pct(actual - guess) }}
+              />
+            ) : (
+              <span
+                className="pchart-short"
+                style={{ bottom: pct(actual), height: pct(guess - actual) }}
+              />
+            )}
+            <span className="pchart-guess" style={{ bottom: pct(guess) }} />
             <span className="pchart-emoji" aria-hidden="true">
               {impression.video.emoji}
             </span>
@@ -71,6 +82,10 @@ function PredictionChart({ finished, current }: PredictionChartProps) {
       })}
     </ol>
   );
+}
+
+function pct(fraction: number): string {
+  return `${fraction * 100}%`;
 }
 
 export default PredictionChart;

@@ -1,3 +1,4 @@
+import { HIT_MS } from "../algorithm/prediction";
 import { SOURCE_LABELS } from "../algorithm/sources";
 import type { FeedController } from "../hooks/useFeed";
 import ExperimentField from "./ExperimentField";
@@ -26,29 +27,33 @@ function EngineLens({ feed }: EngineLensProps) {
 
   return (
     <div className="lens">
-      <section className="pane eng-predict" data-link="predict">
+      <section className="pane eng-predict">
         <div className="pane-head">
           <div className="eng-title">
             <h2 className="eyebrow">It predicts your watch time</h2>
+            {/* The legend doubles as a readout for the video playing now. */}
             <p className="eng-legend">
-              <span className="eng-key is-predicted" /> its guess
+              <span className="eng-key is-guess" /> its guess
+              <b>{seconds(current.predictedMs)}</b>
               <span className="eng-key is-actual" /> you
+              <b className="tone-you">{seconds(current.watchMs)}</b>
             </p>
           </div>
           <p>
             <span className="figure tone-you">
-              {Math.round(feed.accuracy * 100)}%
+              {feed.predictionHits.hits}
+              <span className="eng-of">/{feed.predictionHits.total}</span>
             </span>
-            <span className="unit">right</span>
+            <span className="unit">within {HIT_MS / 1000} s</span>
           </p>
         </div>
         <PredictionChart finished={finished} current={current} />
       </section>
 
       <div className="row">
-        <section className="pane eng-why" data-link="why">
+        <section className="pane eng-why">
           <h2 className="eyebrow">Why this video</h2>
-          <ul className="why">
+          <ul className="why" data-link="why">
             {parts.map((part) => (
               <li key={part.label} className="why-part">
                 <span className="why-label">{part.label}</span>
@@ -96,6 +101,10 @@ function EngineLens({ feed }: EngineLensProps) {
       </ul>
     </div>
   );
+}
+
+function seconds(ms: number): string {
+  return `${(ms / 1000).toFixed(1)}s`;
 }
 
 export default EngineLens;

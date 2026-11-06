@@ -62,6 +62,27 @@
   }
 }
 
+@media (max-width: 560px) {
+  .leave {
+    gap: 8px;
+    padding: 4px 10px 4px 4px;
+  }
+
+  .leave .gauge {
+    width: 64px;
+  }
+
+  .leave .eyebrow {
+    font-size: 10px;
+    letter-spacing: 0.08em;
+  }
+
+  .leave-note,
+  .leave-note.is-on {
+    font-size: 11.5px;
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
   .leave,
   .leave-note.is-on {

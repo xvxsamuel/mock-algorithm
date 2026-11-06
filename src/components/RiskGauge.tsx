@@ -9,14 +9,16 @@ type RiskGaugeProps = {
 
 /** A half dial: how close you are to closing the app. */
 function RiskGauge({ value, threshold }: RiskGaugeProps) {
+  // A notch splits off the "sure hit" zone at the end of the track.
   const angle = Math.PI - threshold * Math.PI;
-  const tick = {
-    x1: 60 + Math.cos(angle) * 40,
-    y1: 60 - Math.sin(angle) * 40,
-    x2: 60 + Math.cos(angle) * 56,
-    y2: 60 - Math.sin(angle) * 56,
+  const notch = {
+    x1: 60 + Math.cos(angle) * 41,
+    y1: 60 - Math.sin(angle) * 41,
+    x2: 60 + Math.cos(angle) * 55,
+    y2: 60 - Math.sin(angle) * 55,
   };
-  const tone = value >= threshold ? "is-high" : value >= 0.3 ? "is-mid" : "";
+  // Grey until the engine steps in; pink from then on.
+  const tone = value >= threshold ? "is-high" : "";
 
   return (
     <svg
@@ -31,6 +33,12 @@ function RiskGauge({ value, threshold }: RiskGaugeProps) {
         pathLength={100}
       />
       <path
+        className="gauge-zone"
+        d="M 12 60 A 48 48 0 0 1 108 60"
+        pathLength={100}
+        strokeDasharray={`0 ${threshold * 100} 100`}
+      />
+      <path
         className="gauge-glow"
         d="M 12 60 A 48 48 0 0 1 108 60"
         pathLength={100}
@@ -42,7 +50,7 @@ function RiskGauge({ value, threshold }: RiskGaugeProps) {
         pathLength={100}
         strokeDasharray={`${value * 100} 100`}
       />
-      <line className="gauge-tick" {...tick} />
+      <line className="gauge-notch" {...notch} />
       <text className="gauge-value" x={60} y={56} textAnchor="middle">
         {Math.round(value * 100)}%
       </text>

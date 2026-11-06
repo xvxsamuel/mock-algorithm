@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { formatClock } from "../algorithm/clock";
 import type { FeedController } from "../hooks/useFeed";
 import EngineLens from "./EngineLens";
 import FeedStrip from "./FeedStrip";
@@ -43,12 +44,14 @@ function AlgorithmPanel({ feed }: AlgorithmPanelProps) {
           {over && intentMs !== null ? (
             <>
               <p className="panel-kicker tone-take">Over your plan</p>
-              <p className="clock is-over">+{clock(sessionMs - intentMs)}</p>
+              <p className="clock is-over">
+                +{formatClock(sessionMs - intentMs)}
+              </p>
             </>
           ) : (
             <>
               <p className="panel-kicker">Time given</p>
-              <p className="clock">{clock(sessionMs)}</p>
+              <p className="clock">{formatClock(sessionMs)}</p>
             </>
           )}
         </div>
@@ -97,7 +100,7 @@ function intentBar(
   const over = (1 - Math.exp(-extra)) * (1 - PLAN_AT) * 100;
   const mark = PLAN_AT * 100;
   return (
-    <div className="intent" aria-label={`Planned ${clock(intentMs)}`}>
+    <div className="intent" aria-label={`Planned ${formatClock(intentMs)}`}>
       <span className="intent-track">
         <span className="intent-under" style={{ width: `${under}%` }} />
         <span
@@ -107,23 +110,18 @@ function intentBar(
         <span className="intent-mark" style={{ left: `${mark}%` }} />
       </span>
       <span className="intent-label" style={{ left: `${mark}%` }}>
-        planned {clock(intentMs)}
+        planned {formatClock(intentMs)}
       </span>
       {over >= NOW_LABEL_FROM && (
         <span
           className="intent-label is-now"
           style={{ left: `${mark + over}%` }}
         >
-          {clock(sessionMs)}
+          {formatClock(sessionMs)}
         </span>
       )}
     </div>
   );
-}
-
-function clock(ms: number): string {
-  const total = Math.floor(ms / 1000);
-  return `${Math.floor(total / 60)}:${String(total % 60).padStart(2, "0")}`;
 }
 
 export default AlgorithmPanel;
