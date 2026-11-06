@@ -9,6 +9,7 @@ import {
   disguiseOf,
   LANDS_MS,
   leansOf,
+  momentsOf,
   persuadableOf,
   PUSHES,
   pushDue,
@@ -215,7 +216,9 @@ function feedReducer(state: State, action: Action): State {
         const played = { ...item, riskWhenPlayed: riskOf(next).value };
         next.items = next.items.map((it, i) => (i === index ? played : it));
       }
-      next.leans = [...new Set([...state.leans, ...liveLeans(next)])];
+      next.leans = [
+        ...new Set([...state.leans, ...momentsOf(liveLeans(next))]),
+      ];
       // Nobody released the bots? Halfway in, someone does.
       if (next.network === null && history.length >= RELEASES_AFTER) {
         next.network = networkOf(next);

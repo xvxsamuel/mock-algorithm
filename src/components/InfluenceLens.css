@@ -19,8 +19,8 @@
 .inf-label {
   position: absolute;
   margin: 0;
-  color: var(--muted);
-  font-size: 11px;
+  color: color-mix(in srgb, var(--muted), var(--text) 35%);
+  font-size: 12px;
   font-weight: 600;
   white-space: nowrap;
   transform: translateX(-50%);
@@ -427,6 +427,12 @@
   line-height: 1;
   letter-spacing: -0.02em;
   font-variant-numeric: tabular-nums;
+  transition: color 0.4s var(--ease);
+}
+
+/* Before any reason: only the baseline it assumes of everyone. */
+.inf-figure.is-guess {
+  color: var(--muted);
 }
 
 .inf-pct {
@@ -514,11 +520,12 @@
   }
 
   .inf-card {
-    padding-top: 20px;
+    padding: 20px 8px 26px;
   }
 
   .inf-overlay {
-    font-size: 11px;
+    max-width: 100%;
+    font-size: 10.5px;
     -webkit-line-clamp: 4;
     line-clamp: 4;
   }
@@ -527,9 +534,15 @@
     font-size: 26px;
   }
 
+  .inf-person {
+    transform: translate(-50%, -50%) scale(0.8);
+  }
+
   .inf-release {
+    left: 0;
     padding: 5px 12px;
     font-size: 12px;
+    transform: none;
   }
 
   .inf-pushed-body {

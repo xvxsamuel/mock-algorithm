@@ -86,8 +86,16 @@ export function leansOf(
 }
 
 /**
- * The score from everything it has read so far. Once it has seen a weak
- * moment it keeps it, so the guess only ever climbs.
+ * The leans it keeps once seen: moments of weakness. Your age is not one of
+ * them; it is read from its current guess, the same one the You lens shows.
+ */
+export function momentsOf(leans: readonly Lean[]): Lean[] {
+  return leans.filter((lean) => lean !== "16–24");
+}
+
+/**
+ * The score from everything it has read: the moments it kept (see
+ * momentsOf) and what it reads from you right now.
  */
 export function persuadableOf(...lists: (readonly Lean[])[]): Persuadable {
   const read = LEANS.filter(([lean]) =>

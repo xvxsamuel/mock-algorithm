@@ -236,11 +236,18 @@ function InfluenceLens({ feed }: InfluenceLensProps) {
                   <li key={`empty-${i}`} className="inf-tile is-empty" />
                 ))}
               </ol>
-              {now !== undefined && (
+              {now !== undefined ? (
                 <p key={now.key} className="inf-now">
                   {order === 0 ? "Dressed as " : "Same message, as "}
                   <b>{now.video.category}</b>. No label.
                 </p>
+              ) : (
+                !running &&
+                pushed.length > 0 && (
+                  <p className="inf-now">
+                    Same message, <b>{PUSHES} disguises</b>. No label.
+                  </p>
+                )
               )}
             </div>
             <p className="inf-why">
@@ -257,7 +264,13 @@ function InfluenceLens({ feed }: InfluenceLensProps) {
           </div>
           <div className="inf-score">
             <p className="inf-kicker">it rates you persuadable</p>
-            <p className="inf-figure">
+            <p
+              className={
+                persuadable.reasons.length === 0
+                  ? "inf-figure is-guess"
+                  : "inf-figure"
+              }
+            >
               {yours}
               <span className="inf-pct">%</span>
             </p>
