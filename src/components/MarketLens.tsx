@@ -75,7 +75,8 @@ function MarketLens({ feed }: MarketLensProps) {
                   </>
                 ) : (
                   <>
-                    <b>{now.brand}</b> paid this creator. No label.
+                    <b>{now.brand}</b> paid this creator. No label. Price
+                    unknown.
                   </>
                 )}
               </p>

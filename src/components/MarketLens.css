@@ -6,16 +6,8 @@
   font-size: 11px;
 }
 
-/* On tall screens the receipt takes the spare height, below its content. */
-.lens > .mkt-sold {
-  display: flex;
-  flex: 1 0 auto;
-  flex-direction: column;
-}
-
 .mkt-sold-body {
   display: grid;
-  flex: 1;
   grid-template-columns: minmax(0, 1fr) auto;
   align-content: start;
   align-items: center;
@@ -113,7 +105,7 @@
 /* Outside the border, so a dashed tile still looks dashed. */
 .mkt-sale.is-now {
   outline: 2px solid var(--text);
-  outline-offset: 2px;
+  outline-offset: 3px;
 }
 
 .mkt-earlier {
@@ -226,6 +218,10 @@
   align-content: start;
   align-items: center;
   gap: 6px 14px;
+}
+
+/* Runners-up are dimmed, but what they would buy about you is not. */
+.mkt-bid > :not(.mkt-because) {
   opacity: 0.7;
   transition: opacity 0.4s var(--ease);
 }
@@ -310,8 +306,8 @@
 }
 
 /* The highest bid: its price in amber. Once the slot is gone, it is sold. */
-.mkt-bid.is-lead,
-.mkt-bid.is-won {
+.mkt-bid.is-lead > *,
+.mkt-bid.is-won > * {
   opacity: 1;
 }
 
@@ -421,7 +417,6 @@
 
 /* Stacked layout: the page scrolls, so nothing stretches or shrinks. */
 @media (max-width: 900px) {
-  .lens > .mkt-sold,
   .lens > .mkt-auction,
   .mkt-bids {
     flex: none;
