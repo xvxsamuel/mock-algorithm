@@ -24,6 +24,7 @@ function MarketLens({ feed }: MarketLensProps) {
   const shown = sales.slice(-TILES).reverse();
   const earlier = sales.length - shown.length;
   const sold = sales.length > 0;
+  const hidden = sales.some((sale) => sale.kind === "paid");
   // While a sold thing is on the phone, the key gives way to who paid.
   const now = sales.find((sale) => sale.key === currentItem.key);
 
@@ -71,6 +72,11 @@ function MarketLens({ feed }: MarketLensProps) {
                   <>
                     <b>{now.brand}</b> paid <b>€{now.price.toFixed(4)}</b> for
                     this view
+                    {now.because.map((reason) => (
+                      <span key={reason} className="mkt-chip">
+                        {reason}
+                      </span>
+                    ))}
                   </>
                 ) : (
                   <>
@@ -86,6 +92,14 @@ function MarketLens({ feed }: MarketLensProps) {
             </p>
             <p className={sold ? "mkt-earned" : "mkt-earned is-zero"}>
               €{sold ? market.earned.toFixed(4) : "0"}
+              {hidden && (
+                <span
+                  className="mkt-unknown"
+                  title="Plus the paid posts: nobody says what they cost"
+                >
+                  +?
+                </span>
+              )}
             </p>
           </div>
         </div>
@@ -138,9 +152,12 @@ function MarketLens({ feed }: MarketLensProps) {
                   />
                 </span>
                 <span className="mkt-price">€{bid.total.toFixed(2)}</span>
-                {(won || reasons.length > 0) && (
-                  <span className="mkt-because">
-                    {won && <span className="mkt-chip is-sold">sold</span>}
+                {won && <span className="mkt-chip is-sold">sold</span>}
+                {reasons.length > 0 && (
+                  <span
+                    className="mkt-because"
+                    style={{ paddingLeft: `${share(bid.anyone)}%` }}
+                  >
                     {reasons.map((reason) => (
                       <span key={reason} className="mkt-chip">
                         {reason}

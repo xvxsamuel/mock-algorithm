@@ -64,6 +64,8 @@ export type Sale = {
   emoji: string;
   /** What this view of you sold for (€), for ads. */
   price: number;
+  /** What about you the winning bid paid extra for, for ads. */
+  because: readonly string[];
 };
 
 export type ReactionKind =
@@ -364,9 +366,16 @@ function salesOf(seen: readonly FeedItem[]): Sale[] {
         brand: winner.advertiser.brand,
         emoji: winner.advertiser.emoji,
         price: perView(winner),
+        because: winner.because,
       });
     } else if (paid !== undefined) {
-      sales.push({ key: item.key, kind: "paid", ...paid, price: 0 });
+      sales.push({
+        key: item.key,
+        kind: "paid",
+        ...paid,
+        price: 0,
+        because: [],
+      });
     }
   }
   return sales;

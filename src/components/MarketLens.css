@@ -6,9 +6,18 @@
   font-size: 11px;
 }
 
+/* On tall screens the receipt takes the spare height, not the auction. */
+.lens > .mkt-sold {
+  display: flex;
+  flex: 1 0 auto;
+  flex-direction: column;
+}
+
 .mkt-sold-body {
   display: grid;
+  flex: 1;
   grid-template-columns: minmax(0, 1fr) auto;
+  align-content: center;
   align-items: center;
   gap: 24px;
 }
@@ -38,6 +47,18 @@
   line-height: 1;
   letter-spacing: -0.02em;
   font-variant-numeric: tabular-nums;
+}
+
+/* Paid posts are in there too, at a price nobody tells you: dashed. */
+.mkt-unknown {
+  display: inline-block;
+  margin-left: 8px;
+  padding: 2px 6px;
+  border: 1.5px dashed var(--platform);
+  border-radius: 6px;
+  font-size: 0.42em;
+  letter-spacing: 0;
+  vertical-align: middle;
 }
 
 .mkt-earned.is-zero {
@@ -89,8 +110,10 @@
   border: 1.5px dashed var(--platform);
 }
 
+/* Outside the border, so a dashed tile still looks dashed. */
 .mkt-sale.is-now {
-  box-shadow: 0 0 0 2px var(--text);
+  outline: 2px solid var(--text);
+  outline-offset: 2px;
 }
 
 .mkt-sale.is-empty {
@@ -116,8 +139,8 @@
 /* Who paid for what is on the phone right now. */
 .mkt-now {
   margin: 0;
-  color: var(--muted);
-  font-size: 12px;
+  color: var(--text);
+  font-size: 13px;
   line-height: 1.35;
   animation: mkt-in 0.4s var(--ease);
 }
@@ -125,6 +148,11 @@
 .mkt-now b {
   color: var(--platform);
   font-weight: 650;
+}
+
+.mkt-now .mkt-chip {
+  display: inline-block;
+  margin-left: 6px;
 }
 
 .mkt-key-item::before {
@@ -161,10 +189,12 @@
 
 /* --- The auction: every advertiser's bid for you, grown by your data --- */
 
+/* Rows grow up to a cap, and give way first when the screen is short. */
 .lens > .mkt-auction {
   display: flex;
-  flex: 1 1 0;
+  flex: 0 1 auto;
   flex-direction: column;
+  min-height: 0;
 }
 
 .mkt-stage {
@@ -181,9 +211,11 @@
 /* Equal rows, so the bars keep one rhythm whether or not they have reasons. */
 .mkt-bids {
   display: grid;
-  flex: 1;
-  grid-auto-rows: minmax(0, 1fr);
-  gap: 10px;
+  flex: 1 1 auto;
+  grid-auto-rows: minmax(auto, 62px);
+  align-content: start;
+  gap: 8px;
+  min-height: 0;
   margin: 0 0 12px;
   padding: 0;
   list-style: none;
@@ -193,7 +225,7 @@
   display: grid;
   grid-template-areas:
     "brand track price"
-    ". because because";
+    ". because sold";
   grid-template-columns: 150px minmax(0, 1fr) 70px;
   align-content: start;
   align-items: center;
@@ -263,6 +295,7 @@
   text-align: right;
 }
 
+/* Reasons hang under the cyan part they explain (indented in the markup). */
 .mkt-because {
   display: flex;
   flex-wrap: wrap;
@@ -300,6 +333,8 @@
 }
 
 .mkt-chip.is-sold {
+  grid-area: sold;
+  justify-self: end;
   background: var(--platform);
   color: #1a1206;
   font-weight: 700;
@@ -329,7 +364,8 @@
   }
 
   .mkt-bids {
-    gap: 6px;
+    grid-auto-rows: minmax(auto, 46px);
+    gap: 4px;
     margin-bottom: 8px;
   }
 
@@ -361,6 +397,10 @@
     font-size: 11px;
   }
 
+  .mkt-now {
+    font-size: 12px;
+  }
+
   .mkt-bid.is-lead .mkt-track,
   .mkt-bid.is-won .mkt-track {
     height: 16px;
@@ -383,15 +423,32 @@
   }
 }
 
+/* Stacked layout: the page scrolls, so nothing stretches or shrinks. */
 @media (max-width: 900px) {
-  .lens > .mkt-auction {
+  .lens > .mkt-sold,
+  .lens > .mkt-auction,
+  .mkt-bids {
     flex: none;
   }
 }
 
+/* Phones: the total first, then the tiles across the full width. */
 @media (max-width: 560px) {
   .mkt-sold-body {
-    gap: 18px;
+    grid-template-columns: minmax(0, 1fr);
+    gap: 12px;
+  }
+
+  .mkt-total {
+    order: -1;
+    text-align: left;
+  }
+
+  /* Two lines kept for the key or who paid, so nothing below jumps. */
+  .mkt-key,
+  .mkt-now {
+    min-height: 34px;
+    align-content: flex-start;
   }
 
   .mkt-earned {
