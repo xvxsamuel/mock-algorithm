@@ -6,6 +6,8 @@ type WatchBarProps = {
   predictedMs: number;
   durationMs: number;
   playing: boolean;
+  /** False before the session starts: only the guess is shown. */
+  started: boolean;
 };
 
 /**
@@ -17,6 +19,7 @@ function WatchBar({
   predictedMs,
   durationMs,
   playing,
+  started,
 }: WatchBarProps) {
   const ratio = watchMs / durationMs;
   const fill = Math.min(ratio, 1);
@@ -28,13 +31,17 @@ function WatchBar({
   return (
     <div className="watchbar">
       <div className="watchbar-numbers">
-        <span>
-          <span className="watchbar-big">{seconds(watchMs)}</span>
-          <span className="tone-muted">
-            {" "}
-            watched {playing ? "" : "· paused"}
+        {started ? (
+          <span>
+            <span className="watchbar-big">{seconds(watchMs)}</span>
+            <span className="tone-muted">
+              {" "}
+              watched {playing ? "" : "· paused"}
+            </span>
           </span>
-        </span>
+        ) : (
+          <span />
+        )}
         <span className={passed ? "tone-you" : "tone-muted"}>
           predicted {seconds(predictedMs)}
           {passed ? " ✓" : ""}

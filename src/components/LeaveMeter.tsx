@@ -11,12 +11,14 @@ type LeaveMeterProps = { feed: FeedController };
  * moment the engine steps in to keep you is visible whatever lens is open.
  */
 function LeaveMeter({ feed }: LeaveMeterProps) {
-  const { exitRisk, upNext, current, currentItem } = feed;
+  const { exitRisk, upNext, current, currentItem, started } = feed;
   const queued = upNext.ranking.source === "rescue";
   const playing = current.source === "rescue";
 
   let note: ReactNode;
-  if (queued) {
+  if (!started) {
+    note = <>starts when you do</>;
+  } else if (queued) {
     note = (
       <>
         <span className="leave-emoji">{upNext.video.emoji}</span>
@@ -42,7 +44,11 @@ function LeaveMeter({ feed }: LeaveMeterProps) {
       className={queued || playing ? "leave is-rescue" : "leave"}
       data-link="risk"
     >
-      <RiskGauge value={exitRisk.value} threshold={RESCUE_AT} />
+      <RiskGauge
+        value={started ? exitRisk.value : 0}
+        threshold={RESCUE_AT}
+        live={started}
+      />
       <div className="leave-text">
         <h2 className="eyebrow">Chance you leave</h2>
         <p className={queued || playing ? "leave-note is-on" : "leave-note"}>

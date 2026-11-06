@@ -7,8 +7,6 @@ import "./EngineLens.css";
 
 /** Score parts shown in "why this video", biggest first. */
 const WHY_PARTS = 3;
-/** Videos the phone renders ahead of the one you are watching. */
-const PRELOADED = 2;
 
 type EngineLensProps = { feed: FeedController };
 
@@ -17,7 +15,8 @@ type EngineLensProps = { feed: FeedController };
  * explanation (why this video), and the tests it runs while you watch.
  */
 function EngineLens({ feed }: EngineLensProps) {
-  const { current, currentItem, upNext, counters } = feed;
+  const { current, currentItem, upNext } = feed;
+  const { recent, first } = feed.predictionHits;
   const finished = feed.history.map((entry) => entry.impression);
 
   const parts = [...currentItem.ranking.pick.parts]
@@ -39,10 +38,16 @@ function EngineLens({ feed }: EngineLensProps) {
               <b className="tone-you">{seconds(current.watchMs)}</b>
             </p>
           </div>
-          <p>
+          {/* "2/5 → 9/10": how much better it got at guessing you. */}
+          <p className="eng-hits">
+            {first !== null && (
+              <span className="eng-was">
+                {first.hits}/{first.total} →
+              </span>
+            )}
             <span className="figure tone-you">
-              {feed.predictionHits.hits}
-              <span className="eng-of">/{feed.predictionHits.total}</span>
+              {recent.hits}
+              <span className="eng-of">/{recent.total}</span>
             </span>
             <span className="unit">within {HIT_MS / 1000} s</span>
           </p>
@@ -83,22 +88,6 @@ function EngineLens({ feed }: EngineLensProps) {
           <ExperimentField sessionMs={feed.sessionMs} />
         </section>
       </div>
-
-      {/* Built in, never shown: the quiet parts of the design. */}
-      <ul className="eng-built">
-        <li>
-          <span className="eng-built-value">{counters.autoplays}</span>
-          auto-played
-        </li>
-        <li>
-          <span className="eng-built-value">{PRELOADED}</span>
-          loaded ahead
-        </li>
-        <li>
-          <span className="eng-built-value">∞</span>
-          no end to the feed
-        </li>
-      </ul>
     </div>
   );
 }

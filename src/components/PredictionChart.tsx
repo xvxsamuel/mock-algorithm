@@ -17,7 +17,8 @@ type PredictionChartProps = {
  * One column per video. The white cap is how long the app guessed you would
  * watch, decided before the video started. The bar is how long you did:
  * pink above the cap where you gave it more than it guessed, a hatched gap
- * where you gave less. Watch the caps and bars line up.
+ * where you gave less. Watch the caps and bars line up. A sure hit, played
+ * to stop you leaving, is marked pink.
  */
 function PredictionChart({ finished, current }: PredictionChartProps) {
   const shown = [...finished.slice(-(COLUMNS - 1)), current];
@@ -51,10 +52,14 @@ function PredictionChart({ finished, current }: PredictionChartProps) {
         const guess = Math.min(impression.predictedMs / scale, 1);
         const actual = Math.min(impression.watchMs / scale, 1);
         const live = impression === current;
+        const sureHit = impression.source === "rescue";
+        const classes = ["pchart-col"];
+        if (live) classes.push("is-live");
+        if (sureHit) classes.push("is-sure-hit");
         return (
           <li
             key={impression.index}
-            className={live ? "pchart-col is-live" : "pchart-col"}
+            className={classes.join(" ")}
             data-link={live ? "predict" : undefined}
             data-link-floor={live ? "" : undefined}
           >
@@ -64,7 +69,11 @@ function PredictionChart({ finished, current }: PredictionChartProps) {
             />
             {actual > guess ? (
               <span
-                className="pchart-extra"
+                className={
+                  impression.watchMs > scale
+                    ? "pchart-extra is-clipped"
+                    : "pchart-extra"
+                }
                 style={{ bottom: pct(guess), height: pct(actual - guess) }}
               />
             ) : (
@@ -74,6 +83,14 @@ function PredictionChart({ finished, current }: PredictionChartProps) {
               />
             )}
             <span className="pchart-guess" style={{ bottom: pct(guess) }} />
+            {live && sureHit && (
+              <span
+                className="pchart-tag"
+                style={{ bottom: pct(Math.max(guess, actual)) }}
+              >
+                sure hit
+              </span>
+            )}
             <span className="pchart-emoji" aria-hidden="true">
               {impression.video.emoji}
             </span>

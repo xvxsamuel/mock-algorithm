@@ -5,10 +5,12 @@ type RiskGaugeProps = {
   value: number;
   /** Where the engine steps in, 0-1. */
   threshold: number;
+  /** False before the session starts: the dial shows a dash, not a number. */
+  live?: boolean;
 };
 
 /** A half dial: how close you are to closing the app. */
-function RiskGauge({ value, threshold }: RiskGaugeProps) {
+function RiskGauge({ value, threshold, live = true }: RiskGaugeProps) {
   // A notch splits off the "sure hit" zone at the end of the track.
   const angle = Math.PI - threshold * Math.PI;
   const notch = {
@@ -25,7 +27,7 @@ function RiskGauge({ value, threshold }: RiskGaugeProps) {
       className={`gauge ${tone}`}
       viewBox="0 0 120 68"
       role="img"
-      aria-label={`${Math.round(value * 100)}%`}
+      aria-label={live ? `${Math.round(value * 100)}%` : "not started"}
     >
       <path
         className="gauge-track"
@@ -52,7 +54,7 @@ function RiskGauge({ value, threshold }: RiskGaugeProps) {
       />
       <line className="gauge-notch" {...notch} />
       <text className="gauge-value" x={60} y={56} textAnchor="middle">
-        {Math.round(value * 100)}%
+        {live ? `${Math.round(value * 100)}%` : "–"}
       </text>
     </svg>
   );

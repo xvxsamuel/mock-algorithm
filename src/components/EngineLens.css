@@ -47,6 +47,19 @@
   background: #fff;
 }
 
+.eng-hits {
+  white-space: nowrap;
+}
+
+/* Its first guesses, before it knew you. */
+.eng-was {
+  margin-right: 6px;
+  color: var(--muted);
+  font-size: 18px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+
 .eng-of {
   color: var(--muted);
   font-size: 18px;
@@ -58,11 +71,13 @@
 
 /* --- Why this video --- */
 
+/* Padded so the highlight where a line lands has room around the text. */
 .why {
   display: flex;
   flex-direction: column;
   gap: 8px;
-  margin-top: 12px;
+  margin: 6px -8px 0;
+  padding: 6px 8px;
 }
 
 .why-part {
@@ -119,7 +134,7 @@
   display: flex;
   align-items: center;
   gap: 8px;
-  margin-top: 12px;
+  margin-top: 6px;
   padding-top: 10px;
   border-top: 1px solid var(--line);
   font-size: 12px;
@@ -145,30 +160,6 @@
 .why-source.is-rescue {
   background: rgb(254 44 85 / 0.14);
   color: var(--take);
-}
-
-/* --- Built in: quiet facts, no card --- */
-
-.eng-built {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 6px 22px;
-  padding: 0 4px;
-  color: var(--muted);
-  font-size: 12px;
-}
-
-.eng-built li {
-  display: flex;
-  align-items: baseline;
-  gap: 6px;
-}
-
-.eng-built-value {
-  color: var(--text);
-  font-size: 15px;
-  font-weight: 650;
-  font-variant-numeric: tabular-nums;
 }
 
 @media (prefers-reduced-motion: reduce) {

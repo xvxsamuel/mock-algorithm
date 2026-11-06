@@ -21,12 +21,11 @@ function SheetHandle({ feed, open, onToggle }: SheetHandleProps) {
       type="button"
       className="sheet-handle"
       aria-expanded={open}
+      aria-label={open ? "Back to the feed" : undefined}
       onClick={onToggle}
     >
       <span className="sheet-grip" aria-hidden="true" />
-      {open ? (
-        "Back to the feed"
-      ) : (
+      {!open && (
         <span className="sheet-peek">
           <span className={over ? "tone-take" : undefined}>
             {over && intentMs !== null

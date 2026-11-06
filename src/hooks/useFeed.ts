@@ -106,12 +106,17 @@ function feedReducer(state: State, action: Action): State {
       const history = [...state.history, finished];
       const revisit = index <= state.maxSeenIndex;
       const item = state.items[index];
+      // The guess is made fresh as the video starts, so it already knows how
+      // you treated the one you just left. A revisit keeps its first guess.
+      const predictedMs = revisit
+        ? item.predictedMs
+        : predictWatchMs(item.video, history, item.ranking.source === "rescue");
       const current = startImpression(
         item.video,
         history.length + 1,
         now,
         revisit,
-        item.predictedMs,
+        predictedMs,
         item.ranking.source,
       );
       const next: State = {
@@ -230,7 +235,11 @@ function queueNextVideo(state: State, seed: number): State {
         key: state.nextKey,
         video: ranking.pick.video,
         ranking,
-        predictedMs: predictWatchMs(ranking.pick.video, state.history),
+        predictedMs: predictWatchMs(
+          ranking.pick.video,
+          state.history,
+          ranking.source === "rescue",
+        ),
         riskWhenQueued: risk.value,
       },
     ],

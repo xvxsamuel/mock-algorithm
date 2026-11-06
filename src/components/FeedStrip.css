@@ -75,6 +75,10 @@
   line-height: 1;
 }
 
+.strip-earlier.is-narrow {
+  display: none;
+}
+
 .strip-earlier {
   display: grid;
   place-items: center;
@@ -83,6 +87,18 @@
   font-size: 11px;
   font-weight: 650;
   font-variant-numeric: tabular-nums;
+}
+
+/* After "next": the feed never runs out. */
+.strip-end {
+  display: grid;
+  place-items: center;
+  aspect-ratio: 1;
+  border-radius: 7px;
+  background: linear-gradient(90deg, rgb(255 255 255 / 0.06), transparent);
+  color: var(--muted);
+  font-size: 16px;
+  line-height: 1;
 }
 
 /* "now" and "next" under the last two tiles. */
@@ -135,8 +151,14 @@
     grid-template-columns: repeat(11, minmax(0, 1fr));
   }
 
+  /* Keep the last 11 tiles, or the last 10 after a "+N". */
   .strip-cell:nth-last-child(n + 12),
-  .strip-earlier {
+  .is-narrow-full > .strip-cell:nth-last-child(n + 11),
+  .strip-earlier.is-wide {
     display: none;
+  }
+
+  .strip-earlier.is-narrow {
+    display: grid;
   }
 }

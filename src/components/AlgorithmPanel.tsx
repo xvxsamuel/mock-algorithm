@@ -21,6 +21,10 @@ const OVER_SOFTNESS = 2;
 /** The total time label shows once the pink part is this wide (%), so it
     does not sit on top of the "planned" label. */
 const NOW_LABEL_FROM = 12;
+/** On narrow screens, scrolling the cards this far (px) folds the header to
+    one row; it unfolds back at the very top. */
+const FOLD_AT = 40;
+const UNFOLD_AT = 4;
 
 type AlgorithmPanelProps = { feed: FeedController };
 
@@ -31,13 +35,16 @@ type AlgorithmPanelProps = { feed: FeedController };
  */
 function AlgorithmPanel({ feed }: AlgorithmPanelProps) {
   const [lens, setLens] = useState<Lens>("you");
+  const [folded, setFolded] = useState(false);
   const { sessionMs, intentMs, started } = feed;
   const over = intentMs !== null && sessionMs > intentMs;
+  const classes = ["panel"];
+  if (!started) classes.push("is-idle");
+  if (over) classes.push("is-over");
+  if (folded) classes.push("is-folded");
 
   return (
-    <div
-      className={`panel${started ? "" : " is-idle"}${over ? " is-over" : ""}`}
-    >
+    <div className={classes.join(" ")}>
       <header className="panel-head">
         {/* Once you pass your plan, the time over it is the headline. */}
         <div className="panel-time">
@@ -67,14 +74,26 @@ function AlgorithmPanel({ feed }: AlgorithmPanelProps) {
             className={lens === id ? "lens-tab is-active" : "lens-tab"}
             aria-pressed={lens === id}
             data-link={`lens:${id}`}
-            onClick={() => setLens(id)}
+            onClick={() => {
+              setLens(id);
+              setFolded(false);
+            }}
           >
             {label}
           </button>
         ))}
       </nav>
 
-      <div className="panel-body" key={lens}>
+      {/* Only scrolls on narrow screens, where the header folds away. */}
+      <div
+        className="panel-body"
+        key={lens}
+        onScroll={(event) => {
+          const top = event.currentTarget.scrollTop;
+          if (top > FOLD_AT) setFolded(true);
+          else if (top < UNFOLD_AT) setFolded(false);
+        }}
+      >
         {lens === "you" ? <YouLens feed={feed} /> : <EngineLens feed={feed} />}
       </div>
 

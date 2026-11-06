@@ -2,6 +2,9 @@ import type { Category } from "../data/categories";
 import { hasReaction, type Impression } from "./impression";
 import { QUICK_SKIP_MS } from "./signals";
 
+/** The attention span it assumes before you have watched anything. */
+const SPAN_PRIOR_MS = 8000;
+
 /** A guess about you that you never told the app. */
 export type Trait = {
   key: "age" | "mood" | "attention" | "spending";
@@ -57,11 +60,10 @@ export function inferTraits(
   ).length;
   const mood = skips >= 3 ? "restless" : long >= 2 ? "absorbed" : "drifting";
 
+  // Before you watch anything it assumes the famous 8 seconds.
   const watched = impressions.slice(-8);
-  const span =
-    watched.length === 0
-      ? 0
-      : watched.reduce((sum, i) => sum + i.watchMs, 0) / watched.length;
+  const watchedMs = watched.reduce((sum, i) => sum + i.watchMs, 0);
+  const span = watchedMs === 0 ? SPAN_PRIOR_MS : watchedMs / watched.length;
 
   const shopping = SHOPPING.reduce(
     (sum, topic) => sum + Math.max(topics.get(topic) ?? 0, 0),
