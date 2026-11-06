@@ -2,6 +2,9 @@
   display: grid;
   grid-template-columns: repeat(46, minmax(0, 1fr));
   gap: 2px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
 }
 
 .year-day {

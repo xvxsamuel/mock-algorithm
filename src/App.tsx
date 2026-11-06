@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import AlgorithmPanel from "./components/AlgorithmPanel";
 import LinkLayer from "./components/LinkLayer";
 import PhoneFeed from "./components/PhoneFeed";
+import SessionEnd from "./components/SessionEnd";
 import SheetHandle from "./components/SheetHandle";
 import { useFeed } from "./hooks/useFeed";
 import { useLinks } from "./hooks/useLinks";
@@ -13,10 +14,16 @@ function App() {
   // On narrow screens the panel is a sheet that slides up over the video.
   // While it is open the video waits: reading the panel is not watching.
   const [sheetOpen, setSheetOpen] = useState(false);
-  const { hold } = feed;
+  const { hold, end, resume } = feed;
   function toggleSheet() {
     setSheetOpen(!sheetOpen);
     hold(!sheetOpen);
+  }
+  // Leaving closes the sheet first, so the video is where you left it.
+  function leave() {
+    setSheetOpen(false);
+    hold(false);
+    end();
   }
   // Widened past the sheet layout: the panel is beside the video again.
   useEffect(() => {
@@ -45,9 +52,16 @@ function App() {
         aria-label="What the algorithm sees"
       >
         <SheetHandle feed={feed} open={sheetOpen} onToggle={toggleSheet} />
-        <AlgorithmPanel feed={feed} />
+        <AlgorithmPanel feed={feed} onLeave={leave} />
       </section>
       <LinkLayer links={links} onDone={removeLink} />
+      {feed.ended && (
+        <SessionEnd
+          feed={feed}
+          onBack={resume}
+          onRestart={() => window.location.reload()}
+        />
+      )}
     </main>
   );
 }

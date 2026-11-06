@@ -134,6 +134,13 @@ type State = {
   } | null;
   /** Weak moments it has read in you so far. It never forgets one. */
   leans: readonly Lean[];
+  /**
+   * When you left (pressed Leave), or null while you are still here. The
+   * session stands still until you come back to the feed.
+   */
+  endedAt: number | null;
+  /** The video was playing when you left, so it plays again if you return. */
+  resumeAfterEnd: boolean;
 };
 
 // Time and random seeds are passed in, so the reducer itself stays pure.
@@ -144,10 +151,39 @@ type Action =
   | { type: "togglePause"; now: number }
   | { type: "hold"; held: boolean; now: number }
   | { type: "react"; kind: ReactionKind; now: number; seed: number }
-  | { type: "release"; now: number; seed: number };
+  | { type: "release"; now: number; seed: number }
+  | { type: "end"; now: number }
+  | { type: "resume"; now: number };
 
 function feedReducer(state: State, action: Action): State {
+  // After you leave nothing moves, until you come back.
+  if (state.endedAt !== null && action.type !== "resume") return state;
   switch (action.type) {
+    case "end": {
+      if (!state.started) return state;
+      const { now } = action;
+      return {
+        ...state,
+        current: liveImpression(state, now),
+        playingSince: null,
+        resumeAfterEnd: state.playingSince !== null,
+        endedAt: now,
+        now,
+      };
+    }
+
+    case "resume": {
+      if (state.endedAt === null) return state;
+      const { now } = action;
+      return {
+        ...state,
+        playingSince: state.resumeAfterEnd ? now : null,
+        resumeAfterEnd: false,
+        endedAt: null,
+        now,
+      };
+    }
+
     case "begin": {
       if (state.started) return state;
       const { now } = action;
@@ -584,6 +620,8 @@ function createInitialState(): State {
     followedCreators: [],
     network: null,
     leans: [],
+    endedAt: null,
+    resumeAfterEnd: false,
   };
   return queueNextVideo(state, Math.random());
 }
@@ -691,6 +729,8 @@ export function useFeed() {
 
   return {
     started: state.started,
+    /** You pressed Leave: the session is over, and stands still. */
+    ended: state.endedAt !== null,
     intentMs: state.intentMs,
     sessionMs,
     items: state.items,
@@ -741,6 +781,10 @@ export function useFeed() {
     /** Releases a bot network on a video, which then gets pushed to you. */
     release: () =>
       dispatch({ type: "release", now: Date.now(), seed: Math.random() }),
+    /** Ends the session: everything stops where it is. */
+    end: () => dispatch({ type: "end", now: Date.now() }),
+    /** Back to the feed after leaving, where it left off. */
+    resume: () => dispatch({ type: "resume", now: Date.now() }),
   };
 }
 

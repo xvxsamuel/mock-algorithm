@@ -32,14 +32,18 @@ const NOW_LABEL_FROM = 12;
 const FOLD_AT = 40;
 const UNFOLD_AT = 4;
 
-type AlgorithmPanelProps = { feed: FeedController };
+type AlgorithmPanelProps = {
+  feed: FeedController;
+  /** Pressing Leave: the session ends. */
+  onLeave: () => void;
+};
 
 /**
  * The machine behind the phone. A fixed header (your time) and footer (who
  * chose your feed) frame one "lens" at a time, so nothing ever scrolls.
  * Elements with `data-link` are where lines from the phone can point to.
  */
-function AlgorithmPanel({ feed }: AlgorithmPanelProps) {
+function AlgorithmPanel({ feed, onLeave }: AlgorithmPanelProps) {
   const [lens, setLens] = useState<Lens>("you");
   const [folded, setFolded] = useState(false);
   const { sessionMs, intentMs, started } = feed;
@@ -71,7 +75,17 @@ function AlgorithmPanel({ feed }: AlgorithmPanelProps) {
           )}
         </div>
         <LeaveMeter feed={feed} />
-        {intentBar(sessionMs, intentMs, started)}
+        {started ? (
+          // Your time runs toward the one thing the app never offers.
+          <div className="panel-time-row">
+            {intentBar(sessionMs, intentMs)}
+            <button type="button" className="leave-button" onClick={onLeave}>
+              Leave
+            </button>
+          </div>
+        ) : (
+          <p className="intent-note">Pick a time on the phone to begin.</p>
+        )}
       </header>
 
       <nav className="lens-tabs" aria-label="Lenses">
@@ -115,14 +129,7 @@ function AlgorithmPanel({ feed }: AlgorithmPanelProps) {
 }
 
 /** Planned time against real time. Past the plan, the bar turns pink. */
-function intentBar(
-  sessionMs: number,
-  intentMs: number | null,
-  started: boolean,
-) {
-  if (!started) {
-    return <p className="intent-note">Pick a time on the phone to begin.</p>;
-  }
+function intentBar(sessionMs: number, intentMs: number | null) {
   if (intentMs === null) {
     return <p className="intent-note">No limit set. Nothing will stop you.</p>;
   }
