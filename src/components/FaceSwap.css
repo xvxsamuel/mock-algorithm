@@ -173,6 +173,17 @@
   transform: translateX(-50%);
 }
 
+/* Each new video: the comparison runs again, just after the scan. */
+.swap .reach-fill {
+  animation: swap-reach-in 0.7s var(--ease) 0.6s both;
+}
+
+@keyframes swap-reach-in {
+  from {
+    width: 0;
+  }
+}
+
 .swap-private {
   color: var(--muted);
   font-size: 11px;
@@ -190,9 +201,19 @@
   quotes: "“" "”";
 }
 
+@media (prefers-reduced-motion: reduce) {
+  .swap .reach-fill {
+    animation: none;
+  }
+}
+
 @media (max-height: 860px) {
   .swap-tile > * {
-    max-width: 96px;
+    max-width: 124px;
+  }
+
+  .swap-thumb {
+    aspect-ratio: 1;
   }
 
   .swap {
@@ -217,8 +238,9 @@
     font-size: 13px;
   }
 
-  .swap .reach-value {
-    white-space: normal;
+  /* "followers only" no longer fits: "followers". */
+  .swap .reach-only {
+    display: none;
   }
 
   .swap-tile.is-you .swap-looks {

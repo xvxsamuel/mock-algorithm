@@ -32,7 +32,13 @@ function ReachBar({ reach, you = false, tickLabel = false }: ReachBarProps) {
         </span>
       </span>
       <span className="reach-value">
-        {cut ? "followers only" : `×${reach.toFixed(1)}`}
+        {cut ? (
+          <>
+            followers<span className="reach-only"> only</span>
+          </>
+        ) : (
+          `×${reach.toFixed(1)}`
+        )}
       </span>
     </span>
   );

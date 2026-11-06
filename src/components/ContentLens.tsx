@@ -1,6 +1,6 @@
 import { faceReach, faceRule } from "../algorithm/appearance";
 import { CATEGORY_COLORS } from "../data/categories";
-import { faceEmoji, scanOf } from "../data/scans";
+import { scanOf } from "../data/scans";
 import type { FeedController } from "../hooks/useFeed";
 import FaceSwap from "./FaceSwap";
 import ReachBar from "./ReachBar";
@@ -56,7 +56,7 @@ function ContentLens({ feed }: ContentLensProps) {
               >
                 <span className="con-tag">face</span>
                 <span className="con-face" aria-hidden="true">
-                  {faceEmoji(face)}
+                  {face.emoji}
                 </span>
               </span>
             )}
@@ -89,7 +89,7 @@ function ContentLens({ feed }: ContentLensProps) {
         </div>
       </section>
 
-      <FaceSwap video={video} />
+      <FaceSwap video={video} scanKey={currentItem.key} />
     </div>
   );
 }

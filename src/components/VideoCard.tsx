@@ -1,6 +1,6 @@
 import { useRef, useState, type MouseEvent } from "react";
 import { CATEGORY_COLORS } from "../data/categories";
-import { faceEmoji, scanOf } from "../data/scans";
+import { scanOf } from "../data/scans";
 import type { Video } from "../data/videos";
 import type { ReactionKind } from "../hooks/useFeed";
 import ActionRail from "./ActionRail";
@@ -82,7 +82,7 @@ function VideoCard({
       {/* The creator, on camera: the face the engine reads. */}
       {face !== null && (
         <div className="card-face" aria-hidden="true">
-          {faceEmoji(face)}
+          {face.emoji}
         </div>
       )}
 
