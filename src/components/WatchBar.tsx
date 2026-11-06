@@ -36,11 +36,11 @@ function WatchBar({
     watchMs * WATCH_ROOM,
     QUICK_SKIP_MS * GUESS_ROOM,
   );
-  const fill = watchMs / scale;
+  const under = Math.min(watchMs, predictedMs) / scale;
+  const over = Math.max(watchMs - predictedMs, 0) / scale;
   const loops = Math.min(Math.floor(watchMs / durationMs), 3);
   const predicted = predictedMs / scale;
   const skip = QUICK_SKIP_MS / scale;
-  const passed = watchMs >= predictedMs;
 
   return (
     <div className="watchbar">
@@ -57,18 +57,22 @@ function WatchBar({
         ) : (
           <span />
         )}
-        <span className={passed ? "tone-you" : "tone-muted"}>
-          predicted {seconds(predictedMs)}
-          {passed ? " ✓" : ""}
-        </span>
+        <span className="tone-muted">predicted {seconds(predictedMs)}</span>
       </div>
       <div className="watchbar-track">
         {started && (
           <span className="watchbar-skip" style={{ width: `${skip * 100}%` }} />
         )}
-        <span className="watchbar-fill" style={{ width: `${fill * 100}%` }} />
+        <span className="watchbar-fill" style={{ width: `${under * 100}%` }} />
+        {/* Past the guess: time it took beyond what it expected, so pink. */}
+        {over > 0 && (
+          <span
+            className="watchbar-over"
+            style={{ left: `${predicted * 100}%`, width: `${over * 100}%` }}
+          />
+        )}
         <span
-          className={passed ? "watchbar-mark is-passed" : "watchbar-mark"}
+          className="watchbar-mark"
           style={{ left: `${predicted * 100}%` }}
         />
         {loops > 0 && <span className="watchbar-loops">×{loops + 1}</span>}

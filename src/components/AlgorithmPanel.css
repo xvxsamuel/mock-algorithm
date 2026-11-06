@@ -435,6 +435,11 @@
     grid-template-columns: 1fr;
   }
 
+  /* The headline already says how far over; no room for both labels. */
+  .intent-label.is-now {
+    display: none;
+  }
+
   .clock {
     font-size: 32px;
   }

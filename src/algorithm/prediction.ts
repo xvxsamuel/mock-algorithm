@@ -19,9 +19,8 @@ const MOOD_FROM = 3;
 const MOOD_NORMAL = 0.7;
 /** Restless, it guesses you will give each video as little as this share. */
 const MOOD_MIN = 0.2;
-/** Its typical miss compares your first videos with your latest ones. */
-export const FIRST_WINDOW = 5;
-export const RECENT_WINDOW = 10;
+/** The typical miss is taken over this many of your latest videos. */
+export const MISS_WINDOW = 10;
 
 /**
  * Predicts how long you will watch a video before it plays: how long you
@@ -41,15 +40,20 @@ export function predictWatchMs(
 
 /** How long you watched this topic so far, newest counting most. */
 function topicMs(video: Video, finished: readonly Impression[]): number {
-  const overall = weightedMean(
-    finished.map((i) => i.watchMs),
-    ATTENTION_PRIOR_MS,
-    PRIOR_WEIGHT,
-  );
+  const overall = averageMs(finished);
   const sameTopic = finished
     .filter((i) => i.video.category === video.category)
     .map((i) => i.watchMs);
   return weightedMean(sameTopic, overall, TOPIC_PRIOR_WEIGHT);
+}
+
+/** Your average watch time so far, newest counting most. */
+function averageMs(finished: readonly Impression[]): number {
+  return weightedMean(
+    finished.map((i) => i.watchMs),
+    ATTENTION_PRIOR_MS,
+    PRIOR_WEIGHT,
+  );
 }
 
 /**
@@ -70,44 +74,46 @@ export function moodOf(finished: readonly Impression[]): number {
   return Math.min(Math.max(sum / weight / MOOD_NORMAL, MOOD_MIN), 1);
 }
 
-/** How far off the guess usually was over some videos. */
-export type Miss = {
-  /** The median gap between guess and real watch time, in ms. */
-  ms: number;
+/**
+ * How far off its guesses usually are on your latest videos (the median, so
+ * one odd video does not swing it), against an app that knows nothing about
+ * topics or moods and just guesses your average each time. The gap is what
+ * knowing you is worth to it.
+ */
+export type PredictionMiss = {
+  /** Its typical miss, in ms, knowing you. */
+  model: number;
+  /** The typical miss of guessing your average watch time, in ms. */
+  average: number;
   /** How many videos it is taken over. */
   count: number;
 };
 
-/**
- * How far off its guess usually is: on your latest videos, and on your first
- * ones once there are enough to compare. Shows it learning you. The median,
- * so one odd video (a sudden binge, a skip) does not swing it.
- */
-export type PredictionMiss = { recent: Miss | null; first: Miss | null };
-
 export function predictionMiss(
   finished: readonly Impression[],
-): PredictionMiss {
+): PredictionMiss | null {
+  if (finished.length === 0) return null;
+  const from = Math.max(finished.length - MISS_WINDOW, 0);
+  const model: number[] = [];
+  const average: number[] = [];
+  for (let i = from; i < finished.length; i++) {
+    const { watchMs, predictedMs } = finished[i];
+    model.push(Math.abs(watchMs - predictedMs));
+    average.push(Math.abs(watchMs - averageMs(finished.slice(0, i))));
+  }
   return {
-    recent: medianMiss(finished.slice(-RECENT_WINDOW)),
-    first:
-      finished.length > RECENT_WINDOW
-        ? medianMiss(finished.slice(0, FIRST_WINDOW))
-        : null,
+    model: median(model),
+    average: median(average),
+    count: finished.length - from,
   };
 }
 
-function medianMiss(impressions: readonly Impression[]): Miss | null {
-  if (impressions.length === 0) return null;
-  const misses = impressions
-    .map((i) => Math.abs(i.watchMs - i.predictedMs))
-    .sort((a, b) => a - b);
-  const middle = Math.floor(misses.length / 2);
-  const ms =
-    misses.length % 2 === 1
-      ? misses[middle]
-      : (misses[middle - 1] + misses[middle]) / 2;
-  return { ms, count: impressions.length };
+function median(values: number[]): number {
+  const sorted = [...values].sort((a, b) => a - b);
+  const middle = Math.floor(sorted.length / 2);
+  return sorted.length % 2 === 1
+    ? sorted[middle]
+    : (sorted[middle - 1] + sorted[middle]) / 2;
 }
 
 /** Mean of `values` (oldest first), newest weighted most, pulled towards `prior`. */

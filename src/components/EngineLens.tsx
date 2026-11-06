@@ -5,8 +5,8 @@ import ExperimentField from "./ExperimentField";
 import PredictionChart from "./PredictionChart";
 import "./EngineLens.css";
 
-/** The latest typical miss turns cyan only when it is at most this share
-    of the first one: clearly closer, not noise. */
+/** Its typical miss turns cyan only when it is at most this share of the
+    average's: clearly closer, not noise. */
 const CLEARLY_CLOSER = 0.8;
 /** Beside a sure hit's reason, the other bars use at most this share of
     the half track, so the pink one clearly outweighs them. */
@@ -22,10 +22,9 @@ type EngineLensProps = { feed: FeedController };
  */
 function EngineLens({ feed }: EngineLensProps) {
   const { current, currentItem, upNext } = feed;
-  const { recent, first } = feed.predictionMiss;
-  // Only real progress gets the accent: a closer typical guess than at first.
-  const improved =
-    first !== null && recent !== null && recent.ms <= first.ms * CLEARLY_CLOSER;
+  const miss = feed.predictionMiss;
+  // Only a real edge gets the accent: clearly closer than your average.
+  const knowsYou = miss !== null && miss.model <= miss.average * CLEARLY_CLOSER;
   const finished = feed.history.map((entry) => entry.impression);
 
   // A sure hit's first reason is that you were about to leave.
@@ -58,29 +57,27 @@ function EngineLens({ feed }: EngineLensProps) {
               </span>
             </p>
           </div>
-          {/* "off by 4.1s → 1.6s": how much closer it got to guessing you. */}
-          <p className="eng-hits">
+          {/* "1.1s vs 2.9s": what knowing you is worth, against a blind
+              guess of your average. Over your latest videos. */}
+          <p
+            className="eng-hits"
+            title={
+              miss === null
+                ? undefined
+                : `Median over your last ${miss.count} videos`
+            }
+          >
             <span className="unit">typical miss</span>
-            {first !== null && (
-              <>
-                <span className="eng-hit">
-                  <b>{seconds(first.ms)}</b>
-                  <small>first {first.count}</small>
-                </span>
-                <span className="eng-arrow" aria-hidden="true">
-                  →
-                </span>
-              </>
-            )}
             <span className="eng-hit">
-              <b className={improved ? "tone-you" : undefined}>
-                {recent === null ? "–" : seconds(recent.ms)}
+              <b className={knowsYou ? "tone-you" : undefined}>
+                {miss === null ? "–" : seconds(miss.model)}
               </b>
-              <small>
-                {first !== null && recent !== null
-                  ? `latest ${recent.count}`
-                  : "so far"}
-              </small>
+              <small>knowing you</small>
+            </span>
+            <span className="eng-vs">vs</span>
+            <span className="eng-hit is-baseline">
+              <b>{miss === null ? "–" : seconds(miss.average)}</b>
+              <small>your average</small>
             </span>
           </p>
         </div>

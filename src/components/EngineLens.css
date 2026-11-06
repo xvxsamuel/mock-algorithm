@@ -51,8 +51,8 @@
   white-space: nowrap;
 }
 
-/* A typical miss with its window under it: "first 5", "latest 10". Both
-   the same size; only real progress turns the latest one cyan. */
+/* A typical miss with what it is: "knowing you", "your average". The same
+   size; its own turns cyan only when it is clearly closer. */
 .eng-hit {
   display: inline-flex;
   flex-direction: column;
@@ -74,9 +74,14 @@
   font-weight: 500;
 }
 
-.eng-arrow {
+.eng-vs {
   color: var(--muted);
-  font-size: 16px;
+  font-size: 12px;
+}
+
+/* The blind guess it is measured against. */
+.eng-hit.is-baseline b {
+  color: var(--muted);
 }
 
 .eng-hits .unit {
