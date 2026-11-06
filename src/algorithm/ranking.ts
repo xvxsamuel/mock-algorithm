@@ -77,7 +77,7 @@ export function rankNext(input: RankingInput): Ranking {
   // 3a. Rescue: about to lose you, so play what it expects to hold you
   //     longest instead of testing anything new.
   if (rescue) {
-    const pick = surestHit(scored, profile, holdMs);
+    const pick = surestHit(scored, profile, history, holdMs);
     return {
       pick,
       source: "rescue",
@@ -173,17 +173,24 @@ function popularity(video: Video): number {
 }
 
 /** In a topic you like, the video it expects you to watch longest; on a
-    tie, the most intense, best-scoring one. */
+    tie, the most intense, best-scoring one. A rerun only when nothing new
+    in a topic you like is left. */
 function surestHit(
   scored: readonly ScoredVideo[],
   profile: InterestProfile,
+  history: readonly Video[],
   holdMs: (video: Video) => number,
 ): ScoredVideo {
+  const recent = new Set(
+    history.slice(-SOFT_REPEAT_WINDOW).map((video) => video.id),
+  );
   const liked = scored.filter(
     (entry) => (profile.topics.get(entry.video.category) ?? 0) > 0,
   );
+  const fresh = liked.filter((entry) => !recent.has(entry.video.id));
+  const pool = [fresh, liked, scored].find((list) => list.length > 0) ?? scored;
   const strength = (entry: ScoredVideo) => entry.score + entry.video.intensity;
-  return (liked.length > 0 ? liked : scored).reduce((a, b) => {
+  return pool.reduce((a, b) => {
     const longer = holdMs(b.video) - holdMs(a.video);
     if (longer !== 0) return longer > 0 ? b : a;
     return strength(b) > strength(a) ? b : a;

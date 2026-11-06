@@ -70,7 +70,7 @@ function EngineLens({ feed }: EngineLensProps) {
             }
           >
             <span className="unit">typical miss</span>
-            <span className="eng-hit">
+            <span className={knowsYou ? "eng-hit" : "eng-hit is-baseline"}>
               <b className={knowsYou ? "tone-you" : undefined}>
                 {miss === null ? "–" : seconds(miss.model)}
               </b>
