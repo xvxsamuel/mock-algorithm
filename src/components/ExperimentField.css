@@ -45,22 +45,20 @@
     0 0 14px rgb(255 255 255 / 0.7);
 }
 
+/* A long test name wraps; it is never cut off. */
 .xfield-name {
   display: flex;
+  flex-wrap: wrap;
   align-items: baseline;
-  gap: 10px;
-  overflow: hidden;
+  gap: 2px 10px;
   font-size: 12.5px;
-  white-space: nowrap;
   animation: xfield-in 0.4s var(--ease);
 }
 
 .xfield-text {
-  overflow: hidden;
   color: var(--text);
   font-size: 12.5px;
   font-weight: 550;
-  text-overflow: ellipsis;
 }
 
 @keyframes xfield-in {

@@ -436,6 +436,11 @@
     font-size: 34px;
   }
 
+  /* A bid whose reasons wrap gets the height it needs. */
+  .mkt-bids {
+    grid-auto-rows: auto;
+  }
+
   .mkt-bid {
     grid-template-columns: 104px minmax(0, 1fr) 54px;
     column-gap: 8px;

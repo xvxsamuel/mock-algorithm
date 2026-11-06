@@ -27,6 +27,9 @@ const OVER_SOFTNESS = 2;
 /** The total time label shows once the pink part is this wide (%), so it
     does not sit on top of the "planned" label. */
 const NOW_LABEL_FROM = 12;
+/** The now label's right edge stays this far right of the plan mark, so it
+ * never runs into "planned 1:00" on a narrow bar. */
+const NOW_LABEL_CLEAR_PX = 80;
 /** On narrow screens, scrolling the cards this far (px) folds the header to
     one row; it unfolds back at the very top. */
 const FOLD_AT = 40;
@@ -148,7 +151,9 @@ function intentBar(sessionMs: number, intentMs: number | null) {
       {over >= NOW_LABEL_FROM && (
         <span
           className="intent-label is-now"
-          style={{ left: `${mark + over}%` }}
+          style={{
+            left: `max(${mark + over}%, calc(${mark}% + ${NOW_LABEL_CLEAR_PX}px))`,
+          }}
         >
           {formatClock(sessionMs)}
         </span>
