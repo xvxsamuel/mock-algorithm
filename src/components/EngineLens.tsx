@@ -7,6 +7,9 @@ import "./EngineLens.css";
 /** The latest typical miss turns cyan only when it is at most this share
     of the first one: clearly closer, not noise. */
 const CLEARLY_CLOSER = 0.8;
+/** Beside a sure hit's reason, the other bars use at most this share of
+    the half track, so the pink one clearly outweighs them. */
+const UNDER_RESCUE = 0.6;
 /** Score parts shown in "why this video", biggest first. */
 const WHY_PARTS = 3;
 
@@ -29,7 +32,9 @@ function EngineLens({ feed }: EngineLensProps) {
   const parts = [...currentItem.ranking.pick.parts]
     .sort((a, b) => Math.abs(b.value) - Math.abs(a.value))
     .slice(0, sureHit ? WHY_PARTS - 1 : WHY_PARTS);
-  const widest = Math.max(0.5, ...parts.map((part) => Math.abs(part.value)));
+  const widest =
+    Math.max(0.5, ...parts.map((part) => Math.abs(part.value))) /
+    (sureHit ? UNDER_RESCUE : 1);
 
   return (
     <div className="lens">
@@ -37,15 +42,12 @@ function EngineLens({ feed }: EngineLensProps) {
         <div className="pane-head">
           <div className="eng-title">
             <h2 className="eyebrow">It predicts your watch time</h2>
-            {/* The legend doubles as a readout for the video playing now. */}
             <p className="eng-legend">
               <span>
                 <span className="eng-key is-guess" /> its guess
-                <b>{seconds(current.predictedMs)}</b>
               </span>
               <span>
                 <span className="eng-key is-actual" /> you
-                <b className="tone-you">{seconds(current.watchMs)}</b>
               </span>
               <span>
                 <span className="eng-key is-over" /> over

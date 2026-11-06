@@ -26,11 +26,13 @@ function LeaveMeter({ feed }: LeaveMeterProps) {
       </>
     );
   } else if (playing) {
+    // From the moment it started: what the sure hit itself did to the risk.
+    const from = Math.round(currentItem.riskWhenPlayed * 100);
+    const to = Math.round(exitRisk.value * 100);
     note = (
       <>
         <span className="leave-emoji">{current.video.emoji}</span>
-        {Math.round(currentItem.riskWhenQueued * 100)}% →{" "}
-        {Math.round(exitRisk.value * 100)}%
+        {from === to ? "sure hit playing" : `${from}% → ${to}%`}
       </>
     );
   } else if (exitRisk.reason !== null) {

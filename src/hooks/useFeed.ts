@@ -39,6 +39,8 @@ export type FeedItem = {
   riskWhenQueued: number;
   /** The biggest reason for that risk, e.g. "skipping". */
   reasonWhenQueued: ExitReason | null;
+  /** The exit risk when it started playing (the risk may move in between). */
+  riskWhenPlayed: number;
 };
 
 export type ReactionKind =
@@ -153,6 +155,11 @@ function feedReducer(state: State, action: Action): State {
         resumeAfterHold: state.held,
         now,
       };
+      if (!revisit) {
+        // What it is worth is measured from here, not from when it was queued.
+        const played = { ...item, riskWhenPlayed: riskOf(next).value };
+        next.items = next.items.map((it, i) => (i === index ? played : it));
+      }
       return queueNextVideo(next, seed);
     }
 
@@ -285,6 +292,7 @@ function queueNextVideo(state: State, seed: number): State {
         ),
         riskWhenQueued: risk.value,
         reasonWhenQueued: risk.reason,
+        riskWhenPlayed: risk.value,
       },
     ],
     nextKey: state.nextKey + 1,
@@ -347,6 +355,7 @@ function createInitialState(): State {
     predictedMs,
     riskWhenQueued: 0,
     reasonWhenQueued: null,
+    riskWhenPlayed: 0,
   };
   const state: State = {
     started: false,

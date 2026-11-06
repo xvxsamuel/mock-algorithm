@@ -4,7 +4,8 @@ import { QUICK_SKIP_MS } from "./signals";
 /** Above this risk the engine stops exploring and plays a sure hit. */
 export const RESCUE_AT = 0.55;
 
-export type ExitReason = "skipping" | "no hits" | "past your limit" | "late";
+export type ExitReason =
+  "skipping" | "nothing held you" | "over your plan" | "it's late";
 
 export type ExitRisk = {
   /** 0-1: the predicted chance you close the app within a few videos. */
@@ -39,11 +40,14 @@ export function exitRisk(
 
   const lastHit = finished.findLastIndex(isHit);
   const sinceHit = finished.length - 1 - lastHit;
-  parts.push(["no hits", Math.min(Math.max(sinceHit - 2, 0) * 0.08, 0.4)]);
+  parts.push([
+    "nothing held you",
+    Math.min(Math.max(sinceHit - 2, 0) * 0.08, 0.4),
+  ]);
 
   const over = intentMs !== null && sessionMs > intentMs;
-  parts.push(["past your limit", over ? 0.18 : 0]);
-  parts.push(["late", hour >= 23 || hour < 5 ? 0.08 : 0]);
+  parts.push(["over your plan", over ? 0.18 : 0]);
+  parts.push(["it's late", hour >= 23 || hour < 5 ? 0.08 : 0]);
 
   const total = parts.reduce((sum, [, value]) => sum + value, 0.06);
   const [reason, biggest] = parts.reduce((a, b) => (b[1] > a[1] ? b : a));

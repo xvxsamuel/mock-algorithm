@@ -12,9 +12,16 @@ type WatchBarProps = {
   started: boolean;
 };
 
+/** The track is this many times the guess, so the guess sits mid-way... */
+const GUESS_ROOM = 2;
+/** ...and grows ahead of what you watched once you pass that. */
+const WATCH_ROOM = 1.15;
+
 /**
  * How long you have watched, against how long the app predicted you would.
- * The first two seconds are the skip zone: leaving there counts against the video.
+ * The track is scaled to the guess, so the comparison is big enough to feel;
+ * watching far past it pushes the guess mark back. The first two seconds are
+ * the skip zone: leaving there counts against the video.
  */
 function WatchBar({
   watchMs,
@@ -24,11 +31,15 @@ function WatchBar({
   held,
   started,
 }: WatchBarProps) {
-  const ratio = watchMs / durationMs;
-  const fill = Math.min(ratio, 1);
-  const loops = Math.min(Math.floor(ratio), 3);
-  const predicted = Math.min(predictedMs / durationMs, 1);
-  const skip = Math.min(QUICK_SKIP_MS / durationMs, 1);
+  const scale = Math.max(
+    predictedMs * GUESS_ROOM,
+    watchMs * WATCH_ROOM,
+    QUICK_SKIP_MS * GUESS_ROOM,
+  );
+  const fill = watchMs / scale;
+  const loops = Math.min(Math.floor(watchMs / durationMs), 3);
+  const predicted = predictedMs / scale;
+  const skip = QUICK_SKIP_MS / scale;
   const passed = watchMs >= predictedMs;
 
   return (

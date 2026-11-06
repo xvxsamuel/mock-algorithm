@@ -31,13 +31,6 @@
   white-space: nowrap;
 }
 
-.eng-legend b {
-  min-width: 34px;
-  color: var(--text);
-  font-weight: 650;
-  font-variant-numeric: tabular-nums;
-}
-
 .eng-key {
   display: inline-block;
   width: 10px;
@@ -163,10 +156,10 @@
   background: var(--you);
 }
 
-/* "You were about to leave" outweighs everything: the whole track, pink. */
-/* The reason that beat every other: its words get the room they need. */
+/* "You were about to leave" outweighs everything: pink, from the zero line
+   of the bars below to the end. Its words get the other three quarters. */
 .why-part.is-rescue {
-  grid-template-columns: auto minmax(40px, 1fr);
+  grid-template-columns: 3fr 1fr;
 }
 
 .why-part.is-rescue .why-label {
@@ -236,9 +229,18 @@
   }
 }
 
-/* Phones: the hit figure goes under the title instead of beside it. */
+/* Phones: the figure goes under the title, smaller. */
 @media (max-width: 560px) {
   .eng-predict .pane-head {
     flex-wrap: wrap;
+    row-gap: 6px;
+  }
+
+  .eng-hit b {
+    font-size: 18px;
+  }
+
+  .eng-hit small {
+    font-size: 10px;
   }
 }
