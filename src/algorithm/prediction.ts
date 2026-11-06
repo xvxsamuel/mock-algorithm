@@ -59,6 +59,8 @@ function averageMs(finished: readonly Impression[]): number {
 /**
  * Your latest videos against what you usually give their topics, the newest
  * counting most. Only ever shortens a guess: skipping now means skipping next.
+ * A first video of a topic says nothing about your mood (you may just not
+ * like the topic), so it counts as normal.
  */
 export function moodOf(finished: readonly Impression[]): number {
   if (finished.length < MOOD_FROM) return 1;
@@ -66,8 +68,10 @@ export function moodOf(finished: readonly Impression[]): number {
   let weight = 0;
   MOOD_WEIGHTS.forEach((w, back) => {
     const at = finished.length - 1 - back;
-    const ratio =
-      finished[at].watchMs / topicMs(finished[at].video, finished.slice(0, at));
+    const { video, watchMs } = finished[at];
+    const before = finished.slice(0, at);
+    const known = before.some((i) => i.video.category === video.category);
+    const ratio = known ? watchMs / topicMs(video, before) : 1;
     sum += Math.min(ratio, 1) * w;
     weight += w;
   });
