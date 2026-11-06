@@ -15,6 +15,8 @@ const FULL_CHANGE = 2;
 const MIN_CHANGE = 0.05;
 /** How strong the lines to "why this video" and the prediction are after a swipe. */
 const SWIPE_CHANGE = 0.5;
+/** Targets that never make a hidden lens's tab glow: they change too often. */
+const QUIET = new Set(["scan"]);
 /** Safety cap, in case a finished link never reports back. */
 const MAX_LINKS = 24;
 /** Lines enter the card around a target; these hold a whole card. */
@@ -102,6 +104,8 @@ export function useLinks(feed: FeedController) {
       // The phone is the only element inside the feed area.
       const phone = feedArea.current?.firstElementChild;
       const shown = document.querySelector(`[data-link="${target}"]`);
+      // Every swipe is scanned; only worth a line when you are looking.
+      if (shown === null && QUIET.has(target)) return;
       // Targets on a hidden lens only make that lens's tab glow.
       const element =
         shown ?? document.querySelector(`[data-link="lens:${lensOf(target)}"]`);
@@ -301,6 +305,7 @@ function changesOnSwipe(before: Snapshot, feed: FeedController): Pulse[] {
   pulses.push(
     { target: "why", change: SWIPE_CHANGE, delay: 2 * STEP_MS },
     { target: "predict", change: SWIPE_CHANGE, delay: 3 * STEP_MS },
+    { target: "scan", change: SWIPE_CHANGE, delay: STEP_MS },
   );
   // About to lose you: the engine swaps a sure hit into the queue.
   if (feed.upNext.ranking.source === "rescue") {
@@ -329,7 +334,8 @@ function delta(change: number): string {
 /** Which lens shows a target, for when that lens is not on screen. */
 function lensOf(target: string): string {
   const [kind] = target.split(":");
-  return ["topic", "signal", "trait"].includes(kind) ? "you" : "engine";
+  if (["topic", "signal", "trait"].includes(kind)) return "you";
+  return kind === "scan" ? "content" : "engine";
 }
 
 function topicDelta(signals: Signal[]): number {

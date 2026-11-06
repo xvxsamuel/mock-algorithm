@@ -1,0 +1,229 @@
+/* --- Same video, different face: the hero, it grows to fill the height --- */
+
+.lens > .con-swap {
+  display: flex;
+  flex: 1 1 0;
+  flex-direction: column;
+  min-height: 250px;
+}
+
+.swap {
+  display: grid;
+  flex: 1;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 16px;
+  min-height: 0;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.swap-tile {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  min-width: 0;
+  min-height: 0;
+}
+
+/* The same video each time; only the face in the corner changes. Tall,
+   like the video on the phone. */
+.swap-thumb {
+  position: relative;
+  display: grid;
+  flex: 1;
+  place-items: center;
+  width: 100%;
+  max-width: 190px;
+  min-height: 110px;
+  margin: 0 auto;
+  border-radius: 10px;
+  box-shadow: 0 0 0 1px var(--line-strong);
+}
+
+.swap-art {
+  font-size: 44px;
+  line-height: 1;
+}
+
+.swap-face {
+  position: absolute;
+  bottom: -12px;
+  left: 10px;
+  display: grid;
+  place-items: center;
+  width: 50px;
+  height: 50px;
+  overflow: hidden;
+  border: 2px solid var(--surface);
+  border-radius: 50%;
+  background: var(--surface-2);
+  font-size: 32px;
+  line-height: 1;
+}
+
+/* Labels and bars line up under the thumbnails. */
+.swap-tile > :not(.swap-thumb) {
+  width: 100%;
+  max-width: 190px;
+  margin-inline: auto;
+}
+
+.swap-tile.is-cut .swap-thumb {
+  box-shadow: 0 0 0 1.5px var(--take);
+}
+
+/* Cut from For You: the video is still there, almost nobody sees it. */
+.swap-tile.is-cut .swap-art {
+  opacity: 0.35;
+}
+
+.swap-looks {
+  margin-top: 10px;
+  color: var(--muted);
+  font-size: 12px;
+  white-space: nowrap;
+}
+
+.swap-looks b {
+  color: var(--text);
+  font-size: 15px;
+}
+
+.swap-tile.is-cut .swap-looks {
+  color: var(--take);
+  font-weight: 600;
+  white-space: normal;
+}
+
+/* You: your camera in the bubble, cyan because it is you. */
+.swap-tile.is-you .swap-thumb {
+  box-shadow: 0 0 0 1px rgb(37 244 238 / 0.5);
+}
+
+.swap-face.is-cam {
+  border-color: var(--you);
+}
+
+.swap-face.is-cam video {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transform: scaleX(-1);
+}
+
+.swap-face.is-empty {
+  border: 2px dashed var(--you);
+  color: var(--you);
+  font-size: 22px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.swap-face.is-empty:hover,
+.swap-face.is-empty:focus-visible {
+  background: rgb(37 244 238 / 0.15);
+}
+
+.swap-face.is-empty:disabled {
+  cursor: progress;
+  opacity: 0.6;
+}
+
+.swap-off {
+  position: absolute;
+  top: 6px;
+  right: 6px;
+  width: 22px;
+  height: 22px;
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  background: rgb(0 0 0 / 0.45);
+  color: #fff;
+  font-size: 14px;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.swap-private {
+  color: var(--muted);
+  font-size: 11px;
+}
+
+.swap-source {
+  margin: 10px 0 0;
+  color: var(--muted);
+  font-size: 11px;
+}
+
+.swap-source q,
+.swap-looks q {
+  quotes: "“" "”";
+}
+
+@media (max-height: 860px) {
+  .lens > .con-swap {
+    min-height: 190px;
+  }
+
+  .swap-thumb {
+    min-height: 60px;
+  }
+
+  .swap-art {
+    font-size: 32px;
+  }
+
+  .swap-face {
+    bottom: -8px;
+    width: 38px;
+    height: 38px;
+    font-size: 24px;
+  }
+
+  .swap-looks {
+    margin-top: 4px;
+  }
+
+  .swap-tile {
+    gap: 5px;
+  }
+}
+
+@media (max-width: 900px) {
+  .lens > .con-swap {
+    flex: none;
+  }
+
+  .swap-thumb {
+    flex: none;
+    height: 170px;
+  }
+}
+
+@media (max-width: 560px) {
+  .swap {
+    gap: 10px;
+  }
+
+  .swap-thumb {
+    height: 130px;
+  }
+
+  .swap-art {
+    font-size: 30px;
+  }
+
+  .swap-face {
+    bottom: -10px;
+    left: 6px;
+    width: 36px;
+    height: 36px;
+    font-size: 22px;
+  }
+
+  .swap-looks b {
+    font-size: 13px;
+  }
+}

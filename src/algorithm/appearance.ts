@@ -58,6 +58,8 @@ const SCORE_MIN = 3;
 const SCORE_MAX = 9;
 const REACH_MIN = 0.5;
 const REACH_MAX = 1.5;
+/** A video kept out of For You still reaches the creator's followers. */
+export const FOLLOWERS_ONLY = 0.08;
 /**
  * Pixels darker or brighter than these count as crushed or blown out. "Light"
  * is judged by these, not by average brightness, so darker skin is not marked
@@ -222,13 +224,22 @@ function fromFactors(
     0,
   );
   const score = SCORE_MIN + total * (SCORE_MAX - SCORE_MIN);
-  const reach = REACH_MIN + total * (REACH_MAX - REACH_MIN);
   return {
     scorable,
     score: Math.round(score * 10) / 10,
     factors,
-    reach: Math.round(reach * 100) / 100,
+    reach: reachOf(score),
   };
+}
+
+/**
+ * For You reach of a video whose face scores `score` (3 to 9): 1 is an
+ * ordinary video, 1.2 means 20% more viewers. Made up, like the score.
+ */
+export function reachOf(score: number): number {
+  const share = (score - SCORE_MIN) / (SCORE_MAX - SCORE_MIN);
+  const reach = REACH_MIN + clamp01(share) * (REACH_MAX - REACH_MIN);
+  return Math.round(reach * 100) / 100;
 }
 
 /** Brightness of every pixel, 0 (black) to 1 (white). */

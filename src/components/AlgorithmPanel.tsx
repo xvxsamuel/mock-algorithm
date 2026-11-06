@@ -1,17 +1,19 @@
 import { useState } from "react";
 import { formatClock } from "../algorithm/clock";
 import type { FeedController } from "../hooks/useFeed";
+import ContentLens from "./ContentLens";
 import EngineLens from "./EngineLens";
 import FeedStrip from "./FeedStrip";
 import LeaveMeter from "./LeaveMeter";
 import YouLens from "./YouLens";
 import "./AlgorithmPanel.css";
 
-export type Lens = "you" | "engine";
+export type Lens = "you" | "engine" | "content";
 
 const LENSES: { id: Lens; label: string }[] = [
   { id: "you", label: "You" },
   { id: "engine", label: "Engine" },
+  { id: "content", label: "Content" },
 ];
 
 /** Where your plan ends on the time bar. It never moves. */
@@ -96,7 +98,9 @@ function AlgorithmPanel({ feed }: AlgorithmPanelProps) {
           else if (top < UNFOLD_AT) setFolded(false);
         }}
       >
-        {lens === "you" ? <YouLens feed={feed} /> : <EngineLens feed={feed} />}
+        {lens === "you" && <YouLens feed={feed} />}
+        {lens === "engine" && <EngineLens feed={feed} />}
+        {lens === "content" && <ContentLens feed={feed} />}
       </div>
 
       <FeedStrip feed={feed} />
