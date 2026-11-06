@@ -6,7 +6,7 @@ import {
 } from "../algorithm/impression";
 import { inferTraits } from "../algorithm/inference";
 import {
-  disguisesOf,
+  disguiseOf,
   LANDS_MS,
   leansOf,
   persuadableOf,
@@ -42,7 +42,7 @@ import { readSignals } from "../algorithm/signals";
 import { summarizeSession } from "../algorithm/session";
 import { paidPostOf } from "../data/ads";
 import { campaignVideo } from "../data/campaign";
-import { CATEGORIES, type Category } from "../data/categories";
+import { CATEGORIES } from "../data/categories";
 import { VIDEOS, type Video } from "../data/videos";
 
 /** How often the live numbers (watch time, session time) refresh. */
@@ -123,14 +123,13 @@ type State = {
   followedCreators: string[];
   /**
    * A bot network, released by you or by itself: when, the feed position
-   * its pushes count from, the topics its pushes are dressed as and how
-   * persuadable you looked (both read on release). Null until one is.
+   * its pushes count from, and which campaign of the session it is (0
+   * first). Null until one is.
    */
   network: {
     releasedAt: number;
     start: number;
-    disguises: readonly Category[];
-    score: number;
+    round: number;
   } | null;
   /** Weak moments it has read in you so far. It never forgets one. */
   leans: readonly Lean[];
@@ -400,14 +399,12 @@ function queueNextVideo(state: State, seed: number): State {
   };
 }
 
-/** A bot network released now: it reads you as it starts. */
+/** A bot network released now. */
 function networkOf(state: State): NonNullable<State["network"]> {
-  const impressions = [...state.history, liveImpression(state, state.now)];
   return {
     releasedAt: state.now,
     start: state.maxSeenIndex + 1,
-    disguises: disguisesOf(buildProfile(impressions).topics),
-    score: persuadableOf(state.leans, liveLeans(state)).score,
+    round: state.network === null ? 0 : state.network.round + 1,
   };
 }
 
@@ -435,12 +432,18 @@ function sourcesOf(state: State) {
     .map((item) => item.ranking.source);
 }
 
-/** The campaign's next video: the same message, in its next disguise. */
+/**
+ * The campaign's next video: the same message, dressed as your favourite
+ * topic right now that it has not worn yet.
+ */
 function nextPush(state: State): Video | null {
   if (state.network === null || campaignLeft(state) === 0) return null;
-  const { disguises } = state.network;
-  const made = PUSHES - campaignLeft(state);
-  return campaignVideo(disguises[made % disguises.length]);
+  const used = state.items
+    .slice(state.network.start, state.maxSeenIndex + 1)
+    .filter((item) => item.ranking.source === "pushed")
+    .map((item) => item.video.category);
+  const impressions = [...state.history, liveImpression(state, state.now)];
+  return campaignVideo(disguiseOf(buildProfile(impressions).topics, used));
 }
 
 /** Pushes the running campaign still has to make; 0 when none is running. */
@@ -664,12 +667,12 @@ export function useFeed() {
       ?.video ??
     nextPush(state) ??
     pushedItems.at(-1)?.video ??
-    campaignVideo(disguisesOf(profile.topics)[0]);
+    campaignVideo(disguiseOf(profile.topics, []));
   const influence = {
     /** When the bots were released, or null if they have not been. */
     releasedAt: state.network?.releasedAt ?? null,
-    /** How persuadable you looked then: it picks people at least as easy. */
-    scoreAtRelease: state.network?.score ?? null,
+    /** Which campaign of the session is shown: each picks its own people. */
+    round: state.network?.round ?? 0,
     /** Pushes still to come; 0 when no campaign is running. */
     left: campaignLeft(state),
     /** The campaign videos you have seen, oldest first. */

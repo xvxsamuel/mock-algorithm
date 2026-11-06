@@ -44,8 +44,10 @@ const YOU = 17;
 const PICKS = 7;
 /** The rays reach you last, the moment the campaign lands (LANDS_MS). */
 const PICK_AT = LANDS_MS - PICK_MS - PICKS * PICK_STAGGER;
-/** Before any release, the crowd it would choose from. */
-const PREVIEW_SEED = 0.37;
+/** How bright a person is drawn (white alpha): the ones it would not pick
+    stay dim, the ones it picks are rated easier and drawn bright. */
+const DIM = [0.1, 0.2] as const;
+const BRIGHT = [0.55, 0.9] as const;
 
 type InfluenceLensProps = { feed: FeedController };
 
@@ -61,11 +63,9 @@ function InfluenceLens({ feed }: InfluenceLensProps) {
   const running = left > 0;
   const [from, to] = CATEGORY_COLORS[boosted.category];
   const yours = Math.round(persuadable.score * 100);
-  // How movable it rates everyone. It picks the ones at least as easy as you.
-  const crowd = crowdOf(
-    releasedAt === null ? PREVIEW_SEED : (releasedAt % 9973) / 9973,
-    influence.scoreAtRelease ?? persuadable.score,
-  );
+  // How movable it rates everyone; it picks the ones at least as easy as
+  // you. The same crowd from before Release until the next campaign.
+  const crowd = crowdOf(influence.round);
 
   const likes =
     t === null
@@ -99,7 +99,9 @@ function InfluenceLens({ feed }: InfluenceLensProps) {
           <p className="inf-label is-bots">
             {BOTS.toLocaleString("en")} fake accounts
           </p>
-          <p className="inf-label is-people">engine picks</p>
+          <p className="inf-label is-people">
+            engine picks the easiest to move
+          </p>
 
           {/* Fan-out: the boosted video goes to the people it picked. */}
           <svg
@@ -160,7 +162,9 @@ function InfluenceLens({ feed }: InfluenceLensProps) {
             <span className="inf-emoji" aria-hidden="true">
               {boosted.emoji}
             </span>
-            <span className="inf-overlay">{boosted.overlay}</span>
+            <p className="inf-overlay">
+              <span className="inf-sticker">{boosted.overlay}</span>
+            </p>
             <span className="inf-likes">
               <span aria-hidden="true">♥</span> {formatCount(Math.round(likes))}
             </span>
@@ -171,8 +175,9 @@ function InfluenceLens({ feed }: InfluenceLensProps) {
             const classes = ["inf-person"];
             if (lit) classes.push("is-lit");
             if (i === YOU) classes.push("is-you");
-            // Brighter: rated easier to move.
-            const score = i === YOU ? persuadable.score : crowd.scores[i];
+            // Brighter: rated easier to move. You sit at the bottom of the
+            // bright ones: picked, but not the easiest.
+            const shade = i === YOU ? BRIGHT[0] : crowd.shades[i];
             return (
               <span
                 key={i}
@@ -180,9 +185,7 @@ function InfluenceLens({ feed }: InfluenceLensProps) {
                 style={{
                   left: `${at.x}%`,
                   top: `${at.y}%`,
-                  color: lit
-                    ? undefined
-                    : `rgb(255 255 255 / ${0.1 + 0.45 * score})`,
+                  color: lit ? undefined : `rgb(255 255 255 / ${shade})`,
                 }}
               />
             );
@@ -213,43 +216,44 @@ function InfluenceLens({ feed }: InfluenceLensProps) {
         </div>
         <div className="inf-pushed-body">
           <div className="inf-tiles-wrap">
-            <ol className="inf-tiles">
-              {shownPushes.map((push, i) => (
-                <li
-                  key={push.key}
-                  data-link={i === 0 ? "pushed" : undefined}
-                  className={
-                    push.key === currentItem.key
-                      ? "inf-tile is-now"
-                      : "inf-tile"
-                  }
-                  title={`Dressed as ${push.video.category}: "${push.video.overlay}"`}
-                >
-                  {push.video.emoji}
-                </li>
-              ))}
-              {Array.from({ length: empty }, (_, i) => (
-                <li key={`empty-${i}`} className="inf-tile is-empty" />
-              ))}
-            </ol>
-            {now === undefined ? (
-              <p className="inf-why">
-                {persuadable.reasons.length === 0 ? (
-                  <span className="inf-none">not enough signals yet</span>
-                ) : (
-                  persuadable.reasons.map((reason) => (
-                    <span key={reason} className="inf-chip">
-                      {reason}
-                    </span>
-                  ))
-                )}
-              </p>
-            ) : (
-              <p key={now.key} className="inf-now">
-                {order === 0 ? "Dressed as " : "Same message, dressed as "}
-                <b>{now.video.category}</b>. No label.
-              </p>
-            )}
+            <div className="inf-tiles-row">
+              <ol className="inf-tiles">
+                {shownPushes.map((push, i) => (
+                  <li
+                    key={push.key}
+                    data-link={i === 0 ? "pushed" : undefined}
+                    className={
+                      push.key === currentItem.key
+                        ? "inf-tile is-now"
+                        : "inf-tile"
+                    }
+                    title={`Dressed as ${push.video.category}: "${push.video.overlay}"`}
+                  >
+                    {push.video.emoji}
+                  </li>
+                ))}
+                {Array.from({ length: empty }, (_, i) => (
+                  <li key={`empty-${i}`} className="inf-tile is-empty" />
+                ))}
+              </ol>
+              {now !== undefined && (
+                <p key={now.key} className="inf-now">
+                  {order === 0 ? "Dressed as " : "Same message, as "}
+                  <b>{now.video.category}</b>. No label.
+                </p>
+              )}
+            </div>
+            <p className="inf-why">
+              {persuadable.reasons.length === 0 ? (
+                <span className="inf-none">not enough signals yet</span>
+              ) : (
+                persuadable.reasons.map((reason) => (
+                  <span key={reason} className="inf-chip">
+                    {reason}
+                  </span>
+                ))
+              )}
+            </p>
           </div>
           <div className="inf-score">
             <p className="inf-kicker">it rates you persuadable</p>
@@ -265,23 +269,23 @@ function InfluenceLens({ feed }: InfluenceLensProps) {
 }
 
 /**
- * How movable it rates each person (0-1), and the ones it picks: always
- * PICKS of them, all rated at least as easy to move as you.
+ * The people a campaign picks (always PICKS of them, besides you) and how
+ * bright each is drawn: the picked ones are rated at least as easy to move
+ * as you, the rest less. Each campaign of the session has its own crowd.
  */
-function crowdOf(seed: number, yours: number) {
-  const random = createRandom(seed);
+function crowdOf(round: number) {
+  const random = createRandom(((round + 1) * 0.618034) % 1);
   const others = PEOPLE.map((_, i) => i).filter((i) => i !== YOU);
   for (let i = others.length - 1; i > 0; i--) {
     const j = Math.floor(random() * (i + 1));
     [others[i], others[j]] = [others[j], others[i]];
   }
   const picked = others.slice(0, PICKS).sort((a, b) => a - b);
-  const scores = PEOPLE.map((_, i) =>
-    picked.includes(i)
-      ? yours + random() * (0.97 - yours)
-      : 0.04 + random() * Math.max(yours - 0.08, 0),
-  );
-  return { picked, scores };
+  const shades = PEOPLE.map((_, i) => {
+    const [low, high] = picked.includes(i) ? BRIGHT : DIM;
+    return low + random() * (high - low);
+  });
+  return { picked, shades };
 }
 
 /** Where a fake account is `t` ms after release (null: not yet released). */
@@ -289,7 +293,7 @@ function botAt(home: Point, i: number, t: number | null) {
   if (t === null) return { ...home, opacity: 1, scale: 1 };
   // Spent, then back in the cloud, fainter, for the next campaign.
   if (t >= BACK_AT) {
-    return { ...home, opacity: 0.3 * progress(t, BACK_AT, BACK_MS), scale: 1 };
+    return { ...home, opacity: 0.2 * progress(t, BACK_AT, BACK_MS), scale: 1 };
   }
   const p = easeInOut(progress(t, i * STAGGER_MS, FLY_MS));
   // Into the middle of the video, in a slight arc.

@@ -1,4 +1,4 @@
-import type { Category } from "../data/categories";
+import { CATEGORIES, type Category } from "../data/categories";
 import type { Video } from "../data/videos";
 import { watchRatio, type Impression } from "./impression";
 import type { Trait } from "./inference";
@@ -121,10 +121,19 @@ export function pushDue(
   return last < start || sources.length - 1 - last >= PUSH_GAP;
 }
 
-/** What its pushes are dressed as: your favourite topics, best first. */
-export function disguisesOf(topics: ReadonlyMap<Category, number>): Category[] {
-  const ranked = [...topics].sort((a, b) => b[1] - a[1]).map(([t]) => t);
-  return ranked.length > 0 ? ranked.slice(0, PUSHES) : ["comedy"];
+/**
+ * What the next push is dressed as: your favourite topic it has not used
+ * yet in this campaign. Never one you turned away from.
+ */
+export function disguiseOf(
+  topics: ReadonlyMap<Category, number>,
+  used: readonly Category[],
+): Category {
+  const score = (topic: Category) => topics.get(topic) ?? 0;
+  const open = CATEGORIES.filter(
+    (topic) => !used.includes(topic) && score(topic) >= 0,
+  );
+  return [...open].sort((a, b) => score(b) - score(a))[0] ?? "comedy";
 }
 
 /** The push as a pick, so the Engine lens can say why it is in your feed. */

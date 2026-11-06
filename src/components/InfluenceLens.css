@@ -15,9 +15,9 @@
   min-height: 220px;
 }
 
+/* Each sits just above its group. */
 .inf-label {
   position: absolute;
-  top: 0;
   margin: 0;
   color: var(--muted);
   font-size: 11px;
@@ -27,10 +27,12 @@
 }
 
 .inf-label.is-bots {
+  top: calc(18% - 28px);
   left: 17%;
 }
 
 .inf-label.is-people {
+  top: calc(28% - 32px);
   left: 85%;
 }
 
@@ -71,10 +73,9 @@
   z-index: 2;
   display: flex;
   flex-direction: column;
-  justify-content: center;
   align-items: center;
   gap: 6px;
-  padding: 10px 9px 26px;
+  padding: 26px 9px 26px;
   aspect-ratio: 3 / 5;
   border-radius: 12px;
   box-shadow: 0 8px 28px rgb(0 0 0 / 0.5);
@@ -89,22 +90,36 @@
 }
 
 .inf-emoji {
-  font-size: 28px;
+  margin-block: auto;
+  font-size: 40px;
   line-height: 1;
 }
 
+/* Its message, in the same white sticker as every video on the phone. */
 .inf-overlay {
   display: -webkit-box;
+  flex: none;
+  order: -1;
+  max-width: 92%;
+  margin: 0;
   overflow: hidden;
-  color: #fff;
   font-size: 13px;
-  font-weight: 700;
-  line-height: 1.2;
+  line-height: 1.75;
   text-align: center;
-  text-shadow: 0 1px 3px rgb(0 0 0 / 0.55);
+  text-wrap: balance;
   -webkit-box-orient: vertical;
-  -webkit-line-clamp: 6;
-  line-clamp: 6;
+  -webkit-line-clamp: 5;
+  line-clamp: 5;
+}
+
+.inf-sticker {
+  padding: 2px 5px;
+  border-radius: 4px;
+  background: #fff;
+  color: #000;
+  font-weight: 800;
+  -webkit-box-decoration-break: clone;
+  box-decoration-break: clone;
 }
 
 .inf-likes {
@@ -201,6 +216,7 @@
   position: absolute;
   left: 50%;
   background: currentColor;
+  box-shadow: 0 0 0 2px var(--surface);
   transform: translateX(-50%);
 }
 
@@ -306,6 +322,14 @@
   min-width: 0;
 }
 
+/* The tiles, and beside them what the one on your phone is dressed as. */
+.inf-tiles-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 14px;
+}
+
 .inf-tiles {
   display: flex;
   flex-wrap: wrap;
@@ -373,7 +397,6 @@
 }
 
 .inf-now {
-  min-height: 22px;
   margin: 0;
   color: var(--text);
   font-size: 13px;
@@ -451,7 +474,7 @@
   }
 
   .inf-emoji {
-    font-size: 20px;
+    font-size: 32px;
   }
 }
 
@@ -472,16 +495,36 @@
     flex-basis: 220px;
   }
 
+  /* Both labels go up to the top edge, out of the trending chip's way. */
   .inf-label {
+    top: 0;
     font-size: 10px;
+    transform: none;
+  }
+
+  .inf-label.is-bots {
+    top: 0;
+    left: 0;
+  }
+
+  .inf-label.is-people {
+    top: 0;
+    left: auto;
+    right: 0;
+  }
+
+  .inf-card {
+    padding-top: 20px;
   }
 
   .inf-overlay {
-    font-size: 12px;
+    font-size: 11px;
+    -webkit-line-clamp: 4;
+    line-clamp: 4;
   }
 
   .inf-emoji {
-    font-size: 18px;
+    font-size: 26px;
   }
 
   .inf-release {
