@@ -25,6 +25,34 @@ function PhoneFeed({ feed }: PhoneFeedProps) {
   const [myComments, setMyComments] = useState<Record<string, string[]>>({});
   const { items, activeIndex, view } = feed;
   const activeVideo = items[activeIndex].video;
+  // The card height when the feed last settled, and the video on screen.
+  // A resize changes the height: the same video should stay on screen.
+  const cardHeight = useRef(0);
+  const shownIndex = useRef(activeIndex);
+
+  useEffect(() => {
+    shownIndex.current = activeIndex;
+  }, [activeIndex]);
+
+  useEffect(() => {
+    const element = scroller.current;
+    if (!element) return;
+    cardHeight.current = element.clientHeight;
+    const observer = new ResizeObserver(() => keepCard(element));
+    observer.observe(element);
+    return () => observer.disconnect();
+  }, []);
+
+  /** After a resize, puts the video that was on screen back on screen. */
+  function keepCard(element: HTMLElement): boolean {
+    if (element.clientHeight === cardHeight.current) return false;
+    cardHeight.current = element.clientHeight;
+    element.scrollTo({
+      top: shownIndex.current * element.clientHeight,
+      behavior: "instant",
+    });
+    return true;
+  }
 
   // Arrow keys move between videos, like TikTok on desktop.
   useEffect(() => {
@@ -52,6 +80,8 @@ function PhoneFeed({ feed }: PhoneFeedProps) {
   function handleScroll() {
     const element = scroller.current;
     if (!element) return;
+    // A resize moved the cards, not a swipe.
+    if (keepCard(element)) return;
     const index = Math.round(element.scrollTop / element.clientHeight);
     if (index !== activeIndex) view(index);
   }

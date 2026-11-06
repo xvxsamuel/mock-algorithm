@@ -200,7 +200,12 @@ export function useLinks(feed: FeedController) {
 
     const pulses =
       before.index === now.index
-        ? changesWhileWatching(before, now, feed.current.video.category)
+        ? changesWhileWatching(
+            before,
+            now,
+            feed.current.video.category,
+            feed.upNext.ranking.source === "rescue",
+          )
         : changesOnSwipe(before, feed);
     pulses.forEach(send);
   });
@@ -232,6 +237,7 @@ function changesWhileWatching(
   before: Snapshot,
   now: Snapshot,
   category: Category,
+  rescueQueued: boolean,
 ): Pulse[] {
   const pulses: Pulse[] = [];
   const topic = `topic:${category}`;
@@ -260,9 +266,14 @@ function changesWhileWatching(
     );
   }
 
-  // Reacting re-ranks the queued video.
+  // Reacting re-ranks the queued video. So does the risk crossing the
+  // line mid-video: then a sure hit is swapped in, in pink.
   if (now.queueKey !== before.queueKey) {
-    pulses.push({ target: "queue", change: total, delay: 2 * STEP_MS });
+    pulses.push(
+      rescueQueued
+        ? { target: "queue", change: FULL_CHANGE, delay: 0, tone: "keep" }
+        : { target: "queue", change: total, delay: 2 * STEP_MS },
+    );
   }
   return pulses;
 }

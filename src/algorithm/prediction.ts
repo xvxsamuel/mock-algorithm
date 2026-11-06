@@ -19,11 +19,9 @@ const MOOD_FROM = 3;
 const MOOD_NORMAL = 0.7;
 /** Restless, it guesses you will give each video as little as this share. */
 const MOOD_MIN = 0.2;
-/** The hit count compares your first videos with your latest ones. */
+/** Its typical miss compares your first videos with your latest ones. */
 export const FIRST_WINDOW = 5;
 export const RECENT_WINDOW = 10;
-/** A guess this close (ms) to the real watch time counts as a hit. */
-export const HIT_MS = 2000;
 
 /**
  * Predicts how long you will watch a video before it plays: how long you
@@ -72,32 +70,44 @@ export function moodOf(finished: readonly Impression[]): number {
   return Math.min(Math.max(sum / weight / MOOD_NORMAL, MOOD_MIN), 1);
 }
 
-/** Close guesses among some videos. */
-export type HitCount = { hits: number; total: number };
+/** How far off the guess usually was over some videos. */
+export type Miss = {
+  /** The median gap between guess and real watch time, in ms. */
+  ms: number;
+  /** How many videos it is taken over. */
+  count: number;
+};
 
 /**
- * How often the guess was within `HIT_MS`: on your latest videos, and on your
- * first ones once there are enough to compare. Shows it learning you.
+ * How far off its guess usually is: on your latest videos, and on your first
+ * ones once there are enough to compare. Shows it learning you. The median,
+ * so one odd video (a sudden binge, a skip) does not swing it.
  */
-export type PredictionHits = { recent: HitCount; first: HitCount | null };
+export type PredictionMiss = { recent: Miss | null; first: Miss | null };
 
-export function predictionHits(
+export function predictionMiss(
   finished: readonly Impression[],
-): PredictionHits {
+): PredictionMiss {
   return {
-    recent: countHits(finished.slice(-RECENT_WINDOW)),
+    recent: medianMiss(finished.slice(-RECENT_WINDOW)),
     first:
       finished.length > RECENT_WINDOW
-        ? countHits(finished.slice(0, FIRST_WINDOW))
+        ? medianMiss(finished.slice(0, FIRST_WINDOW))
         : null,
   };
 }
 
-function countHits(impressions: readonly Impression[]): HitCount {
-  const hits = impressions.filter(
-    (i) => Math.abs(i.watchMs - i.predictedMs) <= HIT_MS,
-  ).length;
-  return { hits, total: impressions.length };
+function medianMiss(impressions: readonly Impression[]): Miss | null {
+  if (impressions.length === 0) return null;
+  const misses = impressions
+    .map((i) => Math.abs(i.watchMs - i.predictedMs))
+    .sort((a, b) => a - b);
+  const middle = Math.floor(misses.length / 2);
+  const ms =
+    misses.length % 2 === 1
+      ? misses[middle]
+      : (misses[middle - 1] + misses[middle]) / 2;
+  return { ms, count: impressions.length };
 }
 
 /** Mean of `values` (oldest first), newest weighted most, pulled towards `prior`. */

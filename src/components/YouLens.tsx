@@ -110,6 +110,7 @@ function YouLens({ feed }: YouLensProps) {
             predictedMs={current.predictedMs}
             durationMs={video.durationSec * 1000}
             playing={feed.playing}
+            held={feed.held}
             started={feed.started}
           />
         </div>

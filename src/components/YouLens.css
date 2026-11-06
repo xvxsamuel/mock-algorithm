@@ -196,11 +196,6 @@
   margin-top: 12px;
 }
 
-.signal-none {
-  color: var(--faint);
-  font-size: 12px;
-}
-
 .signal {
   display: flex;
   align-items: center;

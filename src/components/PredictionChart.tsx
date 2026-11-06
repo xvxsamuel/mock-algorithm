@@ -4,6 +4,8 @@ import "./PredictionChart.css";
 /** Bars taller than this many seconds are cut off at the top. */
 const CAP_MS = 20_000;
 const MIN_SCALE_MS = 8000;
+/** Room above the tallest bar, so it never touches the top. */
+const HEADROOM = 1.1;
 const COLUMNS = 16;
 /** Room under the bars for the emoji, in px. Matches the CSS padding. */
 const LABEL_SPACE = 22;
@@ -22,13 +24,10 @@ type PredictionChartProps = {
  */
 function PredictionChart({ finished, current }: PredictionChartProps) {
   const shown = [...finished.slice(-(COLUMNS - 1)), current];
-  const scale = Math.min(
-    Math.max(
-      MIN_SCALE_MS,
-      ...shown.map((i) => Math.max(i.watchMs, i.predictedMs)),
-    ),
-    CAP_MS,
+  const tallest = Math.max(
+    ...shown.map((i) => Math.max(i.watchMs, i.predictedMs)),
   );
+  const scale = Math.min(Math.max(MIN_SCALE_MS, tallest * HEADROOM), CAP_MS);
   // One reference line, at a round number of seconds.
   const tickMs = scale > 12_000 ? 10_000 : 5000;
   const tick = tickMs / scale;

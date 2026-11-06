@@ -58,7 +58,8 @@
   white-space: nowrap;
 }
 
-/* A score with its window under it: "first 5", "latest 10". */
+/* A typical miss with its window under it: "first 5", "latest 10". Both
+   the same size; only real progress turns the latest one cyan. */
 .eng-hit {
   display: inline-flex;
   flex-direction: column;
@@ -66,21 +67,18 @@
 }
 
 .eng-hit b {
+  font-size: 22px;
   font-weight: 600;
+  line-height: 1.1;
+  letter-spacing: -0.01em;
+  font-variant-numeric: tabular-nums;
 }
 
 .eng-hit small {
   margin-top: 1px;
   color: var(--muted);
-  font-size: 10px;
+  font-size: 11px;
   font-weight: 500;
-}
-
-/* Its first guesses, before it knew you. */
-.eng-hit.is-was b {
-  color: var(--muted);
-  font-size: 18px;
-  font-variant-numeric: tabular-nums;
 }
 
 .eng-arrow {
@@ -90,11 +88,6 @@
 
 .eng-hits .unit {
   margin-left: 0;
-}
-
-.eng-of {
-  color: var(--muted);
-  font-size: 18px;
 }
 
 .eng-key.is-actual {

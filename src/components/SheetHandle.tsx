@@ -9,8 +9,8 @@ type SheetHandleProps = {
 };
 
 /**
- * The grip of the panel sheet on narrow screens. Closed, it still shows
- * the two numbers that matter, live, over the bottom of the video.
+ * The grip of the panel sheet on narrow screens. Closed, it invites you in
+ * and still shows the two numbers that matter, live, under the video.
  */
 function SheetHandle({ feed, open, onToggle }: SheetHandleProps) {
   const { sessionMs, intentMs, exitRisk } = feed;
@@ -24,21 +24,23 @@ function SheetHandle({ feed, open, onToggle }: SheetHandleProps) {
       aria-label={open ? "Back to the feed" : undefined}
       onClick={onToggle}
     >
-      <span className="sheet-grip" aria-hidden="true" />
-      {!open && (
-        <span className="sheet-peek">
-          <span className={over ? "tone-take" : undefined}>
-            {over && intentMs !== null
-              ? `+${formatClock(sessionMs - intentMs)} over`
-              : formatClock(sessionMs)}
+      {open ? (
+        <span className="sheet-grip" aria-hidden="true" />
+      ) : (
+        <>
+          <span className="sheet-invite">
+            See the algorithm <span aria-hidden="true">↑</span>
           </span>
-          <span className="sheet-dot" aria-hidden="true" />
-          {Math.round(exitRisk.value * 100)}% chance you leave
-          <span className="sheet-more">
+          <span className="sheet-peek">
+            <span className={over ? "tone-take" : undefined}>
+              {over && intentMs !== null
+                ? `+${formatClock(sessionMs - intentMs)} over`
+                : formatClock(sessionMs)}
+            </span>
             <span className="sheet-dot" aria-hidden="true" />
-            <span className="sheet-more-words">behind your feed</span>↑
+            {Math.round(exitRisk.value * 100)}% chance you leave
           </span>
-        </span>
+        </>
       )}
     </button>
   );

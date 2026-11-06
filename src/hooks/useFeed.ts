@@ -5,7 +5,7 @@ import {
   type Impression,
 } from "../algorithm/impression";
 import { inferTraits } from "../algorithm/inference";
-import { predictionHits, predictWatchMs } from "../algorithm/prediction";
+import { predictionMiss, predictWatchMs } from "../algorithm/prediction";
 import { buildProfile } from "../algorithm/profile";
 import { createRandom } from "../algorithm/random";
 import { rankNext, type Ranking } from "../algorithm/ranking";
@@ -86,7 +86,7 @@ type State = {
 // Time and random seeds are passed in, so the reducer itself stays pure.
 type Action =
   | { type: "begin"; intentMs: number | null; now: number }
-  | { type: "tick"; now: number }
+  | { type: "tick"; now: number; seed: number }
   | { type: "view"; index: number; now: number; seed: number }
   | { type: "togglePause"; now: number }
   | { type: "hold"; held: boolean; now: number }
@@ -109,8 +109,16 @@ function feedReducer(state: State, action: Action): State {
       };
     }
 
-    case "tick":
-      return { ...state, now: action.now };
+    case "tick": {
+      // The risk also climbs while you watch (e.g. past your plan). Once it
+      // crosses the line, the engine swaps a sure hit in at once.
+      const next = { ...state, now: action.now };
+      const queued = next.items[next.maxSeenIndex + 1];
+      if (queued.ranking.source === "rescue") return next;
+      return rescueDue(next, riskOf(next).value)
+        ? queueNextVideo(next, action.seed)
+        : next;
+    }
 
     case "view": {
       const { index, now, seed } = action;
@@ -253,11 +261,7 @@ function queueNextVideo(state: State, seed: number): State {
   const impressions = [...state.history, liveImpression(state, state.now)];
   const session = summarizeSession(impressions, state.sessionStart, state.now);
   const risk = riskOf(state);
-  const lastSource = seen.at(-1)?.ranking.source;
-  const rescue =
-    state.history.length >= RESCUE_AFTER &&
-    risk.value >= RESCUE_AT &&
-    lastSource !== "rescue";
+  const rescue = rescueDue(state, risk.value);
   const ranking = rankNext({
     videos: VIDEOS,
     profile: buildProfile(impressions),
@@ -285,6 +289,19 @@ function queueNextVideo(state: State, seed: number): State {
     ],
     nextKey: state.nextKey + 1,
   };
+}
+
+/**
+ * Whether the next video should be a sure hit: the risk is over the line,
+ * the app knows you well enough, and the video you are on is not one already.
+ */
+function rescueDue(state: State, risk: number): boolean {
+  return (
+    state.started &&
+    state.history.length >= RESCUE_AFTER &&
+    risk >= RESCUE_AT &&
+    state.items[state.maxSeenIndex].ranking.source !== "rescue"
+  );
 }
 
 /**
@@ -369,7 +386,7 @@ export function useFeed() {
 
   useEffect(() => {
     const timer = window.setInterval(
-      () => dispatch({ type: "tick", now: Date.now() }),
+      () => dispatch({ type: "tick", now: Date.now(), seed: Math.random() }),
       TICK_MS,
     );
     return () => window.clearInterval(timer);
@@ -410,6 +427,8 @@ export function useFeed() {
     items: state.items,
     activeIndex: state.activeIndex,
     playing: state.playingSince !== null,
+    /** Playback is held because the panel covers the video. */
+    held: state.held,
     current,
     currentSignals: readSignals(current),
     currentItem: state.items[state.activeIndex],
@@ -421,7 +440,7 @@ export function useFeed() {
     })),
     session: summarizeSession(impressions, state.sessionStart, state.now),
     exitRisk: riskOf(state),
-    predictionHits: predictionHits(state.history),
+    predictionMiss: predictionMiss(state.history),
     traits: inferTraits(impressions, profile.topics),
     counters: {
       autoplays: state.started ? impressions.length : 0,

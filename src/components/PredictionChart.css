@@ -120,11 +120,6 @@
   box-shadow: 0 0 0 1px rgb(254 44 85 / 0.7);
 }
 
-.pchart-col.is-sure-hit .pchart-guess {
-  background: var(--take);
-  box-shadow: 0 0 8px rgb(254 44 85 / 0.7);
-}
-
 /* Above the live column: "now", or "sure hit" in pink. */
 .pchart-tag {
   position: absolute;

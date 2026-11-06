@@ -56,6 +56,8 @@
   font-weight: 800;
   line-height: 1.55;
   text-align: center;
+  /* Even lines, so a title never breaks at "self-" / "checkout". */
+  text-wrap: balance;
 }
 
 .card-overlay span {

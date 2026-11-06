@@ -1,10 +1,12 @@
-import { HIT_MS } from "../algorithm/prediction";
 import { SOURCE_LABELS } from "../algorithm/sources";
 import type { FeedController } from "../hooks/useFeed";
 import ExperimentField from "./ExperimentField";
 import PredictionChart from "./PredictionChart";
 import "./EngineLens.css";
 
+/** The latest typical miss turns cyan only when it is at most this share
+    of the first one: clearly closer, not noise. */
+const CLEARLY_CLOSER = 0.8;
 /** Score parts shown in "why this video", biggest first. */
 const WHY_PARTS = 3;
 
@@ -16,7 +18,10 @@ type EngineLensProps = { feed: FeedController };
  */
 function EngineLens({ feed }: EngineLensProps) {
   const { current, currentItem, upNext } = feed;
-  const { recent, first } = feed.predictionHits;
+  const { recent, first } = feed.predictionMiss;
+  // Only real progress gets the accent: a closer typical guess than at first.
+  const improved =
+    first !== null && recent !== null && recent.ms <= first.ms * CLEARLY_CLOSER;
   const finished = feed.history.map((entry) => entry.impression);
 
   // A sure hit's first reason is that you were about to leave.
@@ -50,15 +55,14 @@ function EngineLens({ feed }: EngineLensProps) {
               </span>
             </p>
           </div>
-          {/* "2/5 → 9/10": how much better it got at guessing you. */}
+          {/* "off by 4.1s → 1.6s": how much closer it got to guessing you. */}
           <p className="eng-hits">
+            <span className="unit">off by</span>
             {first !== null && (
               <>
-                <span className="eng-hit is-was">
-                  <b>
-                    {first.hits}/{first.total}
-                  </b>
-                  <small>first {first.total}</small>
+                <span className="eng-hit">
+                  <b>{seconds(first.ms)}</b>
+                  <small>first {first.count}</small>
                 </span>
                 <span className="eng-arrow" aria-hidden="true">
                   →
@@ -66,15 +70,15 @@ function EngineLens({ feed }: EngineLensProps) {
               </>
             )}
             <span className="eng-hit">
-              <b className="figure tone-you">
-                {recent.hits}
-                <span className="eng-of">/{recent.total}</span>
+              <b className={improved ? "tone-you" : undefined}>
+                {recent === null ? "–" : seconds(recent.ms)}
               </b>
               <small>
-                {first === null ? "so far" : `latest ${recent.total}`}
+                {first !== null && recent !== null
+                  ? `latest ${recent.count}`
+                  : "so far"}
               </small>
             </span>
-            <span className="unit">within ±{HIT_MS / 1000} s</span>
           </p>
         </div>
         <PredictionChart finished={finished} current={current} />
