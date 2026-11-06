@@ -1,7 +1,6 @@
 import AlgorithmPanel from "./components/AlgorithmPanel";
 import LinkLayer from "./components/LinkLayer";
 import PhoneFeed from "./components/PhoneFeed";
-import UserCam from "./components/UserCam";
 import { useFeed } from "./hooks/useFeed";
 import { useLinks } from "./hooks/useLinks";
 
@@ -24,7 +23,6 @@ function App() {
         <AlgorithmPanel feed={feed} />
       </section>
       <LinkLayer links={links} onDone={removeLink} />
-      <UserCam />
     </main>
   );
 }

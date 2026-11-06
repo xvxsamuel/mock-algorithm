@@ -1,6 +1,7 @@
 import { CATEGORIES, type Category } from "../data/categories";
 import type { Video } from "../data/videos";
 import type { InterestProfile } from "./profile";
+import type { FeedSource } from "./sources";
 
 /** Made-up weights. Real apps learn thousands of these from data. */
 const WEIGHTS = {
@@ -28,8 +29,8 @@ export type ScoredVideo = {
 
 export type Ranking = {
   pick: ScoredVideo;
-  /** exploit = best guess, explore = deliberately trying something new. */
-  mode: "exploit" | "explore";
+  /** Why the engine picked it: best match, a test, or a rescue. */
+  source: FeedSource;
   reason: string;
   explorationRate: number;
   candidates: number;
@@ -44,12 +45,14 @@ export type RankingInput = {
   history: readonly Video[];
   /** Chance (0-1) of picking an exploration video instead of the best one. */
   explorationRate: number;
+  /** You look about to leave: skip the tests and play the surest hit. */
+  rescue: boolean;
   random: () => number;
 };
 
 /** Picks the next video for the feed and explains why. */
 export function rankNext(input: RankingInput): Ranking {
-  const { videos, profile, history, explorationRate, random } = input;
+  const { videos, profile, history, explorationRate, rescue, random } = input;
 
   // 1. Candidate generation: drop what was just shown.
   const blocked = new Set(
@@ -63,7 +66,22 @@ export function rankNext(input: RankingInput): Ranking {
     .map((video) => scoreVideo(video, profile, history, random))
     .sort((a, b) => b.score - a.score);
 
-  // 3. Exploration: sometimes show something unexpected to learn more.
+  // 3a. Rescue: about to lose you, so play the strongest thing in your
+  //     favourite topic instead of testing anything new.
+  if (rescue) {
+    const pick = surestHit(scored, profile);
+    return {
+      pick,
+      source: "rescue",
+      reason: `You looked about to leave, so it played your surest topic: ${pick.video.category}.`,
+      explorationRate,
+      candidates: candidates.length,
+      filteredOut: videos.length - candidates.length,
+      runnersUp: scored.filter((entry) => entry !== pick).slice(0, 3),
+    };
+  }
+
+  // 3b. Exploration: sometimes show something unexpected to learn more.
   const exploring = random() < explorationRate;
   const topic = exploring ? leastShownTopic(profile, history, random) : null;
   const pick =
@@ -71,7 +89,7 @@ export function rankNext(input: RankingInput): Ranking {
 
   return {
     pick,
-    mode: exploring ? "explore" : "exploit",
+    source: exploring ? "explore" : "interest",
     reason: exploring
       ? `Exploring: you have seen little ${pick.video.category} lately, so the app tests whether it hooks you.`
       : `Highest predicted engagement. Biggest boost: ${biggestBoost(pick)}.`,
@@ -131,6 +149,26 @@ function scoreVideo(
 function popularity(video: Video): number {
   const value = (Math.log10(video.likes) - 5) / 1.8;
   return Math.min(Math.max(value, 0), 1);
+}
+
+/** The most intense, best-scoring video in the topic you like most. */
+function surestHit(
+  scored: readonly ScoredVideo[],
+  profile: InterestProfile,
+): ScoredVideo {
+  let top: Category | null = null;
+  let best = -Infinity;
+  for (const [topic, score] of profile.topics) {
+    if (score > best) {
+      best = score;
+      top = topic;
+    }
+  }
+  const inTopic = scored.filter((entry) => entry.video.category === top);
+  if (inTopic.length === 0) return scored[0];
+  return inTopic.reduce((a, b) =>
+    b.score + b.video.intensity > a.score + a.video.intensity ? b : a,
+  );
 }
 
 function leastShownTopic(

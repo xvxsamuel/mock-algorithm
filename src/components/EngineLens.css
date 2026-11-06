@@ -1,0 +1,246 @@
+/* --- Prediction: the one pane that grows to fill the height --- */
+
+.eng-predict {
+  display: flex;
+  flex: 1 1 0;
+  flex-direction: column;
+  min-height: 130px;
+}
+
+.eng-title {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 4px 18px;
+}
+
+.eng-legend {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--muted);
+  font-size: 11px;
+}
+
+.eng-key {
+  display: inline-block;
+  width: 10px;
+  height: 10px;
+  margin-left: 8px;
+  border-radius: 2px;
+}
+
+.eng-key:first-child {
+  margin-left: 0;
+}
+
+.eng-key.is-predicted {
+  border: 1.5px dashed rgb(243 243 246 / 0.6);
+}
+
+.eng-key.is-actual {
+  background: var(--you);
+}
+
+/* --- Exit risk and "why this video" --- */
+
+.eng-middle {
+  grid-template-columns: minmax(0, 0.8fr) minmax(0, 1.2fr);
+}
+
+.eng-risk {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+}
+
+.eng-risk .eyebrow {
+  align-self: flex-start;
+}
+
+.eng-rescue {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 3px 10px;
+  border-radius: 999px;
+  color: var(--muted);
+  font-size: 12px;
+}
+
+.eng-rescue.is-on {
+  background: rgb(254 44 85 / 0.14);
+  color: var(--take);
+  font-weight: 600;
+  animation: eng-pulse 1.4s ease-in-out infinite;
+}
+
+.eng-rescue-emoji {
+  font-size: 15px;
+}
+
+@keyframes eng-pulse {
+  50% {
+    box-shadow: 0 0 0 6px rgb(254 44 85 / 0);
+  }
+  0%,
+  100% {
+    box-shadow: 0 0 0 0 rgb(254 44 85 / 0.35);
+  }
+}
+
+.why {
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+  margin-top: 10px;
+}
+
+.why-part {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1.1fr);
+  align-items: center;
+  gap: 10px;
+}
+
+.why-label {
+  overflow: hidden;
+  color: var(--muted);
+  font-size: 12px;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+/* Bars grow out of a centre line: right helps the video, left hurts it. */
+.why-track {
+  position: relative;
+  height: 8px;
+}
+
+.why-track::before {
+  content: "";
+  position: absolute;
+  top: -3px;
+  bottom: -3px;
+  left: 50%;
+  width: 1px;
+  background: var(--line-strong);
+}
+
+.why-bar {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  border-radius: 3px;
+  transition: width 0.5s var(--ease);
+}
+
+.why-bar.is-up {
+  left: 50%;
+  background: var(--you);
+}
+
+.why-bar.is-down {
+  right: 50%;
+  background: var(--take);
+}
+
+.why-next {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 12px;
+  padding-top: 10px;
+  border-top: 1px solid var(--line);
+  font-size: 12px;
+}
+
+.why-next-emoji {
+  font-size: 16px;
+}
+
+.why-source {
+  padding: 2px 8px;
+  border-radius: 999px;
+  background: rgb(37 244 238 / 0.12);
+  color: var(--you);
+  font-weight: 600;
+}
+
+.why-source.is-explore {
+  background: rgb(185 185 200 / 0.12);
+  color: var(--engine);
+}
+
+.why-source.is-rescue {
+  background: rgb(254 44 85 / 0.14);
+  color: var(--take);
+}
+
+/* --- Friction: the things that make stopping hard --- */
+
+.eng-friction {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  padding: 10px 6px;
+}
+
+.eng-friction li {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  grid-template-rows: auto auto;
+  align-items: center;
+  gap: 0 8px;
+  padding: 0 10px;
+  border-left: 1px solid var(--line);
+  color: var(--muted);
+}
+
+.eng-friction li:first-child {
+  border-left: 0;
+}
+
+.eng-friction-value {
+  color: var(--text);
+  font-size: 20px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+
+.eng-friction-label {
+  grid-column: 1 / -1;
+  font-size: 11px;
+  white-space: nowrap;
+}
+
+/* --- Experiments and the year --- */
+
+.eng-foot {
+  margin-top: 8px;
+  color: var(--muted);
+  font-size: 11px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .eng-rescue.is-on {
+    animation: none;
+  }
+
+  .why-bar {
+    transition: none;
+  }
+}
+
+@media (max-width: 900px) {
+  .lens > .eng-predict {
+    flex: none;
+  }
+}
+
+@media (max-width: 560px) {
+  .eng-friction {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    row-gap: 10px;
+  }
+}

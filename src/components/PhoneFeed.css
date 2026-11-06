@@ -74,6 +74,10 @@
   scrollbar-width: none;
 }
 
+.phone-feed.is-locked {
+  overflow: hidden;
+}
+
 .phone-feed::-webkit-scrollbar {
   display: none;
 }

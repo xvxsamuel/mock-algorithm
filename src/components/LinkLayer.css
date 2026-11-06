@@ -50,6 +50,11 @@
   stroke-dashoffset: 0.001;
 }
 
+/* A tab glow: short, no line. */
+.link.is-ping {
+  animation-duration: 900ms;
+}
+
 .link-box {
   fill: currentColor;
   stroke: currentColor;
@@ -95,6 +100,11 @@
   .link-trail {
     stroke-dashoffset: 0;
     animation: none;
+  }
+
+  /* A tab glow: short, no line. */
+  .link.is-ping {
+    animation-duration: 900ms;
   }
 
   .link-box {

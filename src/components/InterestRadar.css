@@ -1,0 +1,58 @@
+.radar {
+  display: block;
+  width: 100%;
+  max-width: 280px;
+  height: auto;
+  overflow: visible;
+}
+
+.radar-ring {
+  fill: none;
+  stroke: var(--line);
+}
+
+.radar-axis {
+  stroke: var(--line);
+}
+
+.radar-axis.is-current {
+  stroke: var(--line-strong);
+}
+
+.radar-shape {
+  fill: rgb(37 244 238 / 0.16);
+  stroke: var(--you);
+  stroke-width: 1.5;
+  stroke-linejoin: round;
+  filter: drop-shadow(0 0 10px rgb(37 244 238 / 0.35));
+  transition: d 0.6s var(--ease);
+}
+
+.radar-dot {
+  fill: var(--you);
+  transition:
+    cx 0.6s var(--ease),
+    cy 0.6s var(--ease);
+}
+
+.radar-label {
+  fill: var(--muted);
+  font-size: 11.5px;
+  font-weight: 500;
+}
+
+.radar-label.is-current {
+  fill: var(--text);
+  font-weight: 700;
+}
+
+.radar-label.is-down {
+  fill: var(--take);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .radar-shape,
+  .radar-dot {
+    transition: none;
+  }
+}

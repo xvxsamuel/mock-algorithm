@@ -1,0 +1,86 @@
+.xfield {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+/* Thousands of faint dots: everyone else's experiments. */
+.xfield-dots {
+  position: relative;
+  height: 74px;
+  border-radius: var(--radius-sm);
+  background-image: radial-gradient(
+    circle,
+    rgb(255 255 255 / 0.13) 0.8px,
+    transparent 1.2px
+  );
+  background-size: 5px 5px;
+}
+
+.xfield-dot {
+  position: absolute;
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: var(--take);
+  box-shadow: 0 0 6px var(--take);
+  transform: translate(-50%, -50%);
+  transition:
+    width 0.4s var(--ease),
+    height 0.4s var(--ease);
+}
+
+.xfield-dot.is-active {
+  width: 9px;
+  height: 9px;
+  background: #fff;
+  box-shadow:
+    0 0 0 4px rgb(254 44 85 / 0.35),
+    0 0 14px var(--take);
+}
+
+.xfield-name {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  overflow: hidden;
+  font-size: 12px;
+  white-space: nowrap;
+  animation: xfield-in 0.4s var(--ease);
+}
+
+.xfield-name code {
+  overflow: hidden;
+  color: var(--text);
+  font-family: ui-monospace, "Cascadia Code", Consolas, monospace;
+  font-size: 11.5px;
+  text-overflow: ellipsis;
+}
+
+.xfield-variant {
+  padding: 0 5px;
+  border: 1px solid var(--line-strong);
+  border-radius: 4px;
+  color: var(--muted);
+  font-size: 10px;
+  font-weight: 700;
+}
+
+@keyframes xfield-in {
+  from {
+    opacity: 0;
+    transform: translateY(4px);
+  }
+}
+
+@media (max-height: 820px) {
+  .xfield-dots {
+    height: 52px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .xfield-name {
+    animation: none;
+  }
+}

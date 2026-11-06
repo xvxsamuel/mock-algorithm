@@ -1,0 +1,66 @@
+.pchart {
+  display: grid;
+  flex: 1;
+  grid-template-columns: repeat(16, minmax(0, 1fr));
+  grid-template-rows: minmax(0, 1fr);
+  gap: 6px;
+  min-height: 70px;
+  max-height: 260px;
+  padding-bottom: 22px;
+}
+
+.pchart-col {
+  position: relative;
+}
+
+.pchart-col.is-empty {
+  border-bottom: 1px dashed var(--line);
+}
+
+/* The guess, drawn before you watched. */
+.pchart-predicted,
+.pchart-actual {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  border-radius: 4px 4px 0 0;
+  transition: height 0.25s linear;
+}
+
+.pchart-predicted {
+  z-index: 1;
+  border: 1.5px dashed rgb(243 243 246 / 0.55);
+  border-bottom: 0;
+}
+
+.pchart-actual {
+  background: linear-gradient(var(--you), rgb(37 244 238 / 0.35));
+}
+
+.pchart-col.is-live .pchart-actual {
+  box-shadow: 0 0 14px rgb(37 244 238 / 0.5);
+}
+
+.pchart-emoji {
+  position: absolute;
+  left: 50%;
+  bottom: -19px;
+  font-size: 12px;
+  line-height: 1;
+  transform: translateX(-50%);
+}
+
+@media (max-width: 900px) {
+  .pchart {
+    flex: none;
+    height: 150px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .pchart-predicted,
+  .pchart-actual {
+    transition: none;
+  }
+}

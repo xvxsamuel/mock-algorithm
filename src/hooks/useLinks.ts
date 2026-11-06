@@ -30,8 +30,11 @@ export type Link = {
   tone: "up" | "down";
   /** 0-1: how big the change was. Sets thickness, brightness and lifetime. */
   strength: number;
-  /** "line" for things the user did, "dot" for small passive updates. */
-  style: "line" | "dot";
+  /**
+   * "line" for things the user did, "dot" for small passive updates,
+   * "ping" for a lens tab whose content is not on screen (no line, just a glow).
+   */
+  style: "line" | "dot" | "ping";
   from: Point;
   d: string;
   box: Box;
@@ -41,7 +44,7 @@ export type Link = {
 type Pulse = {
   target: string;
   change: number;
-  style: Link["style"];
+  style: "line" | "dot";
   delay: number;
 };
 
@@ -82,7 +85,10 @@ export function useLinks(feed: FeedController) {
       timers.current.delete(timer);
       // The phone is the only element inside the feed area.
       const phone = feedArea.current?.firstElementChild;
-      const element = document.querySelector(`[data-link="${target}"]`);
+      const shown = document.querySelector(`[data-link="${target}"]`);
+      // Targets on a hidden lens only make that lens's tab glow.
+      const element =
+        shown ?? document.querySelector(`[data-link="lens:${lensOf(target)}"]`);
       if (!phone || element === null) return;
 
       const press = lastPress.current;
@@ -103,12 +109,18 @@ export function useLinks(feed: FeedController) {
         id: nextId.current++,
         tone: change >= 0 ? "up" : "down",
         strength: Math.min(Math.sqrt(Math.abs(change) / FULL_CHANGE), 1),
-        style,
+        style: shown === null ? "ping" : style,
         from,
         d: curve(from, to),
         box,
       };
-      setLinks((all) => [...all.slice(-(MAX_LINKS - 1)), link]);
+      setLinks((all) => {
+        // One glow per tab at a time is enough.
+        if (link.style === "ping" && all.some((l) => l.style === "ping")) {
+          return all;
+        }
+        return [...all.slice(-(MAX_LINKS - 1)), link];
+      });
     }, delay);
     timers.current.add(timer);
   }
@@ -207,17 +219,17 @@ function changesWhileWatching(
   return pulses;
 }
 
-/** The user swiped: the old video is logged and a new one is explained. */
+/**
+ * The user swiped: the new video is explained. (The strip logs the old one
+ * by itself, so it needs no line.)
+ */
 function changesOnSwipe(before: Snapshot, feed: FeedController): Pulse[] {
   const finished = feed.history.at(-1);
   if (finished === undefined) return [];
-  const total = topicDelta(finished.signals);
   // Swiping can still change the score, e.g. a quick skip replaces WATCH.
-  const settled = total - topicDelta(before.signals);
+  const settled = topicDelta(finished.signals) - topicDelta(before.signals);
 
-  const pulses: Pulse[] = [
-    { target: "log", change: total, style: "line", delay: 0 },
-  ];
+  const pulses: Pulse[] = [];
   if (Math.abs(settled) >= MIN_CHANGE) {
     pulses.push({
       target: `topic:${finished.impression.video.category}`,
@@ -226,12 +238,23 @@ function changesOnSwipe(before: Snapshot, feed: FeedController): Pulse[] {
       delay: STEP_MS,
     });
   }
-  pulses.push({
-    target: "why",
-    change: WHY_CHANGE,
-    style: "line",
-    delay: 2 * STEP_MS,
-  });
+  pulses.push(
+    { target: "why", change: WHY_CHANGE, style: "line", delay: 2 * STEP_MS },
+    {
+      target: "predict",
+      change: WHY_CHANGE,
+      style: "dot",
+      delay: 3 * STEP_MS,
+    },
+  );
+  if (feed.upNext.ranking.source === "rescue") {
+    pulses.push({
+      target: "risk",
+      change: -FULL_CHANGE,
+      style: "line",
+      delay: 3 * STEP_MS,
+    });
+  }
   if (feed.current.revisit) {
     pulses.push({
       target: "signal:REVISIT",
@@ -241,6 +264,14 @@ function changesOnSwipe(before: Snapshot, feed: FeedController): Pulse[] {
     });
   }
   return pulses;
+}
+
+/** Which lens shows a target, for when that lens is not on screen. */
+function lensOf(target: string): string {
+  const [kind] = target.split(":");
+  return ["topic", "signal", "creators", "trait"].includes(kind)
+    ? "you"
+    : "engine";
 }
 
 /** How many watch steps the live video has earned so far. */

@@ -19,7 +19,16 @@ export type IconName =
   | "mail"
   | "flag"
   | "download"
-  | "arrowUp";
+  | "arrowUp"
+  | "pause"
+  | "loop"
+  | "revisit"
+  | "ban"
+  | "userPlus"
+  | "clockOff"
+  | "infinity"
+  | "layers"
+  | "eye";
 
 const ICONS: Record<IconName, { path: string; filled: boolean }> = {
   heart: {
@@ -76,11 +85,41 @@ const ICONS: Record<IconName, { path: string; filled: boolean }> = {
   flag: { path: "M5 21V4h11l-2 4 2 4H5", filled: false },
   download: { path: "M12 4v11M7 10l5 5 5-5M5 20h14", filled: false },
   arrowUp: { path: "M12 19V5M5 12l7-7 7 7", filled: false },
+  pause: { path: "M8 5v14M16 5v14", filled: false },
+  loop: {
+    path: "M17 2l3 3-3 3M4 11V9a4 4 0 0 1 4-4h12M7 22l-3-3 3-3M20 13v2a4 4 0 0 1-4 4H4",
+    filled: false,
+  },
+  revisit: { path: "M3 12a9 9 0 1 0 2.6-6.4L3 8M3 3v5h5", filled: false },
+  ban: {
+    path: "M12 3a9 9 0 1 0 0 18 9 9 0 0 0 0-18zM5.6 5.6l12.8 12.8",
+    filled: false,
+  },
+  userPlus: {
+    path: "M10 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8zM3 21a7 7 0 0 1 14 0M19 8v6M16 11h6",
+    filled: false,
+  },
+  clockOff: {
+    path: "M12 7v5l3 2M5.6 5.6A9 9 0 0 0 18.4 18.4M8.3 3.8A9 9 0 0 1 20.2 15.7M3 3l18 18",
+    filled: false,
+  },
+  infinity: {
+    path: "M6.5 8C4 8 2.5 9.8 2.5 12s1.5 4 4 4c3.6 0 7.4-8 11-8 2.5 0 4 1.8 4 4s-1.5 4-4 4c-3.6 0-7.4-8-11-8z",
+    filled: false,
+  },
+  layers: {
+    path: "M12 3l9 5-9 5-9-5zM3 13l9 5 9-5M3 17.5l9 5 9-5",
+    filled: false,
+  },
+  eye: {
+    path: "M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7S2 12 2 12zM12 9a3 3 0 1 0 0 6 3 3 0 0 0 0-6z",
+    filled: false,
+  },
 };
 
-type IconProps = { name: IconName; size?: number };
+type IconProps = { name: IconName; size?: number; strokeWidth?: number };
 
-function Icon({ name, size = 24 }: IconProps) {
+function Icon({ name, size = 24, strokeWidth = 2 }: IconProps) {
   const { path, filled } = ICONS[name];
   return (
     <svg
@@ -89,7 +128,7 @@ function Icon({ name, size = 24 }: IconProps) {
       viewBox="0 0 24 24"
       fill={filled ? "currentColor" : "none"}
       stroke={filled ? "none" : "currentColor"}
-      strokeWidth={2}
+      strokeWidth={strokeWidth}
       strokeLinecap="round"
       strokeLinejoin="round"
       aria-hidden="true"

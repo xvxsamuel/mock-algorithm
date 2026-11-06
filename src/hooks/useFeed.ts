@@ -1,8 +1,15 @@
 import { useEffect, useReducer } from "react";
-import { startImpression, type Impression } from "../algorithm/impression";
+import {
+  startImpression,
+  watchRatio,
+  type Impression,
+} from "../algorithm/impression";
+import { inferTraits } from "../algorithm/inference";
+import { predictionAccuracy, predictWatchMs } from "../algorithm/prediction";
 import { buildProfile } from "../algorithm/profile";
 import { createRandom } from "../algorithm/random";
 import { rankNext, type Ranking } from "../algorithm/ranking";
+import { exitRisk, RESCUE_AT } from "../algorithm/retention";
 import { readSignals } from "../algorithm/signals";
 import { summarizeSession } from "../algorithm/session";
 import { CATEGORIES } from "../data/categories";
@@ -10,8 +17,20 @@ import { VIDEOS, type Video } from "../data/videos";
 
 /** How often the live numbers (watch time, session time) refresh. */
 const TICK_MS = 250;
+/** No rescue while the app is still getting to know you. */
+const RESCUE_AFTER = 5;
+/** Data points logged per second of watching (dwell, position, volume...). */
+const POINTS_PER_SECOND = 24;
+/** Data points logged when a video starts (device, network, time, place...). */
+const POINTS_PER_VIDEO = 38;
 
-export type FeedItem = { key: number; video: Video; ranking: Ranking };
+export type FeedItem = {
+  key: number;
+  video: Video;
+  ranking: Ranking;
+  /** How long the app expects you to watch it, decided before it plays. */
+  predictedMs: number;
+};
 
 export type ReactionKind =
   | "like"
@@ -25,6 +44,10 @@ export type ReactionKind =
   | "notInterested";
 
 type State = {
+  /** False until the user picks how long they want to scroll. */
+  started: boolean;
+  /** The time the user said they would scroll for, or null for no limit. */
+  intentMs: number | null;
   /** Every video placed in the feed. Always one more than the user has seen. */
   items: FeedItem[];
   activeIndex: number;
@@ -46,6 +69,7 @@ type State = {
 
 // Time and random seeds are passed in, so the reducer itself stays pure.
 type Action =
+  | { type: "begin"; intentMs: number | null; now: number }
   | { type: "tick"; now: number }
   | { type: "view"; index: number; now: number; seed: number }
   | { type: "togglePause"; now: number }
@@ -53,22 +77,40 @@ type Action =
 
 function feedReducer(state: State, action: Action): State {
   switch (action.type) {
+    case "begin": {
+      if (state.started) return state;
+      const { now } = action;
+      return {
+        ...state,
+        started: true,
+        intentMs: action.intentMs,
+        sessionStart: now,
+        current: { ...state.current, startedAt: now },
+        playingSince: now,
+        now,
+      };
+    }
+
     case "tick":
       return { ...state, now: action.now };
 
     case "view": {
       const { index, now, seed } = action;
+      if (!state.started) return state;
       if (index === state.activeIndex || index < 0) return state;
       if (index >= state.items.length) return state;
 
       const finished = { ...liveImpression(state, now), endedAt: now };
       const history = [...state.history, finished];
       const revisit = index <= state.maxSeenIndex;
+      const item = state.items[index];
       const current = startImpression(
-        state.items[index].video,
+        item.video,
         history.length + 1,
         now,
         revisit,
+        item.predictedMs,
+        item.ranking.source,
       );
       const next: State = {
         ...state,
@@ -84,6 +126,7 @@ function feedReducer(state: State, action: Action): State {
 
     case "togglePause": {
       const { now } = action;
+      if (!state.started) return state;
       if (state.playingSince === null) {
         return { ...state, playingSince: now, now };
       }
@@ -163,21 +206,42 @@ function queueNextVideo(state: State, seed: number): State {
   const seen = state.items.slice(0, state.maxSeenIndex + 1);
   const impressions = [...state.history, liveImpression(state, state.now)];
   const session = summarizeSession(impressions, state.sessionStart, state.now);
+  const risk = riskOf(state);
+  const lastSource = seen.at(-1)?.ranking.source;
+  const rescue =
+    state.history.length >= RESCUE_AFTER &&
+    risk.value >= RESCUE_AT &&
+    lastSource !== "rescue";
   const ranking = rankNext({
     videos: VIDEOS,
     profile: buildProfile(impressions),
     history: seen.map((item) => item.video),
     explorationRate: session.explorationRate,
+    rescue,
     random: createRandom(seed),
   });
   return {
     ...state,
     items: [
       ...seen,
-      { key: state.nextKey, video: ranking.pick.video, ranking },
+      {
+        key: state.nextKey,
+        video: ranking.pick.video,
+        ranking,
+        predictedMs: predictWatchMs(ranking.pick.video, state.history),
+      },
     ],
     nextKey: state.nextKey + 1,
   };
+}
+
+function riskOf(state: State) {
+  return exitRisk(
+    state.history,
+    state.now - state.sessionStart,
+    state.intentMs,
+    new Date(state.now).getHours(),
+  );
 }
 
 /** The current impression with watch time counted up to `now`. */
@@ -198,16 +262,32 @@ function createInitialState(): State {
     profile: buildProfile([]),
     history: [],
     explorationRate: summarizeSession([], now, now).explorationRate,
+    rescue: false,
     random: createRandom(Math.random()),
   });
-  const first: FeedItem = { key: 0, video: ranking.pick.video, ranking };
+  const predictedMs = predictWatchMs(ranking.pick.video, []);
+  const first: FeedItem = {
+    key: 0,
+    video: ranking.pick.video,
+    ranking,
+    predictedMs,
+  };
   const state: State = {
+    started: false,
+    intentMs: null,
     items: [first],
     activeIndex: 0,
     maxSeenIndex: 0,
     history: [],
-    current: startImpression(first.video, 1, now, false),
-    playingSince: now,
+    current: startImpression(
+      first.video,
+      1,
+      now,
+      false,
+      predictedMs,
+      ranking.source,
+    ),
+    playingSince: null,
     sessionStart: now,
     now,
     nextKey: 1,
@@ -237,6 +317,7 @@ export function useFeed() {
   const current = liveImpression(state, state.now);
   const impressions = [...state.history, current];
   const profile = buildProfile(impressions);
+  const sessionMs = state.started ? state.now - state.sessionStart : 0;
 
   const topicScores = CATEGORIES.map((name) => ({
     name,
@@ -249,7 +330,16 @@ export function useFeed() {
     .sort((a, b) => b.score - a.score)
     .slice(0, 5);
 
+  const watchedMs = impressions.reduce((sum, i) => sum + i.watchMs, 0);
+  const loops = impressions.reduce(
+    (sum, i) => sum + Math.min(Math.floor(watchRatio(i)), 3),
+    0,
+  );
+
   return {
+    started: state.started,
+    intentMs: state.intentMs,
+    sessionMs,
     items: state.items,
     activeIndex: state.activeIndex,
     playing: state.playingSince !== null,
@@ -263,12 +353,27 @@ export function useFeed() {
       signals: readSignals(impression),
     })),
     session: summarizeSession(impressions, state.sessionStart, state.now),
+    exitRisk: riskOf(state),
+    accuracy: predictionAccuracy(state.history),
+    traits: inferTraits(impressions, profile.topics),
+    counters: {
+      autoplays: state.started ? impressions.length : 0,
+      loops,
+      dataPoints: state.started
+        ? Math.round(
+            (watchedMs / 1000) * POINTS_PER_SECOND +
+              impressions.length * POINTS_PER_VIDEO,
+          )
+        : 0,
+    },
     topicScores,
     creatorScores,
     likedIds: state.likedIds,
     savedIds: state.savedIds,
     followedCreators: state.followedCreators,
 
+    begin: (intentMs: number | null) =>
+      dispatch({ type: "begin", intentMs, now: Date.now() }),
     view: (index: number) =>
       dispatch({ type: "view", index, now: Date.now(), seed: Math.random() }),
     togglePause: () => dispatch({ type: "togglePause", now: Date.now() }),

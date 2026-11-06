@@ -1,0 +1,253 @@
+/* --- Who you are to the app --- */
+
+.you-id {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.you-avatar {
+  display: grid;
+  flex-shrink: 0;
+  place-items: center;
+  width: 46px;
+  height: 46px;
+  border-radius: 50%;
+  background:
+    linear-gradient(var(--surface), var(--surface)) padding-box,
+    conic-gradient(var(--you), var(--take), var(--you)) border-box;
+  border: 2px solid transparent;
+  font-size: 15px;
+  font-weight: 700;
+}
+
+.you-who {
+  min-width: 0;
+}
+
+.you-name {
+  font-size: 17px;
+  font-weight: 650;
+  line-height: 1.2;
+}
+
+.you-rec {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-right: auto;
+  padding: 3px 9px;
+  border-radius: 999px;
+  background: rgb(254 44 85 / 0.12);
+  color: var(--take);
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.you-rec-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: currentColor;
+  animation: you-blink 1.6s ease-in-out infinite;
+}
+
+@keyframes you-blink {
+  50% {
+    opacity: 0.2;
+  }
+}
+
+.you-points {
+  text-align: right;
+}
+
+/* --- The model: a shape and a list of guesses --- */
+
+.lens > .you-model {
+  display: grid;
+  flex: 1 1 0;
+  grid-template-columns: minmax(0, 1.1fr) minmax(0, 0.9fr);
+  gap: 22px;
+  min-height: 220px;
+}
+
+.you-radar {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-height: 0;
+}
+
+.you-radar .radar {
+  flex: 1;
+  width: 100%;
+  max-width: none;
+  min-height: 0;
+  max-height: 360px;
+  margin: auto 0;
+}
+
+.you-guesses {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  min-height: 0;
+}
+
+/* The guesses spread out to fill the pane, the creators sit at the bottom. */
+.traits {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  justify-content: space-evenly;
+  gap: 12px;
+  max-height: 380px;
+}
+
+.trait {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 2px 12px;
+  align-items: baseline;
+}
+
+.trait-label {
+  color: var(--muted);
+  font-size: 12px;
+}
+
+.trait-value {
+  grid-row: 2;
+  font-size: 19px;
+  font-weight: 650;
+  letter-spacing: -0.01em;
+}
+
+.trait-bar {
+  grid-column: 1 / -1;
+  height: 3px;
+  overflow: hidden;
+  border-radius: 2px;
+  background: var(--line);
+}
+
+.trait-bar span {
+  display: block;
+  height: 100%;
+  background: var(--you);
+  transition: width 0.6s var(--ease);
+}
+
+.trait-sure {
+  grid-row: 2;
+  grid-column: 2;
+  color: var(--muted);
+  font-size: 11px;
+  font-variant-numeric: tabular-nums;
+}
+
+.you-creators {
+  margin-top: auto;
+  overflow: hidden;
+  color: var(--muted);
+  font-size: 12px;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+/* --- Right now: the live video and what it is sending --- */
+
+.you-now {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.you-thumb {
+  display: grid;
+  flex-shrink: 0;
+  place-items: center;
+  width: 44px;
+  height: 60px;
+  border-radius: 8px;
+  font-size: 24px;
+}
+
+/* One cell per signal: dim until the video sends it. */
+.signals {
+  display: grid;
+  grid-template-columns: repeat(9, minmax(0, 1fr));
+  gap: 6px;
+  margin-top: 14px;
+}
+
+.signal {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  min-width: 0;
+  padding: 8px 2px 6px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+  color: var(--faint);
+  font-size: 10.5px;
+  transition:
+    color 0.3s var(--ease),
+    border-color 0.3s var(--ease),
+    background 0.3s var(--ease);
+}
+
+.signal span {
+  max-width: 100%;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.signal.is-up {
+  border-color: rgb(37 244 238 / 0.5);
+  background: rgb(37 244 238 / 0.1);
+  color: var(--you);
+}
+
+.signal.is-down {
+  border-color: rgb(254 44 85 / 0.5);
+  background: rgb(254 44 85 / 0.1);
+  color: var(--take);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .you-rec-dot {
+    animation: none;
+  }
+}
+
+@media (max-width: 900px) {
+  .lens > .you-model {
+    flex: none;
+    min-height: 0;
+  }
+
+  .you-radar .radar {
+    flex: none;
+    height: 280px;
+  }
+}
+
+@media (max-width: 560px) {
+  .lens > .you-model {
+    grid-template-columns: 1fr;
+  }
+
+  .signals {
+    grid-template-columns: repeat(5, minmax(0, 1fr));
+  }
+
+  .you-id {
+    flex-wrap: wrap;
+  }
+}

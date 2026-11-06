@@ -21,6 +21,28 @@ function LinkLayer({ links, onDone }: LinkLayerProps) {
     <svg className="links" aria-hidden="true">
       {links.map((link) => {
         const { strength, box } = link;
+        if (link.style === "ping") {
+          return (
+            <g
+              key={link.id}
+              className={`link is-${link.tone} is-ping`}
+              onAnimationEnd={(event) => {
+                if (event.target === event.currentTarget) onDone(link.id);
+              }}
+            >
+              <rect
+                className="link-box"
+                x={box.x}
+                y={box.y}
+                width={box.width}
+                height={box.height}
+                rx={box.height / 2}
+                strokeOpacity={0.7}
+                fillOpacity={0.12}
+              />
+            </g>
+          );
+        }
         const isLine = link.style === "line";
         const dots = isLine ? 1 + Math.round(strength * 2) : 1;
         const arrive = TRAVEL_MS + (dots - 1) * DOT_GAP_MS;
@@ -64,6 +86,7 @@ function LinkLayer({ links, onDone }: LinkLayerProps) {
               y={box.y}
               width={box.width}
               height={box.height}
+              rx={10}
               strokeOpacity={isLine ? 0.4 + strength * 0.6 : 0.25}
               fillOpacity={isLine ? 0.05 + strength * 0.15 : 0.06}
               style={{ animationDelay: `${TRAVEL_MS - 80}ms` }}

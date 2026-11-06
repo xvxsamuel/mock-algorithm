@@ -3,6 +3,7 @@ import type { FeedController } from "../hooks/useFeed";
 import CommentsSheet from "./CommentsSheet";
 import Icon from "./Icon";
 import ShareSheet from "./ShareSheet";
+import StartGate from "./StartGate";
 import VideoCard from "./VideoCard";
 import "./PhoneFeed.css";
 
@@ -33,13 +34,14 @@ function PhoneFeed({ feed }: PhoneFeedProps) {
         return;
       }
       if (event.key !== "ArrowDown" && event.key !== "ArrowUp") return;
+      if (!feed.started) return;
       event.preventDefault();
       const step = event.key === "ArrowDown" ? 1 : -1;
       scrollToCard(scroller.current, activeIndex + step);
     }
     window.addEventListener("keydown", handleKey);
     return () => window.removeEventListener("keydown", handleKey);
-  }, [activeIndex, sheet]);
+  }, [activeIndex, sheet, feed.started]);
 
   useEffect(() => {
     if (toast === null) return;
@@ -92,7 +94,11 @@ function PhoneFeed({ feed }: PhoneFeedProps) {
         </span>
       </div>
 
-      <div className="phone-feed" ref={scroller} onScroll={handleScroll}>
+      <div
+        className={feed.started ? "phone-feed" : "phone-feed is-locked"}
+        ref={scroller}
+        onScroll={handleScroll}
+      >
         {items.map((item, index) => (
           <div className="phone-slot" key={item.key}>
             {Math.abs(index - activeIndex) <= RENDER_DISTANCE && (
@@ -171,6 +177,8 @@ function PhoneFeed({ feed }: PhoneFeedProps) {
           </div>
         </>
       )}
+
+      {!feed.started && <StartGate onStart={feed.begin} />}
 
       {toast !== null && (
         <div className="phone-toast" role="status">

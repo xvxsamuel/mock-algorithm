@@ -1,0 +1,113 @@
+.strip {
+  flex-shrink: 0;
+  padding-top: 12px;
+  border-top: 1px solid var(--line);
+}
+
+.strip-head {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 4px 16px;
+  margin-bottom: 8px;
+}
+
+.strip-legend {
+  display: flex;
+  gap: 14px;
+  color: var(--muted);
+  font-size: 11px;
+}
+
+.strip-legend li::before {
+  content: "";
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  margin-right: 6px;
+  border-radius: 2px;
+  background: var(--tone);
+}
+
+.strip-cells {
+  display: grid;
+  grid-template-columns: repeat(22, minmax(0, 1fr));
+  gap: 4px;
+}
+
+.strip-cell,
+.strip-legend li {
+  --tone: var(--you);
+}
+
+.strip-cell.is-explore,
+.strip-legend .is-explore {
+  --tone: var(--engine);
+}
+
+.strip-cell.is-rescue,
+.strip-legend .is-rescue {
+  --tone: var(--take);
+}
+
+.strip-cell {
+  position: relative;
+  display: grid;
+  place-items: center;
+  aspect-ratio: 1;
+  overflow: hidden;
+  border: 1px solid color-mix(in srgb, var(--tone) 45%, transparent);
+  border-radius: 7px;
+  background: color-mix(in srgb, var(--tone) 14%, var(--bg));
+  animation: strip-in 0.5s var(--ease);
+}
+
+@keyframes strip-in {
+  from {
+    opacity: 0;
+    transform: scale(0.6);
+  }
+}
+
+.strip-emoji {
+  font-size: clamp(11px, 1vw, 16px);
+  line-height: 1;
+}
+
+/* How much of the video you watched, as a thin bar along the bottom. */
+.strip-watch {
+  position: absolute;
+  left: 0;
+  bottom: 0;
+  height: 3px;
+  background: var(--tone);
+}
+
+.strip-cell.is-now {
+  border-color: var(--text);
+  box-shadow: 0 0 0 1px var(--text);
+}
+
+/* Already picked for you, before you even swiped. */
+.strip-cell.is-next {
+  border-style: dashed;
+  background: transparent;
+  opacity: 0.75;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .strip-cell {
+    animation: none;
+  }
+}
+
+@media (max-width: 560px) {
+  .strip-cells {
+    grid-template-columns: repeat(11, minmax(0, 1fr));
+  }
+
+  .strip-cell:nth-last-child(n + 12) {
+    display: none;
+  }
+}

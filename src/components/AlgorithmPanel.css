@@ -1,427 +1,281 @@
-/* Deliberately lo-fi: monospace text in boxes, like a debug console.
-   Everything fits one screen height; only the signal log gets cut off. */
+/* The machine: quiet surfaces, big numbers, few words. */
 .panel {
   display: flex;
   flex-direction: column;
-  gap: 16px;
+  gap: 14px;
   height: 100%;
-  max-width: 760px;
-  padding: 14px 20px 16px;
-  font-family:
-    ui-monospace, "Cascadia Code", "SF Mono", Menlo, Consolas, monospace;
-  font-size: 12px;
-  line-height: 1.5;
+  max-width: 880px;
+  padding: 20px 26px 16px;
+  font-size: 13px;
+  transition:
+    opacity 0.8s var(--ease),
+    filter 0.8s var(--ease);
 }
 
-.panel :where(p, h3, ul, ol, dl) {
+.panel.is-idle {
+  opacity: 0.45;
+  filter: saturate(0.3);
+}
+
+:where(.panel) :where(h1, h2, h3, p, ul, ol, dl, figure) {
   margin: 0;
 }
 
-.panel :where(ul, ol) {
+:where(.panel) :where(ul, ol) {
   padding: 0;
   list-style: none;
 }
 
+/* --- Header: your time, and the lens switch --- */
+
 .panel-head {
-  display: flex;
-  flex-wrap: wrap;
-  justify-content: space-between;
-  align-items: baseline;
-  gap: 4px 16px;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: end;
+  gap: 10px 16px;
 }
 
-.panel h1 {
-  margin: 0;
-  font-size: 13px;
+.panel-kicker,
+.eyebrow {
+  color: var(--muted);
+  font-size: 11px;
+  font-weight: 600;
   letter-spacing: 0.12em;
   text-transform: uppercase;
 }
 
-/* A box with its title sitting on the top border. */
-.box {
-  position: relative;
-  flex-shrink: 0;
-  padding: 12px 12px 10px;
-  border: 1px solid var(--line);
+.clock {
+  font-size: 46px;
+  font-weight: 600;
+  line-height: 1;
+  letter-spacing: -0.03em;
+  font-variant-numeric: tabular-nums;
+  transition: color 0.6s var(--ease);
 }
 
-.box-title {
+.clock.is-over {
+  color: var(--take);
+}
+
+.lens-tabs {
+  display: flex;
+  gap: 2px;
+  padding: 3px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: var(--surface);
+}
+
+.lens-tab {
+  padding: 7px 16px;
+  border: 0;
+  border-radius: 999px;
+  background: transparent;
+  color: var(--muted);
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition:
+    background 0.25s var(--ease),
+    color 0.25s var(--ease);
+}
+
+.lens-tab:hover {
+  color: var(--text);
+}
+
+.lens-tab.is-active {
+  background: var(--text);
+  color: #0b0b0f;
+}
+
+.lens-tab:focus-visible {
+  outline: 2px solid var(--you);
+  outline-offset: 2px;
+}
+
+.intent,
+.intent-note {
+  grid-column: 1 / -1;
+}
+
+.intent {
+  position: relative;
+  height: 24px;
+}
+
+.intent-note {
+  color: var(--faint);
+  font-size: 12px;
+}
+
+.intent-track {
   position: absolute;
   top: 0;
-  left: 8px;
-  margin: 0;
-  padding: 0 6px;
-  background: var(--bg);
-  color: var(--muted);
-  font-size: 11px;
-  font-weight: 400;
-  line-height: 1;
-  letter-spacing: 0.1em;
-  text-transform: uppercase;
-  transform: translateY(-50%);
-}
-
-.panel-label {
-  margin-bottom: 2px;
-  color: var(--muted);
-  font-size: 11px;
-  font-weight: 400;
-  letter-spacing: 0.1em;
-  text-transform: uppercase;
-}
-
-.panel-muted {
-  color: var(--muted);
-}
-
-.panel-faint {
-  color: var(--line);
-}
-
-.panel-clip {
-  min-width: 0;
-  overflow: hidden;
-  white-space: nowrap;
-  text-overflow: ellipsis;
-}
-
-.panel-flag {
-  color: var(--accent);
-  font-weight: 700;
-}
-
-.panel-up {
-  color: var(--good);
-}
-
-.panel-down {
-  color: var(--accent);
-}
-
-/* --- User profile --- */
-
-.box.is-profile {
-  border-color: currentColor;
-}
-
-.box.is-profile .box-title {
-  color: inherit;
-  font-weight: 700;
-}
-
-.profile-id {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-}
-
-.profile-avatar {
-  display: grid;
-  flex-shrink: 0;
-  place-items: center;
-  width: 42px;
-  height: 42px;
-  border: 1px solid currentColor;
-  box-shadow: 3px 3px 0 var(--line);
-  font-size: 15px;
-  font-weight: 700;
-  letter-spacing: 0.05em;
-}
-
-.profile-who {
-  flex: 1;
-  min-width: 0;
-}
-
-.profile-name {
-  font-size: 16px;
-  font-weight: 700;
-  line-height: 1.3;
-}
-
-.profile-rec {
-  align-self: flex-start;
-  color: var(--accent);
-  font-size: 11px;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-}
-
-.profile-dot {
-  animation: profile-blink 1.4s steps(2, jump-none) infinite;
-}
-
-@keyframes profile-blink {
-  50% {
-    opacity: 0;
-  }
-}
-
-.profile-state {
-  margin-top: 10px;
-}
-
-.profile-state strong {
-  font-size: 15px;
-}
-
-.profile-flags li {
-  overflow: hidden;
-  white-space: nowrap;
-  text-overflow: ellipsis;
-}
-
-.profile-cols {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
-  gap: 20px;
-  margin-top: 10px;
-  padding-top: 10px;
-  border-top: 1px dashed var(--line);
-}
-
-.topic {
-  display: grid;
-  grid-template-columns: 1.5ch 8ch max-content max-content;
-  gap: 1ch;
-  white-space: pre;
-}
-
-.topic.is-current {
-  font-weight: 700;
-}
-
-.kv {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) max-content;
-  gap: 0 12px;
-}
-
-.kv dt {
-  overflow: hidden;
-  color: var(--muted);
-  white-space: nowrap;
-  text-overflow: ellipsis;
-}
-
-.kv dd {
-  margin: 0;
-  text-align: right;
-}
-
-/* --- Session tiles: big numbers readable at a glance --- */
-
-.tiles {
-  display: grid;
-  grid-template-columns: repeat(6, minmax(0, 1fr));
-  gap: 1px;
+  left: 0;
+  right: 0;
+  height: 4px;
+  border-radius: 2px;
   background: var(--line);
 }
 
-.tile {
-  display: flex;
-  flex-direction: column;
-  padding: 4px 8px 5px;
-  background: var(--bg);
+.intent-under,
+.intent-over {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  border-radius: 2px;
+  transition: width 0.25s linear;
 }
 
-.tile-value {
-  overflow: hidden;
-  font-size: clamp(14px, 1.5vw, 20px);
-  font-weight: 700;
-  line-height: 1.2;
+.intent-under {
+  left: 0;
+  background: var(--you);
+}
+
+.intent-over {
+  background: var(--take);
+  box-shadow: 0 0 12px rgb(254 44 85 / 0.6);
+}
+
+.intent-mark {
+  position: absolute;
+  top: -4px;
+  width: 2px;
+  height: 12px;
+  border-radius: 1px;
+  background: var(--text);
+  transform: translateX(-1px);
+}
+
+.intent-label {
+  position: absolute;
+  top: 10px;
+  color: var(--muted);
+  font-size: 11px;
+  white-space: nowrap;
+  transform: translateX(-50%);
+}
+
+/* --- One lens at a time --- */
+
+.panel-body {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  min-height: 0;
+  animation: lens-in 0.45s var(--ease);
+}
+
+@keyframes lens-in {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+}
+
+.lens {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  gap: 12px;
+  min-height: 0;
+}
+
+.lens > * {
+  flex-shrink: 0;
+}
+
+/* A quiet card. */
+.pane {
+  position: relative;
+  padding: 14px 16px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: var(--surface);
+}
+
+.pane-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 12px;
+  margin-bottom: 10px;
+}
+
+.figure {
+  font-size: 28px;
+  font-weight: 600;
+  line-height: 1.05;
+  letter-spacing: -0.02em;
   font-variant-numeric: tabular-nums;
 }
 
-.tile-label {
+.unit {
+  margin-left: 4px;
   color: var(--muted);
-  font-size: 10px;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
+  font-size: 13px;
+  font-weight: 500;
+  letter-spacing: 0;
 }
 
-.tile-meter {
-  height: 3px;
-  margin-top: 3px;
-  background: var(--line);
-}
-
-.tile-meter span {
-  display: block;
-  height: 100%;
-  background: currentColor;
-  transition: width 0.25s linear;
-}
-
-/* --- Now watching --- */
-
-.live-head,
-.next {
-  display: flex;
-  justify-content: space-between;
-  gap: 12px;
-  white-space: nowrap;
-}
-
-.watch {
+.row {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) max-content max-content;
-  align-items: center;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
   gap: 12px;
-  margin-top: 4px;
 }
 
-/* Segmented like ▮▮▮▮▯▯▯, red until the 2s skip mark is passed. */
-.watch-track {
-  --segments: repeating-linear-gradient(
-    90deg,
-    currentColor 0 6px,
-    transparent 6px 8px
-  );
-
-  position: relative;
-  height: 10px;
-  color: var(--good);
+.tone-you {
+  color: var(--you);
 }
 
-.watch-track::before {
-  content: "";
-  position: absolute;
-  inset: 0;
-  background: var(--segments);
-  opacity: 0.18;
+.tone-take {
+  color: var(--take);
 }
 
-.watch-track.is-skip {
-  color: var(--accent);
-}
-
-.watch-fill {
-  position: absolute;
-  inset: 0 auto 0 0;
-  background: var(--segments);
-  transition: width 0.25s linear;
-}
-
-.watch-mark {
-  position: absolute;
-  top: -3px;
-  bottom: -3px;
-  width: 2px;
-  background: var(--accent);
-}
-
-.chips {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 4px;
-  margin-top: 8px;
-}
-
-.chip {
-  padding: 0 5px;
-  border: 1px dashed var(--line);
+.tone-muted {
   color: var(--muted);
-  font-size: 11px;
-  line-height: 18px;
-}
-
-.chip.is-up,
-.chip.is-down {
-  border-style: solid;
-  font-weight: 700;
-}
-
-.chip.is-up {
-  border-color: var(--good);
-  background: color-mix(in srgb, var(--good) 14%, transparent);
-  color: var(--good);
-}
-
-.chip.is-down {
-  border-color: var(--accent);
-  background: color-mix(in srgb, var(--accent) 14%, transparent);
-  color: var(--accent);
-}
-
-/* --- Signal log: takes the leftover height, older entries fade out --- */
-
-.box.is-log {
-  display: flex;
-  flex: 1;
-  flex-direction: column;
-  min-height: 0;
-}
-
-.log {
-  flex: 1;
-  min-height: 0;
-  overflow: hidden;
-  mask-image: linear-gradient(#000 60%, transparent);
-}
-
-.log li {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) max-content;
-  gap: 0 12px;
-  padding: 3px 0;
-  border-bottom: 1px dotted var(--line);
-}
-
-.log-signals {
-  grid-column: 1 / -1;
-  padding-left: 2ch;
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .profile-dot {
+  .panel,
+  .panel-body,
+  .clock {
+    transition: none;
     animation: none;
   }
-
-  .tile-meter span,
-  .watch-fill {
-    transition: none;
-  }
 }
 
-/* Short screens: tighter spacing and one flag line less, so the log keeps some room. */
-@media (max-height: 820px) {
+@media (max-height: 860px) {
   .panel {
-    gap: 12px;
-    padding-top: 10px;
+    gap: 10px;
+    padding-top: 14px;
   }
 
-  .box {
-    padding: 10px 10px 8px;
+  .clock {
+    font-size: 38px;
   }
 
-  .profile-state {
-    margin-top: 6px;
-  }
-
-  .profile-cols {
-    margin-top: 6px;
-    padding-top: 6px;
-  }
-
-  .profile-flags li:nth-child(n + 3) {
-    display: none;
+  .pane {
+    padding: 11px 14px;
   }
 }
 
-/* Stacked layout on narrow screens: the page scrolls instead. */
+/* Stacked layout on narrow screens: the page scrolls instead, so no pane
+   needs to stretch. */
 @media (max-width: 900px) {
   .panel {
     height: auto;
+    padding: 18px 16px;
   }
 
-  .log {
-    mask-image: none;
+  .lens > * {
+    flex: none;
   }
 }
 
-@media (max-width: 520px) {
-  .profile-cols {
+@media (max-width: 560px) {
+  .row {
     grid-template-columns: 1fr;
   }
 }

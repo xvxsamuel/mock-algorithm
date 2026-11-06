@@ -1,0 +1,79 @@
+.watchbar {
+  flex: 1;
+  min-width: 0;
+}
+
+.watchbar-numbers {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 12px;
+  margin-bottom: 8px;
+  font-size: 12px;
+  white-space: nowrap;
+}
+
+.watchbar-big {
+  font-size: 22px;
+  font-weight: 600;
+  letter-spacing: -0.02em;
+  font-variant-numeric: tabular-nums;
+}
+
+.watchbar-track {
+  position: relative;
+  height: 8px;
+  border-radius: 4px;
+  background: var(--line);
+}
+
+/* Leaving in the first two seconds counts as a skip. */
+.watchbar-skip {
+  position: absolute;
+  inset: 0 auto 0 0;
+  border-radius: 4px 0 0 4px;
+  background: repeating-linear-gradient(
+    -45deg,
+    rgb(254 44 85 / 0.35) 0 3px,
+    transparent 3px 6px
+  );
+}
+
+.watchbar-fill {
+  position: absolute;
+  inset: 0 auto 0 0;
+  border-radius: 4px;
+  background: var(--you);
+  box-shadow: 0 0 12px rgb(37 244 238 / 0.45);
+  transition: width 0.25s linear;
+}
+
+/* Where the app expected you to stop. */
+.watchbar-mark {
+  position: absolute;
+  top: -5px;
+  bottom: -5px;
+  width: 2px;
+  border-radius: 1px;
+  background: var(--text);
+  transform: translateX(-1px);
+}
+
+.watchbar-mark.is-passed {
+  background: var(--you);
+}
+
+.watchbar-loops {
+  position: absolute;
+  right: 0;
+  bottom: 12px;
+  color: var(--you);
+  font-size: 11px;
+  font-weight: 700;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .watchbar-fill {
+    transition: none;
+  }
+}
