@@ -279,11 +279,17 @@
 
 /* --- One lens at a time --- */
 
+/* A lens taller than the screen scrolls inside its own space, so its
+   cards never run over the strip below. */
 .panel-body {
   display: flex;
   flex: 1;
   flex-direction: column;
   min-height: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  scrollbar-color: rgb(255 255 255 / 0.18) transparent;
+  scrollbar-width: thin;
   animation: lens-in 0.45s var(--ease);
 }
 

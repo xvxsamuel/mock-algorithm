@@ -9,6 +9,9 @@ const HEADROOM = 1.1;
 const COLUMNS = 16;
 /** Room under the bars for the emoji, in px. Matches the CSS padding. */
 const LABEL_SPACE = 22;
+/** Room over the bars for the live tag, in px, so nothing rises out of the
+ * chart. Matches the CSS padding. */
+const TAG_SPACE = 22;
 
 type PredictionChartProps = {
   finished: Impression[];
@@ -40,7 +43,7 @@ function PredictionChart({ finished, current, playing }: PredictionChartProps) {
         className="pchart-grid"
         aria-hidden="true"
         style={{
-          bottom: `calc(${LABEL_SPACE}px + (100% - ${LABEL_SPACE}px) * ${tick})`,
+          bottom: `calc(${LABEL_SPACE}px + (100% - ${LABEL_SPACE + TAG_SPACE}px) * ${tick})`,
         }}
       >
         <span>{tickMs / 1000}s</span>

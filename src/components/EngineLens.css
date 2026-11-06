@@ -123,12 +123,11 @@
   gap: 10px;
 }
 
+/* Wraps rather than cutting a word off. */
 .why-label {
-  overflow: hidden;
   color: var(--muted);
   font-size: 12px;
-  white-space: nowrap;
-  text-overflow: ellipsis;
+  line-height: 1.25;
 }
 
 /* Bars grow out of a centre line: right helps the video, left hurts it. */
@@ -271,6 +270,6 @@
   }
 
   .eng-hit small {
-    font-size: 10px;
+    font-size: 11px;
   }
 }

@@ -36,8 +36,8 @@
   position: absolute;
   bottom: calc(100% + 4px);
   left: 50%;
-  color: var(--muted);
-  font-size: 10px;
+  color: color-mix(in srgb, var(--muted), var(--text) 30%);
+  font-size: 11px;
   transform: translateX(-50%);
 }
 

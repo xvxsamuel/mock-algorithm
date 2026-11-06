@@ -227,6 +227,13 @@
   }
 }
 
+/* Laptops 720 px tall: smaller tiles, so the lens fits. */
+@media (max-height: 760px) {
+  .swap-tile > * {
+    max-width: 104px;
+  }
+}
+
 @media (max-width: 560px) {
   .swap {
     gap: 8px 10px;

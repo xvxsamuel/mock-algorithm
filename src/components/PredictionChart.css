@@ -5,9 +5,10 @@
   grid-template-columns: repeat(16, minmax(0, 1fr));
   grid-template-rows: minmax(0, 1fr);
   gap: 6px;
-  min-height: 110px;
-  /* The left gutter holds the seconds label, clear of the bars. */
-  padding: 0 0 22px 26px;
+  min-height: 132px;
+  /* The left gutter holds the seconds label, clear of the bars. The top
+     holds the live tag, so a bar at the cap never lifts it out. */
+  padding: 22px 0 22px 26px;
 }
 
 .pchart-col {
@@ -124,12 +125,12 @@
 .pchart-tag {
   position: absolute;
   left: 50%;
-  margin-bottom: 6px;
-  padding: 1px 4px;
+  margin-bottom: 4px;
+  padding: 1px 5px;
   border-radius: 999px;
   background: rgb(255 255 255 / 0.14);
   color: var(--text);
-  font-size: 10px;
+  font-size: 11px;
   font-weight: 700;
   line-height: 1.3;
   white-space: nowrap;
