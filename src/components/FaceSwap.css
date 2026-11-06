@@ -126,6 +126,11 @@
   cursor: pointer;
 }
 
+.swap-face.is-empty svg {
+  width: 40%;
+  height: auto;
+}
+
 .swap-face.is-empty:hover,
 .swap-face.is-empty:focus-visible {
   background: rgb(37 244 238 / 0.15);

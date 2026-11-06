@@ -3,6 +3,7 @@ import { CATEGORY_COLORS } from "../data/categories";
 import { FACE_SWAPS } from "../data/scans";
 import type { Video } from "../data/videos";
 import { useUserCam, type CamStatus } from "../hooks/useUserCam";
+import Icon from "./Icon";
 import ReachBar from "./ReachBar";
 import "./FaceSwap.css";
 
@@ -91,7 +92,7 @@ function FaceSwap({ video, scanKey }: FaceSwapProps) {
                 disabled={status === "starting"}
                 aria-label="Put your face in: turn on the camera"
               >
-                +
+                <Icon name="camera" />
               </button>
             )}
             {on && (

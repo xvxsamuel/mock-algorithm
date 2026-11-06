@@ -37,8 +37,8 @@ function ContentLens({ feed }: ContentLensProps) {
               backgroundImage: `linear-gradient(160deg, ${from}, ${to})`,
             }}
           >
-            <p className="con-mini-text">
-              <span className="con-box is-text">{video.overlay}</span>
+            <p className="con-box is-text">
+              <span className="con-mini-sticker">{video.overlay}</span>
             </p>
             <span className="con-box is-subject">
               <span className="con-tag">

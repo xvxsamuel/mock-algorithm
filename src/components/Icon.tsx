@@ -28,7 +28,8 @@ export type IconName =
   | "clockOff"
   | "infinity"
   | "layers"
-  | "eye";
+  | "eye"
+  | "camera";
 
 const ICONS: Record<IconName, { path: string; filled: boolean }> = {
   heart: {
@@ -113,6 +114,10 @@ const ICONS: Record<IconName, { path: string; filled: boolean }> = {
   },
   eye: {
     path: "M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7S2 12 2 12zM12 9a3 3 0 1 0 0 6 3 3 0 0 0 0-6z",
+    filled: false,
+  },
+  camera: {
+    path: "M3 8h4l2-3h6l2 3h4v11H3zM12 10a3.5 3.5 0 1 0 0 7 3.5 3.5 0 0 0 0-7z",
     filled: false,
   },
 };
