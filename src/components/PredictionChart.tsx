@@ -13,6 +13,8 @@ const LABEL_SPACE = 22;
 type PredictionChartProps = {
   finished: Impression[];
   current: Impression;
+  /** False while paused (also while the panel covers the video). */
+  playing: boolean;
 };
 
 /**
@@ -22,7 +24,7 @@ type PredictionChartProps = {
  * where you gave less. Watch the caps and bars line up. A sure hit, played
  * to stop you leaving, is marked pink.
  */
-function PredictionChart({ finished, current }: PredictionChartProps) {
+function PredictionChart({ finished, current, playing }: PredictionChartProps) {
   const shown = [...finished.slice(-(COLUMNS - 1)), current];
   const tallest = Math.max(
     ...shown.map((i) => Math.max(i.watchMs, i.predictedMs)),
@@ -88,7 +90,7 @@ function PredictionChart({ finished, current }: PredictionChartProps) {
                 className={sureHit ? "pchart-tag is-sure-hit" : "pchart-tag"}
                 style={{ bottom: pct(Math.max(guess, actual)) }}
               >
-                {sureHit ? "sure hit" : "now"}
+                {sureHit ? "sure hit" : playing ? "now" : "paused"}
               </span>
             )}
             <span className="pchart-emoji" aria-hidden="true">

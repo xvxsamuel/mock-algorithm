@@ -35,11 +35,9 @@ export type FeedItem = {
   ranking: Ranking;
   /** How long the app expects you to watch it, decided before it plays. */
   predictedMs: number;
-  /** The exit risk when this video was picked, 0-1. */
-  riskWhenQueued: number;
-  /** The biggest reason for that risk, e.g. "skipping". */
+  /** The biggest reason for the exit risk when it was picked, e.g. "skipping". */
   reasonWhenQueued: ExitReason | null;
-  /** The exit risk when it started playing (the risk may move in between). */
+  /** The exit risk (0-1) when it started playing; it may move after the pick. */
   riskWhenPlayed: number;
 };
 
@@ -290,7 +288,6 @@ function queueNextVideo(state: State, seed: number): State {
           state.history,
           ranking.source === "rescue",
         ),
-        riskWhenQueued: risk.value,
         reasonWhenQueued: risk.reason,
         riskWhenPlayed: risk.value,
       },
@@ -353,7 +350,6 @@ function createInitialState(): State {
     video: ranking.pick.video,
     ranking,
     predictedMs,
-    riskWhenQueued: 0,
     reasonWhenQueued: null,
     riskWhenPlayed: 0,
   };

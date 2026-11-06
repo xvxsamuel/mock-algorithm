@@ -1,3 +1,4 @@
+import type { ScorePart } from "../algorithm/ranking";
 import { SOURCE_LABELS } from "../algorithm/sources";
 import type { FeedController } from "../hooks/useFeed";
 import ExperimentField from "./ExperimentField";
@@ -59,7 +60,7 @@ function EngineLens({ feed }: EngineLensProps) {
           </div>
           {/* "off by 4.1s → 1.6s": how much closer it got to guessing you. */}
           <p className="eng-hits">
-            <span className="unit">off by</span>
+            <span className="unit">typical miss</span>
             {first !== null && (
               <>
                 <span className="eng-hit">
@@ -83,7 +84,11 @@ function EngineLens({ feed }: EngineLensProps) {
             </span>
           </p>
         </div>
-        <PredictionChart finished={finished} current={current} />
+        <PredictionChart
+          finished={finished}
+          current={current}
+          playing={feed.playing}
+        />
       </section>
 
       <div className="row">
@@ -98,11 +103,12 @@ function EngineLens({ feed }: EngineLensProps) {
           <ul className="why" data-link="why">
             {sureHit && (
               <li className="why-part is-rescue">
-                {/* The chain: what you did → how close you were to leaving. */}
+                {/* The chain: what you did → you were leaving. The dial
+                    above carries the numbers. */}
                 <span className="why-label">
                   {currentItem.reasonWhenQueued !== null &&
                     `${currentItem.reasonWhenQueued} → `}
-                  {Math.round(currentItem.riskWhenQueued * 100)}% about to leave
+                  about to leave
                 </span>
                 <span className="why-track">
                   <span className="why-bar is-rescue" />
@@ -114,9 +120,7 @@ function EngineLens({ feed }: EngineLensProps) {
                 <span className="why-label">{part.label}</span>
                 <span className="why-track">
                   <span
-                    className={
-                      part.value >= 0 ? "why-bar is-up" : "why-bar is-down"
-                    }
+                    className={`why-bar ${barClass(part)}`}
                     style={{
                       width: `${(Math.abs(part.value) / widest) * 50}%`,
                     }}
@@ -140,6 +144,12 @@ function EngineLens({ feed }: EngineLensProps) {
       </div>
     </div>
   );
+}
+
+/** Right for, left against; cyan when it comes from you, grey when not. */
+function barClass(part: ScorePart): string {
+  if (part.value < 0) return "is-down";
+  return part.from === "you" ? "is-up" : "is-up is-engine";
 }
 
 function seconds(ms: number): string {

@@ -19,7 +19,12 @@ const HARD_REPEAT_WINDOW = 8;
 /** Videos shown within this many slots get a penalty. */
 const SOFT_REPEAT_WINDOW = 24;
 
-export type ScorePart = { label: string; value: number };
+export type ScorePart = {
+  label: string;
+  value: number;
+  /** "you": it follows from what you watched. "engine": the engine's own rule. */
+  from: "you" | "engine";
+};
 
 export type ScoredVideo = {
   video: Video;
@@ -119,26 +124,39 @@ function scoreVideo(
     {
       label: `interest in ${video.category}`,
       value: topicInterest * WEIGHTS.interest,
+      from: "you",
     },
     {
       label: `interest in @${video.creator}`,
       value: creatorInterest * WEIGHTS.creator,
+      from: "you",
     },
-    { label: "popularity", value: popularity(video) * WEIGHTS.popularity },
+    {
+      label: "popularity",
+      value: popularity(video) * WEIGHTS.popularity,
+      from: "engine",
+    },
     {
       // The more you like a topic, the more extreme versions of it you get.
       label: "intensity boost",
       value: Math.max(topicInterest, 0) * video.intensity * WEIGHTS.intensity,
+      from: "engine",
     },
     {
       label: "seen recently",
       value: seenRecently ? WEIGHTS.seenRecently : 0,
+      from: "engine",
     },
     {
       label: "same topic in a row",
       value: sameTopicInARow * WEIGHTS.sameTopicInARow,
+      from: "engine",
     },
-    { label: "a bit of chance", value: random() * WEIGHTS.jitter },
+    {
+      label: "a bit of chance",
+      value: random() * WEIGHTS.jitter,
+      from: "engine",
+    },
   ];
 
   const score = parts.reduce((sum, part) => sum + part.value, 0);

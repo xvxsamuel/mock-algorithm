@@ -14,9 +14,16 @@ export type ExitRisk = {
   reason: ExitReason | null;
 };
 
-/** A video that held you: mostly watched, or reacted to. */
+/** Held this long, a short video did its job, however long it runs. */
+const HELD_MS = 6000;
+
+/** A video that held you: mostly watched, watched a while, or reacted to. */
 export function isHit(impression: Impression): boolean {
-  return watchRatio(impression) >= 0.6 || hasReaction(impression);
+  return (
+    watchRatio(impression) >= 0.6 ||
+    impression.watchMs >= HELD_MS ||
+    hasReaction(impression)
+  );
 }
 
 /**
