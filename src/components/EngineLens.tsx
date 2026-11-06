@@ -57,8 +57,8 @@ function EngineLens({ feed }: EngineLensProps) {
               </span>
             </p>
           </div>
-          {/* "1.1s vs 2.9s": what knowing you is worth, against a blind
-              guess of your average. Over your latest videos. */}
+          {/* "1.1s vs 2.9s": what knowing you is worth. Not knowing you is
+              a blind guess of your average. Over your latest videos. */}
           <p
             className="eng-hits"
             title={
@@ -77,7 +77,7 @@ function EngineLens({ feed }: EngineLensProps) {
             <span className="eng-vs">vs</span>
             <span className="eng-hit is-baseline">
               <b>{miss === null ? "–" : seconds(miss.average)}</b>
-              <small>your average</small>
+              <small>not knowing you</small>
             </span>
           </p>
         </div>

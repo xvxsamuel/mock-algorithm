@@ -273,6 +273,7 @@ function queueNextVideo(state: State, seed: number): State {
     history: seen.map((item) => item.video),
     explorationRate: session.explorationRate,
     rescue,
+    holdMs: (video) => predictWatchMs(video, state.history, true),
     random: createRandom(seed),
   });
   return {
@@ -342,6 +343,7 @@ function createInitialState(): State {
     history: [],
     explorationRate: summarizeSession([], now, now).explorationRate,
     rescue: false,
+    holdMs: (video) => predictWatchMs(video, [], true),
     random: createRandom(Math.random()),
   });
   const predictedMs = predictWatchMs(ranking.pick.video, []);

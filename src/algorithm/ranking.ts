@@ -52,12 +52,15 @@ export type RankingInput = {
   explorationRate: number;
   /** You look about to leave: skip the tests and play the surest hit. */
   rescue: boolean;
+  /** How long it expects you to watch a video played as a sure hit. */
+  holdMs: (video: Video) => number;
   random: () => number;
 };
 
 /** Picks the next video for the feed and explains why. */
 export function rankNext(input: RankingInput): Ranking {
-  const { videos, profile, history, explorationRate, rescue, random } = input;
+  const { videos, profile, history, explorationRate, rescue, holdMs, random } =
+    input;
 
   // 1. Candidate generation: drop what was just shown.
   const blocked = new Set(
@@ -71,14 +74,14 @@ export function rankNext(input: RankingInput): Ranking {
     .map((video) => scoreVideo(video, profile, history, random))
     .sort((a, b) => b.score - a.score);
 
-  // 3a. Rescue: about to lose you, so play the strongest thing in your
-  //     favourite topic instead of testing anything new.
+  // 3a. Rescue: about to lose you, so play what it expects to hold you
+  //     longest instead of testing anything new.
   if (rescue) {
-    const pick = surestHit(scored, profile);
+    const pick = surestHit(scored, holdMs);
     return {
       pick,
       source: "rescue",
-      reason: `You looked about to leave, so it played your surest topic: ${pick.video.category}.`,
+      reason: `You looked about to leave, so it played what it expects to hold you longest: ${pick.video.category}.`,
       explorationRate,
       candidates: candidates.length,
       filteredOut: videos.length - candidates.length,
@@ -169,24 +172,18 @@ function popularity(video: Video): number {
   return Math.min(Math.max(value, 0), 1);
 }
 
-/** The most intense, best-scoring video in the topic you like most. */
+/** The video it expects you to watch longest; on a tie, the most intense,
+    best-scoring one. */
 function surestHit(
   scored: readonly ScoredVideo[],
-  profile: InterestProfile,
+  holdMs: (video: Video) => number,
 ): ScoredVideo {
-  let top: Category | null = null;
-  let best = -Infinity;
-  for (const [topic, score] of profile.topics) {
-    if (score > best) {
-      best = score;
-      top = topic;
-    }
-  }
-  const inTopic = scored.filter((entry) => entry.video.category === top);
-  if (inTopic.length === 0) return scored[0];
-  return inTopic.reduce((a, b) =>
-    b.score + b.video.intensity > a.score + a.video.intensity ? b : a,
-  );
+  const strength = (entry: ScoredVideo) => entry.score + entry.video.intensity;
+  return scored.reduce((a, b) => {
+    const longer = holdMs(b.video) - holdMs(a.video);
+    if (longer !== 0) return longer > 0 ? b : a;
+    return strength(b) > strength(a) ? b : a;
+  });
 }
 
 function leastShownTopic(

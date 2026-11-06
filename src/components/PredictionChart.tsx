@@ -87,7 +87,9 @@ function PredictionChart({ finished, current, playing }: PredictionChartProps) {
             <span className="pchart-guess" style={{ bottom: pct(guess) }} />
             {live && (
               <span
-                className={sureHit ? "pchart-tag is-sure-hit" : "pchart-tag"}
+                className={
+                  sureHit && playing ? "pchart-tag is-sure-hit" : "pchart-tag"
+                }
                 style={{ bottom: pct(Math.max(guess, actual)) }}
               >
                 {!playing ? "paused" : sureHit ? "sure hit" : "now"}
