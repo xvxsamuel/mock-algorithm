@@ -27,7 +27,7 @@ const SHORT_ATTENTION_MS = 4000;
 export type Lean =
   | "heated videos"
   | "restless"
-  | "past your plan"
+  | "over your plan"
   | "16–24"
   | "short attention"
   | "late at night"
@@ -37,7 +37,7 @@ export type Lean =
 const LEANS: readonly (readonly [Lean, number])[] = [
   ["heated videos", 0.16],
   ["restless", 0.14],
-  ["past your plan", 0.14],
+  ["over your plan", 0.14],
   ["16–24", 0.12],
   ["short attention", 0.1],
   ["late at night", 0.1],
@@ -72,7 +72,7 @@ export function leansOf(
     found.push("heated videos");
   }
   if (trait("mood") === "restless") found.push("restless");
-  if (pastPlan) found.push("past your plan");
+  if (pastPlan) found.push("over your plan");
   if (trait("age") === "16–24") found.push("16–24");
   const recent = impressions.slice(-8);
   const average =

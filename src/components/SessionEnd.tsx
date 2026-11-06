@@ -189,7 +189,7 @@ function SessionEnd({ feed, onBack, onRestart, returnTo }: SessionEndProps) {
             )}
             {overFrom !== -1 && (
               <li className="is-late">
-                <b>{seen.length - overFrom}</b> past your plan
+                <b>{seen.length - overFrom}</b> over your plan
               </li>
             )}
           </ul>

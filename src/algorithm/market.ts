@@ -124,7 +124,7 @@ export function weaknessesOf(
     }
     if (key === "age" && value === "16–24") found.add("16–24");
   }
-  if (pastPlan) found.add("past your plan");
+  if (pastPlan) found.add("over your plan");
   return found;
 }
 

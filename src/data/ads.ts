@@ -6,7 +6,7 @@ import type { Video } from "./videos";
  * Ad platforms sell audiences by interests, behaviour and device; these
  * stand in for the "moments" and states ads are aimed at.
  */
-export type Weakness = "restless" | "ready to buy" | "16–24" | "past your plan";
+export type Weakness = "restless" | "ready to buy" | "16–24" | "over your plan";
 
 /** A fictional brand that bids for your next ad slot. */
 export type Advertiser = {
@@ -41,7 +41,7 @@ export const ADVERTISERS: readonly Advertiser[] = [
     emoji: "💸",
     category: "finance",
     base: 2,
-    extra: { weakness: "past your plan", premium: 4.4 },
+    extra: { weakness: "over your plan", premium: 4.4 },
     cta: "Apply now",
     overlay: "€500 in 5 minutes. No questions.",
   }),
