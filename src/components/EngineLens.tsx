@@ -29,9 +29,11 @@ function EngineLens({ feed }: EngineLensProps) {
 
   // A sure hit's first reason is that you were about to leave.
   const sureHit = current.source === "rescue";
-  const parts = [...currentItem.ranking.pick.parts]
-    .sort((a, b) => Math.abs(b.value) - Math.abs(a.value))
-    .slice(0, sureHit ? WHY_PARTS - 1 : WHY_PARTS);
+  const parts = whyParts(
+    currentItem.ranking.pick.parts,
+    sureHit ? WHY_PARTS - 1 : WHY_PARTS,
+    current.source !== "explore",
+  );
   const widest =
     Math.max(0.5, ...parts.map((part) => Math.abs(part.value))) /
     (sureHit ? UNDER_RESCUE : 1);
@@ -141,6 +143,22 @@ function EngineLens({ feed }: EngineLensProps) {
       </div>
     </div>
   );
+}
+
+/**
+ * The biggest parts, biggest first. A pick made for you (not a test) always
+ * names the part of you it used, even when the engine's own rules weigh more.
+ */
+function whyParts(
+  all: readonly ScorePart[],
+  count: number,
+  forYou: boolean,
+): ScorePart[] {
+  const sorted = [...all].sort((a, b) => Math.abs(b.value) - Math.abs(a.value));
+  const shown = sorted.slice(0, count);
+  const yours = sorted.find((part) => part.from === "you" && part.value > 0);
+  if (!forYou || yours === undefined || shown.includes(yours)) return shown;
+  return [...shown.slice(0, count - 1), yours];
 }
 
 /** Right for, left against; cyan when it comes from you, grey when not. */
