@@ -146,15 +146,20 @@ function EngineLens({ feed }: EngineLensProps) {
 }
 
 /**
- * The biggest parts, biggest first. A pick made for you (not a test) always
- * names the part of you it used, even when the engine's own rules weigh more.
+ * The biggest parts, biggest first, and on an ad the payment first. A pick
+ * made for you (not a test) always names the part of you it used, even when
+ * the engine's own rules weigh more.
  */
 function whyParts(
   all: readonly ScorePart[],
   count: number,
   forYou: boolean,
 ): ScorePart[] {
-  const sorted = [...all].sort((a, b) => Math.abs(b.value) - Math.abs(a.value));
+  const sorted = [...all].sort(
+    (a, b) =>
+      Number(b.from === "paid") - Number(a.from === "paid") ||
+      Math.abs(b.value) - Math.abs(a.value),
+  );
   const shown = sorted.slice(0, count);
   const yours = sorted.find((part) => part.from === "you" && part.value > 0);
   if (!forYou || yours === undefined || shown.includes(yours)) return shown;

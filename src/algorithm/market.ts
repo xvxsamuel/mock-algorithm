@@ -9,8 +9,10 @@ import type { FeedSource } from "./sources";
 export const AD_EVERY = 6;
 /** Your interest in its topic can raise a bid by up to this many times its base. */
 const INTEREST_PULL = 2;
-/** A topic is named as a reason once it is this much of your interest. */
-const NAMED_SHARE = 0.15;
+/** It is sure of your taste after this many videos; before that, it bids less on it. */
+const LEARNED_AFTER = 18;
+/** A topic is named as a reason once it adds at least this much, in €. */
+const NAMED_FROM = 0.3;
 /** Bids wobble by up to ±this share, the same way for the same slot. */
 const JITTER = 0.16;
 
@@ -38,6 +40,8 @@ export type Auction = {
 export type AuctionInput = {
   topics: ReadonlyMap<Category, number>;
   weaknesses: ReadonlySet<Weakness>;
+  /** Videos it has watched you watch. */
+  seen: number;
   slot: number;
 };
 
@@ -48,6 +52,7 @@ export type AuctionInput = {
 export function runAuction({
   topics,
   weaknesses,
+  seen,
   slot,
 }: AuctionInput): Auction {
   const liked = [...topics.values()].reduce(
@@ -56,15 +61,16 @@ export function runAuction({
   );
   // The same slot always wobbles the same way, so live bids do not flicker.
   const random = createRandom((slot * 0.618034) % 1);
+  const sure = Math.min(seen / LEARNED_AFTER, 1);
   const bids = ADVERTISERS.map((advertiser): Bid => {
     const score = Math.max(topics.get(advertiser.category) ?? 0, 0);
     const share = liked === 0 ? 0 : score / liked;
     const weak = weaknesses.has(advertiser.extra.weakness);
     const anyone = advertiser.base * (1 + (random() - 0.5) * JITTER);
-    const interest = advertiser.base * INTEREST_PULL * share;
+    const interest = advertiser.base * INTEREST_PULL * share * sure;
     const premium = weak ? advertiser.extra.premium : 0;
     const because: string[] = [];
-    if (share >= NAMED_SHARE) because.push(advertiser.category);
+    if (interest >= NAMED_FROM) because.push(advertiser.category);
     if (weak) because.push(advertiser.extra.weakness);
     const total = anyone + interest + premium;
     return { advertiser, anyone, interest, premium, total, because };
@@ -120,7 +126,7 @@ export function adRanking(auction: Auction, explorationRate: number): Ranking {
   const { advertiser } = winner;
   const parts: Ranking["pick"]["parts"] = [
     {
-      label: `${advertiser.brand} paid most`,
+      label: `${advertiser.brand} paid`,
       value: winner.anyone,
       from: "paid",
     },

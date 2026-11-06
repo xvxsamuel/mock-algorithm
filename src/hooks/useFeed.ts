@@ -304,6 +304,7 @@ function queueNextVideo(state: State, seed: number): State {
             inferTraits(impressions, profile.topics),
             pastPlan(state),
           ),
+          seen: impressions.length,
           slot: sources.filter((source) => source === "ad").length + 1,
         })
       : null;
@@ -521,6 +522,7 @@ export function useFeed() {
       runAuction({
         topics: profile.topics,
         weaknesses: weaknessesOf(traits, pastPlan(state)),
+        seen: impressions.length,
         slot: sales.filter((sale) => sale.kind === "ad").length + 1,
       }),
     /** Swipes until the next ad, while the bidding is open. */

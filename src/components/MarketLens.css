@@ -1,4 +1,4 @@
-/* --- You, sold so far: one number, and a tile for each thing sold --- */
+/* --- You, sold so far: a tile for each thing sold, and what you fetched --- */
 
 .mkt-note {
   margin: 0;
@@ -8,9 +8,26 @@
 
 .mkt-sold-body {
   display: grid;
-  grid-template-columns: auto minmax(0, 1fr);
+  grid-template-columns: minmax(0, 1fr) auto;
   align-items: center;
-  gap: 28px;
+  gap: 24px;
+}
+
+/* Like a receipt: the time you gave, then what it was sold for. */
+.mkt-total {
+  text-align: right;
+}
+
+.mkt-for {
+  margin: 0 0 4px;
+  color: var(--muted);
+  font-size: 12px;
+}
+
+.mkt-for b {
+  color: var(--text);
+  font-weight: 650;
+  font-variant-numeric: tabular-nums;
 }
 
 .mkt-earned {
@@ -21,6 +38,10 @@
   line-height: 1;
   letter-spacing: -0.02em;
   font-variant-numeric: tabular-nums;
+}
+
+.mkt-earned.is-zero {
+  color: var(--muted);
 }
 
 .mkt-sales-wrap {
@@ -57,10 +78,10 @@
   }
 }
 
-/* An ad: labelled, and paid for per view. */
+/* An ad: labelled, and paid for per view. Solid, out in the open. */
 .mkt-sale.is-ad {
-  border: 1.5px solid var(--platform);
-  background: rgb(255 181 71 / 0.22);
+  background: var(--platform);
+  text-shadow: 0 0 3px rgb(0 0 0 / 0.6);
 }
 
 /* Paid, and nothing on the phone said so: dashed, like something hidden. */
@@ -73,7 +94,7 @@
 }
 
 .mkt-sale.is-empty {
-  border: 1.5px dashed var(--line-strong);
+  background: var(--line);
 }
 
 .mkt-earlier {
@@ -90,6 +111,20 @@
   margin: 0;
   color: var(--muted);
   font-size: 11px;
+}
+
+/* Who paid for what is on the phone right now. */
+.mkt-now {
+  margin: 0;
+  color: var(--muted);
+  font-size: 12px;
+  line-height: 1.35;
+  animation: mkt-in 0.4s var(--ease);
+}
+
+.mkt-now b {
+  color: var(--platform);
+  font-weight: 650;
 }
 
 .mkt-key-item::before {
@@ -143,11 +178,11 @@
   color: var(--platform);
 }
 
+/* Equal rows, so the bars keep one rhythm whether or not they have reasons. */
 .mkt-bids {
-  display: flex;
+  display: grid;
   flex: 1;
-  flex-direction: column;
-  justify-content: space-evenly;
+  grid-auto-rows: minmax(0, 1fr);
   gap: 10px;
   margin: 0 0 12px;
   padding: 0;
@@ -160,6 +195,7 @@
     "brand track price"
     ". because because";
   grid-template-columns: 150px minmax(0, 1fr) 70px;
+  align-content: start;
   align-items: center;
   gap: 6px 14px;
   opacity: 0.7;
@@ -244,15 +280,10 @@
   font-weight: 600;
 }
 
-/* The highest bid: amber. Once the slot is gone, it is sold. */
+/* The highest bid: its price in amber. Once the slot is gone, it is sold. */
 .mkt-bid.is-lead,
 .mkt-bid.is-won {
   opacity: 1;
-}
-
-.mkt-bid.is-lead .mkt-anyone,
-.mkt-bid.is-won .mkt-anyone {
-  background: var(--platform);
 }
 
 .mkt-bid.is-lead .mkt-price,
@@ -279,6 +310,7 @@
 
 @media (prefers-reduced-motion: reduce) {
   .mkt-sale,
+  .mkt-now,
   .mkt-anyone,
   .mkt-you,
   .mkt-chip.is-sold {

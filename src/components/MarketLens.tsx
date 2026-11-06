@@ -1,3 +1,4 @@
+import { formatClock } from "../algorithm/clock";
 import { yourPart } from "../algorithm/market";
 import type { FeedController } from "../hooks/useFeed";
 import "./MarketLens.css";
@@ -6,6 +7,8 @@ import "./MarketLens.css";
 const SCALE = 12;
 /** Sold things shown as tiles; older ones fold into "+N". */
 const TILES = 14;
+/** Only the top bids say what about you they are paying for. */
+const EXPLAINED = 3;
 
 type MarketLensProps = { feed: FeedController };
 
@@ -15,10 +18,14 @@ type MarketLensProps = { feed: FeedController };
  * raises your price.
  */
 function MarketLens({ feed }: MarketLensProps) {
-  const { market, currentItem } = feed;
+  const { market, currentItem, sessionMs } = feed;
   const { sales, stage, auction } = market;
-  const shown = sales.slice(-TILES);
+  // Newest first, so a line from the phone lands on it without crossing others.
+  const shown = sales.slice(-TILES).reverse();
   const earlier = sales.length - shown.length;
+  const sold = sales.length > 0;
+  // While a sold thing is on the phone, the key gives way to who paid.
+  const now = sales.find((sale) => sale.key === currentItem.key);
 
   return (
     <div className="lens">
@@ -28,13 +35,12 @@ function MarketLens({ feed }: MarketLensProps) {
           <p className="mkt-note">simulated prices</p>
         </div>
         <div className="mkt-sold-body">
-          <p className="mkt-earned">€{market.earned.toFixed(4)}</p>
           <div className="mkt-sales-wrap">
-            <ol className="mkt-sales" data-link="sold">
-              {earlier > 0 && <li className="mkt-earlier">+{earlier}</li>}
-              {shown.map((sale) => (
+            <ol className="mkt-sales">
+              {shown.map((sale, i) => (
                 <li
                   key={sale.key}
+                  data-link={i === 0 ? "sold" : undefined}
                   className={[
                     "mkt-sale",
                     `is-${sale.kind}`,
@@ -49,13 +55,37 @@ function MarketLens({ feed }: MarketLensProps) {
                   {sale.emoji}
                 </li>
               ))}
-              {sales.length === 0 && (
+              {earlier > 0 && <li className="mkt-earlier">+{earlier}</li>}
+              {!sold && (
                 <li className="mkt-sale is-empty" aria-label="Nothing yet" />
               )}
             </ol>
-            <p className="mkt-key">
-              <span className="mkt-key-item is-ad">ad</span>
-              <span className="mkt-key-item is-paid">paid, no label</span>
+            {now === undefined ? (
+              <p className="mkt-key">
+                <span className="mkt-key-item is-ad">ad</span>
+                <span className="mkt-key-item is-paid">paid, no label</span>
+              </p>
+            ) : (
+              <p key={now.key} className="mkt-now">
+                {now.kind === "ad" ? (
+                  <>
+                    <b>{now.brand}</b> paid <b>€{now.price.toFixed(4)}</b> for
+                    this view
+                  </>
+                ) : (
+                  <>
+                    <b>{now.brand}</b> paid this creator. No label.
+                  </>
+                )}
+              </p>
+            )}
+          </div>
+          <div className="mkt-total">
+            <p className="mkt-for">
+              <b>{formatClock(sessionMs)}</b> of you
+            </p>
+            <p className={sold ? "mkt-earned" : "mkt-earned is-zero"}>
+              €{sold ? market.earned.toFixed(4) : "0"}
             </p>
           </div>
         </div>
@@ -63,7 +93,11 @@ function MarketLens({ feed }: MarketLensProps) {
 
       <section className="pane mkt-auction">
         <div className="pane-head">
-          <h2 className="eyebrow">The auction for your next ad</h2>
+          <h2 className="eyebrow">
+            {stage === "now"
+              ? "The auction that chose this ad"
+              : "The auction for your next ad"}
+          </h2>
           <p className={stage === "open" ? "mkt-stage" : "mkt-stage is-sold"}>
             {stage === "open"
               ? `in ${market.swipesToAd} ${market.swipesToAd === 1 ? "swipe" : "swipes"}`
@@ -72,13 +106,18 @@ function MarketLens({ feed }: MarketLensProps) {
                 : "playing now"}
           </p>
         </div>
-        <ol key={auction.slot} className="mkt-bids" data-link="auction">
+        <ol key={auction.slot} className="mkt-bids">
           {auction.bids.map((bid, i) => {
             const won = i === 0 && stage !== "open";
+            const reasons = i < EXPLAINED ? bid.because : [];
             const classes = ["mkt-bid"];
             if (i === 0) classes.push(won ? "is-won" : "is-lead");
             return (
-              <li key={bid.advertiser.id} className={classes.join(" ")}>
+              <li
+                key={bid.advertiser.id}
+                className={classes.join(" ")}
+                data-link={i === 0 ? "auction" : undefined}
+              >
                 <span className="mkt-brand">
                   <span className="mkt-logo" aria-hidden="true">
                     {bid.advertiser.emoji}
@@ -99,10 +138,10 @@ function MarketLens({ feed }: MarketLensProps) {
                   />
                 </span>
                 <span className="mkt-price">€{bid.total.toFixed(2)}</span>
-                {(won || bid.because.length > 0) && (
+                {(won || reasons.length > 0) && (
                   <span className="mkt-because">
                     {won && <span className="mkt-chip is-sold">sold</span>}
-                    {bid.because.map((reason) => (
+                    {reasons.map((reason) => (
                       <span key={reason} className="mkt-chip">
                         {reason}
                       </span>
