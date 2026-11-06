@@ -14,12 +14,21 @@
   gap: 4px 18px;
 }
 
+/* Wraps between its items, never inside one. */
 .eng-legend {
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
-  gap: 6px;
+  gap: 4px 14px;
   color: var(--muted);
   font-size: 12px;
+}
+
+.eng-legend > span {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  white-space: nowrap;
 }
 
 .eng-legend b {
@@ -33,12 +42,7 @@
   display: inline-block;
   width: 10px;
   height: 10px;
-  margin-left: 8px;
   border-radius: 2px;
-}
-
-.eng-key:first-child {
-  margin-left: 0;
 }
 
 .eng-key.is-guess {
@@ -114,14 +118,15 @@
   height: 8px;
 }
 
+/* The zero line: bars grow out of it, right for, left against. */
 .why-track::before {
   content: "";
   position: absolute;
-  top: -3px;
-  bottom: -3px;
+  top: -4px;
+  bottom: -4px;
   left: 50%;
   width: 1px;
-  background: var(--line-strong);
+  background: rgb(255 255 255 / 0.3);
 }
 
 .why-bar {
@@ -135,6 +140,23 @@
 .why-bar.is-up {
   left: 50%;
   background: var(--you);
+}
+
+/* "You were about to leave" outweighs everything: the whole track, pink. */
+.why-part.is-rescue .why-label {
+  color: var(--take);
+  font-weight: 650;
+}
+
+.why-part.is-rescue .why-track::before {
+  display: none;
+}
+
+.why-bar.is-rescue {
+  left: 0;
+  right: 0;
+  background: var(--take);
+  box-shadow: 0 0 10px rgb(254 44 85 / 0.5);
 }
 
 .why-bar.is-down {
@@ -185,5 +207,12 @@
 @media (max-width: 900px) {
   .lens > .eng-predict {
     flex: none;
+  }
+}
+
+/* Phones: the hit figure goes under the title instead of beside it. */
+@media (max-width: 560px) {
+  .eng-predict .pane-head {
+    flex-wrap: wrap;
   }
 }

@@ -356,11 +356,11 @@
   /* Soft edges where the cards scroll under the header and the strip. */
   .panel-body {
     overflow-y: auto;
-    padding-block: 10px 18px;
+    padding-block: 14px 18px;
     overscroll-behavior: contain;
     mask-image: linear-gradient(
       transparent,
-      #000 10px,
+      #000 16px,
       #000 calc(100% - 12px),
       transparent
     );

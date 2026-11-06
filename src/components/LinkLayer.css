@@ -95,6 +95,13 @@
   animation: link-show 0.2s ease-out forwards;
 }
 
+.link-dot {
+  fill: currentColor;
+  filter: drop-shadow(0 0 5px currentColor);
+  animation: link-show 0.15s ease-out forwards;
+  opacity: 0;
+}
+
 /* A small label above the target, e.g. "+0.4 comedy". */
 .link-chip {
   opacity: 0;
@@ -154,6 +161,7 @@
   }
 
   .link-box,
+  .link-dot,
   .link-chip,
   .link-notch {
     opacity: 1;

@@ -115,7 +115,11 @@ export function useLinks(feed: FeedController) {
         phone.getBoundingClientRect(),
         recent ? press.y : null,
       );
-      const box = outset(element.getBoundingClientRect(), 3);
+      // A ping marks the tab's label (a dot goes after it), not the tab.
+      const box = outset(
+        shown === null ? textRect(element) : element.getBoundingClientRect(),
+        3,
+      );
       const aim = { x: box.x, y: box.y + box.height / 2 };
       // Lines run behind the cards, so a target deep inside a card gets the
       // line to the card's edge at the target's height, then a trace inside.
@@ -338,6 +342,13 @@ function outset(rect: DOMRect, by: number): Box {
 function curve(from: Point, to: Point): string {
   const bend = (to.x - from.x) / 2;
   return `M ${from.x} ${from.y} C ${from.x + bend} ${from.y}, ${to.x - bend} ${to.y}, ${to.x} ${to.y}`;
+}
+
+/** Where the text inside an element is, e.g. a tab's label. */
+function textRect(element: Element): DOMRect {
+  const range = document.createRange();
+  range.selectNodeContents(element);
+  return range.getBoundingClientRect();
 }
 
 function middleOf(element: Element): Point {

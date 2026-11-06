@@ -1,8 +1,8 @@
 import type { Video } from "../data/videos";
 import type { Impression } from "./impression";
 
-/** Before it knows you, the app guesses a few seconds of attention. */
-const PRIOR_MS = 4000;
+/** Before it knows you, the app assumes the famous 8 seconds of attention. */
+export const ATTENTION_PRIOR_MS = 8000;
 /** How many "imaginary" videos the guess is worth against real data. */
 const PRIOR_WEIGHT = 1.5;
 /** A topic learns fast: one video of it nearly outweighs your average. */
@@ -45,7 +45,7 @@ export function predictWatchMs(
 function topicMs(video: Video, finished: readonly Impression[]): number {
   const overall = weightedMean(
     finished.map((i) => i.watchMs),
-    PRIOR_MS,
+    ATTENTION_PRIOR_MS,
     PRIOR_WEIGHT,
   );
   const sameTopic = finished
@@ -58,7 +58,7 @@ function topicMs(video: Video, finished: readonly Impression[]): number {
  * Your latest videos against what you usually give their topics, the newest
  * counting most. Only ever shortens a guess: skipping now means skipping next.
  */
-function moodOf(finished: readonly Impression[]): number {
+export function moodOf(finished: readonly Impression[]): number {
   if (finished.length < MOOD_FROM) return 1;
   let sum = 0;
   let weight = 0;

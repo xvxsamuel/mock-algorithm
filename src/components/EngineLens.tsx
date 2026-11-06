@@ -19,9 +19,11 @@ function EngineLens({ feed }: EngineLensProps) {
   const { recent, first } = feed.predictionHits;
   const finished = feed.history.map((entry) => entry.impression);
 
+  // A sure hit's first reason is that you were about to leave.
+  const sureHit = current.source === "rescue";
   const parts = [...currentItem.ranking.pick.parts]
     .sort((a, b) => Math.abs(b.value) - Math.abs(a.value))
-    .slice(0, WHY_PARTS);
+    .slice(0, sureHit ? WHY_PARTS - 1 : WHY_PARTS);
   const widest = Math.max(0.5, ...parts.map((part) => Math.abs(part.value)));
 
   return (
@@ -32,12 +34,20 @@ function EngineLens({ feed }: EngineLensProps) {
             <h2 className="eyebrow">It predicts your watch time</h2>
             {/* The legend doubles as a readout for the video playing now. */}
             <p className="eng-legend">
-              <span className="eng-key is-guess" /> its guess
-              <b>{seconds(current.predictedMs)}</b>
-              <span className="eng-key is-actual" /> you
-              <b className="tone-you">{seconds(current.watchMs)}</b>
-              <span className="eng-key is-over" /> over
-              <span className="eng-key is-under" /> under
+              <span>
+                <span className="eng-key is-guess" /> its guess
+                <b>{seconds(current.predictedMs)}</b>
+              </span>
+              <span>
+                <span className="eng-key is-actual" /> you
+                <b className="tone-you">{seconds(current.watchMs)}</b>
+              </span>
+              <span>
+                <span className="eng-key is-over" /> over
+              </span>
+              <span>
+                <span className="eng-key is-under" /> under
+              </span>
             </p>
           </div>
           {/* "2/5 → 9/10": how much better it got at guessing you. */}
@@ -67,6 +77,17 @@ function EngineLens({ feed }: EngineLensProps) {
             </span>
           </div>
           <ul className="why" data-link="why">
+            {sureHit && (
+              <li className="why-part is-rescue">
+                <span className="why-label">
+                  about to leave: {Math.round(currentItem.riskWhenQueued * 100)}
+                  %
+                </span>
+                <span className="why-track">
+                  <span className="why-bar is-rescue" />
+                </span>
+              </li>
+            )}
             {parts.map((part) => (
               <li key={part.label} className="why-part">
                 <span className="why-label">{part.label}</span>

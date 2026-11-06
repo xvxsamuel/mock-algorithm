@@ -11,6 +11,8 @@ const TRACE_MS = 260;
 const CHAR_PX = 6.6;
 /** Targets bigger than this (px²) are whole cards: outline only, no fill. */
 const CARD_AREA = 30_000;
+/** Targets taller than this (px), like a chart column, get a quieter box. */
+const TALL_PX = 100;
 
 type LinkLayerProps = {
   links: Link[];
@@ -68,6 +70,7 @@ function LinkLayer({ links, onDone }: LinkLayerProps) {
           const { box, strength, label } = link;
           const isPing = link.style === "ping";
           const isCard = box.width * box.height > CARD_AREA;
+          const isTall = box.height > TALL_PX;
           const enter = TRAVEL_MS - 80;
           const arrive = isPing
             ? 0
@@ -103,21 +106,29 @@ function LinkLayer({ links, onDone }: LinkLayerProps) {
                   />
                 </>
               )}
-              <rect
-                className="link-box"
-                x={box.x}
-                y={box.y}
-                width={box.width}
-                height={box.height}
-                rx={isPing ? box.height / 2 : 10}
-                strokeOpacity={
-                  isPing ? 0.7 : isCard ? 0.45 : 0.5 + strength * 0.5
-                }
-                fillOpacity={
-                  isPing ? 0.12 : isCard ? 0 : 0.08 + strength * 0.14
-                }
-                style={{ animationDelay: `${arrive}ms` }}
-              />
+              {isPing ? (
+                // A dot after the tab's label: "something changed in here".
+                <circle
+                  className="link-dot"
+                  cx={box.x + box.width + 6}
+                  cy={box.y + box.height / 2}
+                  r={4}
+                />
+              ) : (
+                <rect
+                  className="link-box"
+                  x={box.x}
+                  y={box.y}
+                  width={box.width}
+                  height={box.height}
+                  rx={10}
+                  strokeOpacity={isCard || isTall ? 0.4 : 0.5 + strength * 0.5}
+                  fillOpacity={
+                    isCard ? 0 : isTall ? 0.05 : 0.08 + strength * 0.14
+                  }
+                  style={{ animationDelay: `${arrive}ms` }}
+                />
+              )}
               {label !== null && (
                 <g
                   className="link-chip"

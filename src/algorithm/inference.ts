@@ -1,9 +1,9 @@
 import type { Category } from "../data/categories";
 import { hasReaction, type Impression } from "./impression";
-import { QUICK_SKIP_MS } from "./signals";
+import { ATTENTION_PRIOR_MS, moodOf } from "./prediction";
 
-/** The attention span it assumes before you have watched anything. */
-const SPAN_PRIOR_MS = 8000;
+/** Below this, the mood the predictor reads off your skipping is "restless". */
+const RESTLESS_BELOW = 0.6;
 
 /** A guess about you that you never told the app. */
 export type Trait = {
@@ -51,19 +51,23 @@ export function inferTraits(
   const age = weight === 0 ? 0 : lean / weight;
   const ageBand = age < -0.25 ? "16–24" : age < 0.3 ? "25–34" : "35–44";
 
-  const recent = impressions.slice(-6);
-  const skips = recent.filter(
-    (i) => i.endedAt !== null && i.watchMs < QUICK_SKIP_MS,
-  ).length;
-  const long = recent.filter(
-    (i) => i.watchMs >= i.video.durationSec * 800,
-  ).length;
-  const mood = skips >= 3 ? "restless" : long >= 2 ? "absorbed" : "drifting";
+  // The same mood the watch-time guesses use, so when they drop, this says why.
+  const finished = impressions.filter((i) => i.endedAt !== null);
+  const long = impressions
+    .slice(-6)
+    .filter((i) => i.watchMs >= i.video.durationSec * 800).length;
+  const mood =
+    moodOf(finished) < RESTLESS_BELOW
+      ? "restless"
+      : long >= 2
+        ? "absorbed"
+        : "drifting";
 
   // Before you watch anything it assumes the famous 8 seconds.
   const watched = impressions.slice(-8);
   const watchedMs = watched.reduce((sum, i) => sum + i.watchMs, 0);
-  const span = watchedMs === 0 ? SPAN_PRIOR_MS : watchedMs / watched.length;
+  const span =
+    watchedMs === 0 ? ATTENTION_PRIOR_MS : watchedMs / watched.length;
 
   const shopping = SHOPPING.reduce(
     (sum, topic) => sum + Math.max(topics.get(topic) ?? 0, 0),

@@ -115,20 +115,16 @@ function YouLens({ feed }: YouLensProps) {
         </div>
         {/* Only what this video has sent so far, as it happens. */}
         <ul className="signals">
-          {fired.length === 0 ? (
-            <li className="signal-none">sending watch time only</li>
-          ) : (
-            fired.map(({ code, icon, label, up }) => (
-              <li
-                key={code}
-                className={up ? "signal is-up" : "signal is-down"}
-                data-link={`signal:${code}`}
-              >
-                <Icon name={icon} size={14} />
-                {label}
-              </li>
-            ))
-          )}
+          {fired.map(({ code, icon, label, up }) => (
+            <li
+              key={code}
+              className={up ? "signal is-up" : "signal is-down"}
+              data-link={`signal:${code}`}
+            >
+              <Icon name={icon} size={14} />
+              {label}
+            </li>
+          ))}
         </ul>
       </section>
     </div>
