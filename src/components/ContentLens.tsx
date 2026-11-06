@@ -92,7 +92,7 @@ function ContentLens({ feed }: ContentLensProps) {
         </div>
       </section>
 
-      <FaceSwap video={video} scanKey={currentItem.key} />
+      <FaceSwap video={video} />
     </div>
   );
 }

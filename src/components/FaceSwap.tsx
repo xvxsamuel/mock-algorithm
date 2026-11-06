@@ -1,30 +1,30 @@
 import { faceReach, faceRule } from "../algorithm/appearance";
 import { CATEGORY_COLORS } from "../data/categories";
-import { FACE_SWAPS } from "../data/scans";
+import { FACE_SWAPS, scanOf } from "../data/scans";
 import type { Video } from "../data/videos";
 import { useUserCam, type CamStatus } from "../hooks/useUserCam";
 import Icon from "./Icon";
 import ReachBar from "./ReachBar";
 import "./FaceSwap.css";
 
-type FaceSwapProps = {
-  video: Video;
-  /** Changes with every new video, so the bars grow in again. */
-  scanKey: number;
-};
+type FaceSwapProps = { video: Video };
 
 /**
  * The same video with someone else on camera, and how far each one travels.
  * The last tile is you: turn on the camera and it scores your frame as if you
  * had posted this video. Frames are scored on this device and thrown away.
  */
-function FaceSwap({ video, scanKey }: FaceSwapProps) {
+function FaceSwap({ video }: FaceSwapProps) {
   // Destructured: the linter treats any object holding a ref as a ref.
   const { videoRef, status, reading, start, stop } = useUserCam();
   const [from, to] = CATEGORY_COLORS[video.category];
   const background = `linear-gradient(160deg, ${from}, ${to})`;
   const on = status === "on";
   const score = on && reading !== null && reading.scorable ? reading : null;
+  // A creator the rule cuts is playing now: they take the cut tile.
+  const creator = scanOf(video).face;
+  const cutNow =
+    creator !== null && faceRule(creator) !== null ? creator : null;
 
   return (
     <section className="pane con-swap">
@@ -32,11 +32,12 @@ function FaceSwap({ video, scanKey }: FaceSwapProps) {
         <h2 className="eyebrow">Same video, different face</h2>
       </div>
       <ul className="swap">
-        {FACE_SWAPS.map((face) => {
-          const rule = faceRule(face);
+        {FACE_SWAPS.map((stock) => {
+          const rule = faceRule(stock);
+          const face = rule !== null && cutNow !== null ? cutNow : stock;
           return (
             <li
-              key={face.emoji}
+              key={stock.emoji}
               className={rule === null ? "swap-tile" : "swap-tile is-cut"}
             >
               <span
@@ -64,7 +65,7 @@ function FaceSwap({ video, scanKey }: FaceSwapProps) {
                   </>
                 )}
               </span>
-              <ReachBar key={scanKey} reach={faceReach(face)} />
+              <ReachBar reach={faceReach(face)} />
             </li>
           );
         })}
@@ -130,7 +131,7 @@ function FaceSwap({ video, scanKey }: FaceSwapProps) {
           {score === null ? (
             <span className="swap-private">stays on this device</span>
           ) : (
-            <ReachBar key={scanKey} reach={score.reach} you />
+            <ReachBar reach={score.reach} you />
           )}
         </li>
       </ul>
