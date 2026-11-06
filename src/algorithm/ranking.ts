@@ -77,7 +77,7 @@ export function rankNext(input: RankingInput): Ranking {
   // 3a. Rescue: about to lose you, so play what it expects to hold you
   //     longest instead of testing anything new.
   if (rescue) {
-    const pick = surestHit(scored, holdMs);
+    const pick = surestHit(scored, profile, holdMs);
     return {
       pick,
       source: "rescue",
@@ -172,14 +172,18 @@ function popularity(video: Video): number {
   return Math.min(Math.max(value, 0), 1);
 }
 
-/** The video it expects you to watch longest; on a tie, the most intense,
-    best-scoring one. */
+/** In a topic you like, the video it expects you to watch longest; on a
+    tie, the most intense, best-scoring one. */
 function surestHit(
   scored: readonly ScoredVideo[],
+  profile: InterestProfile,
   holdMs: (video: Video) => number,
 ): ScoredVideo {
+  const liked = scored.filter(
+    (entry) => (profile.topics.get(entry.video.category) ?? 0) > 0,
+  );
   const strength = (entry: ScoredVideo) => entry.score + entry.video.intensity;
-  return scored.reduce((a, b) => {
+  return (liked.length > 0 ? liked : scored).reduce((a, b) => {
     const longer = holdMs(b.video) - holdMs(a.video);
     if (longer !== 0) return longer > 0 ? b : a;
     return strength(b) > strength(a) ? b : a;
