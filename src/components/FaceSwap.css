@@ -77,12 +77,16 @@
 }
 
 /* Cut from For You: the video is still there, almost nobody sees it. */
+/* Pink, with a dark edge so it holds on warm videos too. */
 .swap-tile.is-cut .swap-thumb {
-  box-shadow: 0 0 0 1.5px var(--take);
+  box-shadow:
+    0 0 0 1.5px var(--take),
+    0 0 0 3px rgb(0 0 0 / 0.55);
 }
 
 .swap-tile.is-cut .swap-face {
   border-color: var(--take);
+  box-shadow: 0 0 0 1.5px rgb(0 0 0 / 0.45);
 }
 
 .swap-age {
