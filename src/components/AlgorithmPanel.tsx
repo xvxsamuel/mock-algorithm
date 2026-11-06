@@ -59,23 +59,16 @@ function AlgorithmPanel({ feed, onLeave }: AlgorithmPanelProps) {
         {/* Once you pass your plan, the time over it is the headline. */}
         <div className="panel-time">
           {over && intentMs !== null ? (
-            <>
-              <p className="panel-kicker tone-take">Over your plan</p>
-              <p className="clock is-over">
-                +{formatClock(sessionMs - intentMs)}
-                {/* Folded, the kicker is gone, so the clock says it. */}
-                <span className="clock-unit"> over</span>
-              </p>
-            </>
+            <p className="clock is-over">
+              +{formatClock(sessionMs - intentMs)}
+              <span className="clock-unit">{" over"}</span>
+            </p>
           ) : (
-            <>
-              <p className="panel-kicker">Time given</p>
-              <p className="clock">{formatClock(sessionMs)}</p>
-            </>
+            <p className="clock">{formatClock(sessionMs)}</p>
           )}
         </div>
         <LeaveMeter feed={feed} />
-        {started ? (
+        {started && (
           // Your time runs toward the one thing the app never offers.
           <div className="panel-time-row">
             {intentBar(sessionMs, intentMs)}
@@ -87,8 +80,6 @@ function AlgorithmPanel({ feed, onLeave }: AlgorithmPanelProps) {
               Leave
             </button>
           </div>
-        ) : (
-          <p className="intent-note">Pick a time on the phone to begin.</p>
         )}
       </header>
 
@@ -135,7 +126,7 @@ function AlgorithmPanel({ feed, onLeave }: AlgorithmPanelProps) {
 /** Planned time against real time. Past the plan, the bar turns pink. */
 function intentBar(sessionMs: number, intentMs: number | null) {
   if (intentMs === null) {
-    return <p className="intent-note">No limit set. Nothing will stop you.</p>;
+    return <p className="intent-note">No limit</p>;
   }
   const under = (Math.min(sessionMs, intentMs) / intentMs) * PLAN_AT * 100;
   const extra = Math.max(sessionMs - intentMs, 0) / (intentMs * OVER_SOFTNESS);

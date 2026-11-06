@@ -33,7 +33,7 @@ function ExperimentField({ sessionMs }: ExperimentFieldProps) {
   return (
     <div className="xfield">
       <div className="pane-head">
-        <h2 className="eyebrow">Tests running on you</h2>
+        <h2 className="eyebrow">Tests on you</h2>
         <p>
           <span className="figure">{MY_EXPERIMENTS.length}</span>
           <span className="unit">

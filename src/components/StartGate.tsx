@@ -14,7 +14,6 @@ function StartGate({ onStart }: StartGateProps) {
   return (
     <div className="gate">
       <div className="gate-inner">
-        <p className="gate-kicker">Before you start</p>
         <h2 className="gate-title">How long will you scroll?</h2>
         <div className="gate-options">
           {OPTIONS.map(({ label, ms }) => (
@@ -28,7 +27,6 @@ function StartGate({ onStart }: StartGateProps) {
             </button>
           ))}
         </div>
-        <p className="gate-note">The clock starts when you choose.</p>
       </div>
     </div>
   );

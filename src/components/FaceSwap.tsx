@@ -111,9 +111,6 @@ function FaceSwap({ video }: FaceSwapProps) {
                 >
                   ×
                 </button>
-                <span className="swap-local">
-                  <span className="swap-local-long">stays </span>on device
-                </span>
               </>
             )}
           </span>
@@ -136,8 +133,8 @@ function FaceSwap({ video }: FaceSwapProps) {
         </li>
       </ul>
       <p className="swap-source">
-        <q>too many wrinkles</q>: leaked TikTok moderation rules, 2019–20
-        (TikTok says no longer used)
+        Leaked TikTok moderation rules, 2019–20. TikTok says they are no longer
+        used.
       </p>
     </section>
   );
@@ -149,7 +146,7 @@ function youNote(status: CamStatus, waiting: boolean): string {
   if (status === "starting") return "allow camera…";
   if (status === "blocked") return "camera blocked";
   if (status === "unavailable") return "no camera";
-  return "if you posted it";
+  return "you";
 }
 
 export default FaceSwap;

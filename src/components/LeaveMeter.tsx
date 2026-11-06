@@ -19,9 +19,9 @@ function LeaveMeter({ feed }: LeaveMeterProps) {
   const to = Math.round(exitRisk.value * 100);
   const comparing = playing && !queued && from !== to;
 
-  let note: ReactNode;
+  let note: ReactNode = null;
   if (!started) {
-    note = <>starts when you do</>;
+    note = null;
   } else if (queued) {
     note = (
       <>
@@ -38,9 +38,7 @@ function LeaveMeter({ feed }: LeaveMeterProps) {
       </>
     );
   } else if (exitRisk.reason !== null) {
-    note = <>why: {exitRisk.reason}</>;
-  } else {
-    note = <>you're settled in</>;
+    note = exitRisk.reason;
   }
 
   return (
@@ -57,9 +55,11 @@ function LeaveMeter({ feed }: LeaveMeterProps) {
       />
       <div className="leave-text">
         <h2 className="eyebrow">Chance you leave</h2>
-        <p className={queued || playing ? "leave-note is-on" : "leave-note"}>
-          {note}
-        </p>
+        {note !== null && (
+          <p className={queued || playing ? "leave-note is-on" : "leave-note"}>
+            {note}
+          </p>
+        )}
       </div>
     </section>
   );

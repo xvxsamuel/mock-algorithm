@@ -15,7 +15,7 @@ const YEAR_DAYS = Math.round((TEEN_MINUTES_A_DAY * 365) / (24 * 60));
     another, all within TILES_MS; then the year fills. */
 const TILES_AT_MS = 1200;
 const TILES_MS = 700;
-const YEAR_AT_MS = 2000;
+const YEAR_AT_MS = 2300;
 /** Fewer videos than this: bigger tiles. */
 const FEW = 25;
 
@@ -79,7 +79,7 @@ function SessionEnd({ feed, onBack, onRestart, returnTo }: SessionEndProps) {
   const total = Math.max(sessionMs, intentMs ?? 0, 1);
   const planned = intentMs === null ? 0 : (intentMs / total) * 100;
   const step = TILES_MS / Math.max(seen.length, 1);
-  const paid = seen.filter((i) => paidPostOf(i.video) !== undefined).length;
+  const sponsors = seen.flatMap((i) => paidPostOf(i.video) ?? []);
 
   return (
     <div
@@ -111,9 +111,7 @@ function SessionEnd({ feed, onBack, onRestart, returnTo }: SessionEndProps) {
               <span className="end-clock">{formatClock(sessionMs)}</span>
             </p>
             {intentMs === null ? (
-              <p className="end-open">
-                No limit set. <b>Nothing stopped you.</b>
-              </p>
+              <p className="end-open">No limit</p>
             ) : over > 0 ? (
               <p className="end-stat is-right is-over">
                 <span className="end-clock">+{formatClock(over)}</span>
@@ -147,8 +145,7 @@ function SessionEnd({ feed, onBack, onRestart, returnTo }: SessionEndProps) {
 
         {/* Every video, coloured by who chose it. None by you. */}
         <section className="pane end-pane end-feed">
-          <h3 className="eyebrow">Who chose what you saw</h3>
-          <p className="end-verdict">All {seen.length} chosen for you</p>
+          <h3 className="end-verdict">All {seen.length} chosen for you</h3>
           <ol className={seen.length < FEW ? "end-tiles is-few" : "end-tiles"}>
             {seen.map((impression, i) => {
               const classes = ["end-tile", `is-${impression.source}`];
@@ -174,13 +171,20 @@ function SessionEnd({ feed, onBack, onRestart, returnTo }: SessionEndProps) {
               <li key={source} className={`is-${source}`}>
                 <b>{count}</b> {SOURCE_LABELS[source]}
                 {source === "ad" && market.earned > 0 && (
-                  <span className="end-price">€{market.earned.toFixed(4)}</span>
+                  <>
+                    {" "}
+                    for{" "}
+                    <span className="end-price">
+                      €{market.earned.toFixed(4)}
+                    </span>
+                  </>
                 )}
               </li>
             ))}
-            {paid > 0 && (
+            {sponsors.length > 0 && (
               <li className="is-paid">
-                <b>{paid}</b> secretly paid
+                <b>{sponsors.length}</b> secretly paid
+                {sponsors.length === 1 && ` by ${sponsors[0].brand}`}
               </li>
             )}
             {overFrom !== -1 && (
@@ -194,10 +198,10 @@ function SessionEnd({ feed, onBack, onRestart, returnTo }: SessionEndProps) {
         <div className="end-row">
           {/* The model of you stays when you go. */}
           <section className="pane end-pane end-keeps">
-            <h3 className="eyebrow">What it keeps</h3>
+            <h3 className="eyebrow">What it keeps and guesses</h3>
             <p className="end-points">
               {feed.counters.dataPoints.toLocaleString("en")}
-              <span>data points on you</span>
+              <span>data points</span>
             </p>
             <ul className="end-chips">
               {traits.map((trait) => (
@@ -218,8 +222,7 @@ function SessionEnd({ feed, onBack, onRestart, returnTo }: SessionEndProps) {
             <p className="end-days">
               <b>{YEAR_DAYS} days</b>
               <span>
-                {TEEN_MINUTES_A_DAY} min a day, even with TikTok&apos;s time
-                limit on
+                {TEEN_MINUTES_A_DAY} min a day, with TikTok&apos;s time limit on
               </span>
             </p>
           </section>

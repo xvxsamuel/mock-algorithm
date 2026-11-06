@@ -1,6 +1,9 @@
+/* A calendar: seven rows, a column a week, filled week by week. */
 .year {
   display: grid;
-  grid-template-columns: repeat(46, minmax(0, 1fr));
+  grid-auto-columns: minmax(0, 1fr);
+  grid-auto-flow: column;
+  grid-template-rows: repeat(7, auto);
   gap: 2px;
   margin: 0;
   padding: 0;
@@ -29,5 +32,11 @@
 @media (prefers-reduced-motion: reduce) {
   .year-day.is-gone {
     animation: none;
+  }
+}
+
+@media (max-width: 560px) {
+  .year {
+    gap: 1px;
   }
 }

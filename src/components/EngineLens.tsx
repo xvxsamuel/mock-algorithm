@@ -43,7 +43,7 @@ function EngineLens({ feed }: EngineLensProps) {
       <section className="pane eng-predict">
         <div className="pane-head">
           <div className="eng-title">
-            <h2 className="eyebrow">It predicts your watch time</h2>
+            <h2 className="eyebrow">Watch time</h2>
             <p className="eng-legend">
               <span>
                 <span className="eng-key is-guess" /> its guess

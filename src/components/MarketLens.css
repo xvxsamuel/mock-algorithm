@@ -1,10 +1,4 @@
-/* --- You, sold so far: a tile for each thing sold, and what you fetched --- */
-
-.mkt-note {
-  margin: 0;
-  color: var(--muted);
-  font-size: 11px;
-}
+/* --- Sold so far: a tile for each thing sold, and what you fetched --- */
 
 .mkt-sold-body {
   display: grid;
@@ -14,13 +8,13 @@
   gap: 24px;
 }
 
-/* Like a receipt: the time you gave, then what it was sold for. */
+/* Like a receipt: what you were sold for, and for how long. */
 .mkt-total {
   text-align: right;
 }
 
 .mkt-for {
-  margin: 0 0 4px;
+  margin: 6px 0 0;
   color: var(--muted);
   font-size: 12px;
 }
@@ -330,8 +324,6 @@
   background: var(--platform);
   color: #1a1206;
   font-weight: 700;
-  letter-spacing: 0.04em;
-  text-transform: uppercase;
   animation: mkt-in 0.4s var(--ease) 0.6s both;
 }
 

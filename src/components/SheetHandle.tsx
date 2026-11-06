@@ -37,7 +37,6 @@ function SheetHandle({ feed, open, onToggle }: SheetHandleProps) {
                 ? `+${formatClock(sessionMs - intentMs)} over`
                 : formatClock(sessionMs)}
             </span>
-            <span className="sheet-dot" aria-hidden="true" />
             {Math.round(exitRisk.value * 100)}% chance you leave
           </span>
         </>

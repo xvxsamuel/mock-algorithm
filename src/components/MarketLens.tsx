@@ -30,8 +30,7 @@ function MarketLens({ feed }: MarketLensProps) {
     <div className="lens">
       <section className="pane mkt-sold">
         <div className="pane-head">
-          <h2 className="eyebrow">You, sold so far</h2>
-          <p className="mkt-note">simulated prices</p>
+          <h2 className="eyebrow">Sold so far</h2>
         </div>
         <div className="mkt-sold-body">
           <div className="mkt-sales-wrap">
@@ -75,17 +74,13 @@ function MarketLens({ feed }: MarketLensProps) {
                   </>
                 ) : (
                   <>
-                    <b>{now.brand}</b> paid this creator. No label. Price
-                    unknown.
+                    <b>{now.brand}</b> paid this creator. No label.
                   </>
                 )}
               </p>
             )}
           </div>
           <div className="mkt-total">
-            <p className="mkt-for">
-              <b>{formatClock(sessionMs)}</b> of you
-            </p>
             <p className={sold ? "mkt-earned" : "mkt-earned is-zero"}>
               €{sold ? market.earned.toFixed(4) : "0"}
               {hidden && (
@@ -97,22 +92,21 @@ function MarketLens({ feed }: MarketLensProps) {
                 </span>
               )}
             </p>
+            <p className="mkt-for">
+              for <b>{formatClock(sessionMs)}</b>
+            </p>
           </div>
         </div>
       </section>
 
       <section className="pane mkt-auction">
         <div className="pane-head">
-          <h2 className="eyebrow">
-            {stage === "now"
-              ? "The auction that chose this ad"
-              : "The auction for your next ad"}
-          </h2>
+          <h2 className="eyebrow">Ad auction</h2>
           <p className={stage === "open" ? "mkt-stage" : "mkt-stage is-sold"}>
             {stage === "open"
               ? `in ${market.swipesToAd} ${market.swipesToAd === 1 ? "swipe" : "swipes"}`
               : stage === "next"
-                ? "sold · plays next"
+                ? "plays next"
                 : "playing now"}
           </p>
         </div>

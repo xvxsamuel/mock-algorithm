@@ -43,11 +43,11 @@ function YouLens({ feed }: YouLensProps) {
             <p className="you-name">{USER.name}</p>
             <p className="tone-muted">@{USER.handle}</p>
           </div>
-          {/* Switches on the moment you start scrolling. */}
+          {/* A recording light: on the moment you start scrolling. */}
           {feed.started && (
-            <p className="you-rec">
-              <span className="you-rec-dot" aria-hidden="true" /> profiling
-            </p>
+            <span className="you-rec" role="img" aria-label="Profiling">
+              <span className="you-rec-dot" />
+            </span>
           )}
           <div className="you-points">
             <p className="figure">{counters.dataPoints.toLocaleString("en")}</p>
@@ -57,15 +57,9 @@ function YouLens({ feed }: YouLensProps) {
 
         <div className="you-model-body">
           <div className="you-radar">
-            <h2 className="eyebrow">The model of you</h2>
             <InterestRadar topics={feed.topicScores} current={video.category} />
           </div>
           <div className="you-guesses">
-            <h2 className="eyebrow">
-              {feed.started
-                ? "Guessed, never asked"
-                : "Guessed before you pressed anything"}
-            </h2>
             <ul className="traits">
               {traits.map((trait) => (
                 <li
@@ -89,12 +83,6 @@ function YouLens({ feed }: YouLensProps) {
       </section>
 
       <section className="pane you-live">
-        <div className="pane-head">
-          <h2 className="eyebrow">Right now</h2>
-          <p className="tone-muted">
-            video {current.index} · @{video.creator}
-          </p>
-        </div>
         <div className="you-now">
           <span
             className="you-thumb"
@@ -110,7 +98,6 @@ function YouLens({ feed }: YouLensProps) {
             predictedMs={current.predictedMs}
             durationMs={video.durationSec * 1000}
             playing={feed.playing}
-            held={feed.held}
             started={feed.started}
           />
         </div>

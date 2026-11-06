@@ -1,16 +1,9 @@
-/* --- It reads every video: compact; the faces below get the height --- */
+/* --- Video scan: compact; the faces below get the height --- */
 
 .con-body {
   display: grid;
   grid-template-columns: auto minmax(0, 1fr);
   gap: 24px;
-}
-
-/* The numbers here are made up; the rule below is not. */
-.con-note {
-  margin: 0;
-  color: var(--muted);
-  font-size: 11px;
 }
 
 /* The video playing now, small, with the boxes a vision model would draw.

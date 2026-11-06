@@ -8,7 +8,8 @@ type YearGridProps = {
   delayMs?: number;
 };
 
-/** A year as 365 squares. The pink ones are whole days spent scrolling. */
+/** A year as a calendar, a column a week. The pink ones are whole days
+    spent scrolling. */
 function YearGrid({ filled, delayMs = 0 }: YearGridProps) {
   return (
     <ol className="year" aria-label={`${filled} of ${DAYS} days`}>

@@ -93,7 +93,7 @@ function InfluenceLens({ feed }: InfluenceLensProps) {
     <div className="lens">
       <section className="pane inf-network">
         <div className="pane-head">
-          <h2 className="eyebrow">A bot network</h2>
+          <h2 className="eyebrow">Bot network</h2>
         </div>
         <div className="inf-stage">
           <p className="inf-label is-bots">
@@ -153,12 +153,7 @@ function InfluenceLens({ feed }: InfluenceLensProps) {
             style={{ background: `linear-gradient(160deg, ${from}, ${to})` }}
           >
             {/* The engine takes the fake likes for a real trend. */}
-            {trending && (
-              <span className="inf-trending">
-                <span className="inf-trending-who">engine sees</span>
-                trending
-              </span>
-            )}
+            {trending && <span className="inf-trending">trending</span>}
             <span className="inf-emoji" aria-hidden="true">
               {boosted.emoji}
             </span>
@@ -194,7 +189,7 @@ function InfluenceLens({ feed }: InfluenceLensProps) {
             className="inf-you-label"
             style={{ left: `${PEOPLE[YOU].x}%`, top: `${PEOPLE[YOU].y + 9}%` }}
           >
-            you · {yours}%
+            you<span className="inf-you-pct">{yours}%</span>
           </span>
 
           <button
@@ -203,9 +198,14 @@ function InfluenceLens({ feed }: InfluenceLensProps) {
             disabled={!started || running}
             onClick={feed.release}
           >
-            {running
-              ? "Released"
-              : `${releasedAt === null ? "Release" : "Again"} · €${COST}`}
+            {running ? (
+              "Released"
+            ) : (
+              <>
+                {releasedAt === null ? "Release" : "Again"}
+                <span className="inf-cost">€{COST}</span>
+              </>
+            )}
           </button>
         </div>
       </section>
@@ -239,13 +239,13 @@ function InfluenceLens({ feed }: InfluenceLensProps) {
               {now !== undefined ? (
                 <p key={now.key} className="inf-now">
                   {order === 0 ? "Dressed as " : "Same message, as "}
-                  <b>{now.video.category}</b>. No label.
+                  <b>{now.video.category}</b>
                 </p>
               ) : (
                 !running &&
                 pushed.length > 0 && (
                   <p className="inf-now">
-                    Same message, <b>{PUSHES} disguises</b>. No label.
+                    One message, <b>{PUSHES} disguises</b>
                   </p>
                 )
               )}
@@ -263,7 +263,7 @@ function InfluenceLens({ feed }: InfluenceLensProps) {
             </p>
           </div>
           <div className="inf-score">
-            <p className="inf-kicker">it rates you persuadable</p>
+            <p className="inf-kicker">persuadable</p>
             <p
               className={
                 persuadable.reasons.length === 0

@@ -176,20 +176,6 @@
   content: "";
 }
 
-/* While the camera is on: nothing leaves the device. */
-.swap-local {
-  position: absolute;
-  bottom: 6px;
-  left: 50%;
-  padding: 1px 6px;
-  border-radius: 999px;
-  background: rgb(0 0 0 / 0.5);
-  color: #fff;
-  font-size: 9px;
-  white-space: nowrap;
-  transform: translateX(-50%);
-}
-
 .swap-private {
   color: var(--muted);
   font-size: 11px;
@@ -230,11 +216,6 @@
     width: 18px;
     height: 18px;
     font-size: 12px;
-  }
-
-  .swap-local {
-    bottom: 2px;
-    font-size: 8px;
   }
 
   .swap {
@@ -285,9 +266,5 @@
 
   .swap-age {
     display: inline;
-  }
-
-  .swap-local-long {
-    display: none;
   }
 }

@@ -72,12 +72,11 @@
   transition: width 0.25s linear;
 }
 
+/* Watched more than once: beside the time, in pink. */
 .watchbar-loops {
-  position: absolute;
-  right: 0;
-  bottom: 12px;
+  margin-left: 6px;
   color: var(--take);
-  font-size: 11px;
+  font-size: 13px;
   font-weight: 700;
 }
 

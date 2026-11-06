@@ -24,8 +24,7 @@ function ContentLens({ feed }: ContentLensProps) {
     <div className="lens">
       <section className="pane con-scan">
         <div className="pane-head">
-          <h2 className="eyebrow">It reads every video</h2>
-          <p className="con-note">simulated scores</p>
+          <h2 className="eyebrow">Video scan</h2>
         </div>
         <div className="con-body">
           {/* The video playing now, scanned again each time it changes. */}
@@ -76,7 +75,7 @@ function ContentLens({ feed }: ContentLensProps) {
                   {face.looks.toFixed(1)}
                   <span className="con-who-of">/10</span>
                 </span>
-                <span className="con-who-small">looks · age {face.age}</span>
+                <span className="con-who-small">looks</span>
               </p>
             ) : (
               <p className="con-who is-cut">

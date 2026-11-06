@@ -6,8 +6,6 @@ type WatchBarProps = {
   predictedMs: number;
   durationMs: number;
   playing: boolean;
-  /** Held because the panel covers the video, not paused by the user. */
-  held: boolean;
   /** False before the session starts: only the guess is shown. */
   started: boolean;
 };
@@ -28,7 +26,6 @@ function WatchBar({
   predictedMs,
   durationMs,
   playing,
-  held,
   started,
 }: WatchBarProps) {
   const scale = Math.max(
@@ -48,10 +45,10 @@ function WatchBar({
         {started ? (
           <span>
             <span className="watchbar-big">{seconds(watchMs)}</span>
+            {loops > 0 && <span className="watchbar-loops">×{loops + 1}</span>}
             <span className="tone-muted">
               {" "}
-              watched{" "}
-              {playing ? "" : held ? "· paused while you read" : "· paused"}
+              {playing ? "watched" : "paused"}
             </span>
           </span>
         ) : (
@@ -75,7 +72,6 @@ function WatchBar({
           className="watchbar-mark"
           style={{ left: `${predicted * 100}%` }}
         />
-        {loops > 0 && <span className="watchbar-loops">×{loops + 1}</span>}
       </div>
     </div>
   );

@@ -34,26 +34,21 @@
   line-height: 1.2;
 }
 
+/* A recording light beside your name. */
 .you-rec {
   display: flex;
-  align-items: center;
-  gap: 6px;
-  padding: 3px 9px;
-  border-radius: 999px;
-  background: rgb(254 44 85 / 0.12);
+  align-self: flex-start;
+  margin-top: 6px;
   color: var(--take);
-  font-size: 11px;
-  font-weight: 600;
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
   animation: you-rec-in 0.6s var(--ease);
 }
 
 .you-rec-dot {
-  width: 7px;
-  height: 7px;
+  width: 8px;
+  height: 8px;
   border-radius: 50%;
   background: currentColor;
+  box-shadow: 0 0 8px rgb(254 44 85 / 0.8);
   animation: you-blink 1.6s ease-in-out infinite;
 }
 
@@ -315,17 +310,11 @@
     font-size: 15px;
   }
 
-  .you-rec {
-    padding: 2px 7px;
-    font-size: 10px;
-  }
-
   .you-id .figure {
     font-size: 20px;
   }
 
   .you-points .eyebrow {
-    font-size: 9.5px;
-    letter-spacing: 0.08em;
+    font-size: 11px;
   }
 }
