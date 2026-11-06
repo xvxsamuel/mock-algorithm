@@ -57,6 +57,12 @@
   --tone: var(--platform);
 }
 
+/* Pushed by fake accounts, from outside the app. */
+.strip-cell.is-pushed,
+.strip-legend .is-pushed {
+  --tone: var(--influence);
+}
+
 /* Paid for, with no label on the phone: whoever chose it, plus an amber
    coin in the corner. */
 .strip-cell.is-paid::before {
@@ -166,6 +172,12 @@
 }
 
 @media (max-width: 560px) {
+  /* All five colours can be in the key at once. */
+  .strip-legend {
+    flex-wrap: wrap;
+    gap: 2px 12px;
+  }
+
   .strip-cells {
     grid-template-columns: repeat(11, minmax(0, 1fr));
   }

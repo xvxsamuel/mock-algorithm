@@ -457,4 +457,10 @@
   .panel-head {
     gap: 8px 10px;
   }
+
+  /* Five tabs across a phone. */
+  .lens-tab {
+    padding-inline: 4px;
+    font-size: 12px;
+  }
 }

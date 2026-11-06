@@ -4,18 +4,20 @@ import type { FeedController } from "../hooks/useFeed";
 import ContentLens from "./ContentLens";
 import EngineLens from "./EngineLens";
 import FeedStrip from "./FeedStrip";
+import InfluenceLens from "./InfluenceLens";
 import LeaveMeter from "./LeaveMeter";
 import MarketLens from "./MarketLens";
 import YouLens from "./YouLens";
 import "./AlgorithmPanel.css";
 
-export type Lens = "you" | "engine" | "content" | "market";
+export type Lens = "you" | "engine" | "content" | "market" | "influence";
 
 const LENSES: { id: Lens; label: string }[] = [
   { id: "you", label: "You" },
   { id: "engine", label: "Engine" },
   { id: "content", label: "Content" },
   { id: "market", label: "Market" },
+  { id: "influence", label: "Influence" },
 ];
 
 /** Where your plan ends on the time bar. It never moves. */
@@ -104,6 +106,7 @@ function AlgorithmPanel({ feed }: AlgorithmPanelProps) {
         {lens === "engine" && <EngineLens feed={feed} />}
         {lens === "content" && <ContentLens feed={feed} />}
         {lens === "market" && <MarketLens feed={feed} />}
+        {lens === "influence" && <InfluenceLens feed={feed} />}
       </div>
 
       <FeedStrip feed={feed} />

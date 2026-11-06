@@ -146,7 +146,8 @@ function EngineLens({ feed }: EngineLensProps) {
 }
 
 /**
- * The biggest parts, biggest first, and on an ad the payment first. A pick
+ * The biggest parts, biggest first, and on an ad or a push what bought it
+ * first. A pick
  * made for you (not a test) always names the part of you it used, even when
  * the engine's own rules weigh more.
  */
@@ -157,7 +158,7 @@ function whyParts(
 ): ScorePart[] {
   const sorted = [...all].sort(
     (a, b) =>
-      Number(b.from === "paid") - Number(a.from === "paid") ||
+      Number(bought(b)) - Number(bought(a)) ||
       Math.abs(b.value) - Math.abs(a.value),
   );
   const shown = sorted.slice(0, count);
@@ -166,10 +167,19 @@ function whyParts(
   return [...shown.slice(0, count - 1), yours];
 }
 
-/** Right for, left against; cyan from you, amber bought, grey the engine's. */
+/** Paid for, or pushed by fake accounts: shown first, it outranks the rest. */
+function bought(part: ScorePart): boolean {
+  return part.from === "paid" || part.from === "pushed";
+}
+
+/**
+ * Right for, left against; cyan from you, amber bought, violet pushed by
+ * outsiders, grey the engine's.
+ */
 function barClass(part: ScorePart): string {
   if (part.value < 0) return "is-down";
   if (part.from === "paid") return "is-up is-paid";
+  if (part.from === "pushed") return "is-up is-pushed";
   return part.from === "you" ? "is-up" : "is-up is-engine";
 }
 

@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState, type PointerEvent } from "react";
 import type { Signal } from "../algorithm/signals";
+import type { FeedSource } from "../algorithm/sources";
 import type { Category } from "../data/categories";
 import type { FeedController } from "./useFeed";
 
@@ -17,6 +18,8 @@ const MIN_CHANGE = 0.05;
 const SWIPE_CHANGE = 0.5;
 /** Targets that never make a hidden lens's tab glow: they change too often. */
 const QUIET = new Set(["scan"]);
+/** After a release, the line waits for the video to turn "trending" (ms). */
+const TRENDING_DELAY = 1700;
 /** Safety cap, in case a finished link never reports back. */
 const MAX_LINKS = 24;
 /** Lines enter the card around a target; these hold a whole card. */
@@ -35,9 +38,10 @@ export type Link = {
   id: number;
   /**
    * up = the algorithm now likes this more, down = less,
-   * keep = the engine acting to keep you in the app, sold = money changing hands.
+   * keep = the engine acting to keep you in the app, sold = money changing
+   * hands, pushed = outsiders getting something into your feed.
    */
-  tone: "up" | "down" | "keep" | "sold";
+  tone: "up" | "down" | "keep" | "sold" | "pushed";
   /** 0-1: how big the change was. Sets thickness, brightness and lifetime. */
   strength: number;
   /**
@@ -208,7 +212,7 @@ export function useLinks(feed: FeedController) {
             before,
             now,
             feed.current.video.category,
-            feed.upNext.ranking.source === "rescue",
+            feed.upNext.ranking.source,
           )
         : changesOnSwipe(before, feed);
     pulses.forEach(send);
@@ -241,7 +245,7 @@ function changesWhileWatching(
   before: Snapshot,
   now: Snapshot,
   category: Category,
-  rescueQueued: boolean,
+  queued: FeedSource,
 ): Pulse[] {
   const pulses: Pulse[] = [];
   const topic = `topic:${category}`;
@@ -271,12 +275,20 @@ function changesWhileWatching(
   }
 
   // Reacting re-ranks the queued video. So does the risk crossing the
-  // line mid-video: then a sure hit is swapped in, in pink.
+  // line mid-video: then a sure hit is swapped in, in pink. Releasing bots
+  // puts their video next: a violet line once it is trending.
   if (now.queueKey !== before.queueKey) {
     pulses.push(
-      rescueQueued
+      queued === "rescue"
         ? { target: "queue", change: FULL_CHANGE, delay: 0, tone: "keep" }
-        : { target: "queue", change: total, delay: 2 * STEP_MS },
+        : queued === "pushed"
+          ? {
+              target: "network",
+              change: FULL_CHANGE,
+              delay: TRENDING_DELAY,
+              tone: "pushed",
+            }
+          : { target: "queue", change: total, delay: 2 * STEP_MS },
     );
   }
   return pulses;
@@ -324,6 +336,23 @@ function changesOnSwipe(before: Snapshot, feed: FeedController): Pulse[] {
       tone: "sold",
     });
   }
+  // Fake accounts got their video in: next, or on your phone now.
+  if (feed.upNext.ranking.source === "pushed") {
+    pulses.push({
+      target: "network",
+      change: FULL_CHANGE,
+      delay: 3 * STEP_MS,
+      tone: "pushed",
+    });
+  }
+  if (feed.currentItem.ranking.source === "pushed") {
+    pulses.push({
+      target: "pushed",
+      change: FULL_CHANGE,
+      delay: STEP_MS,
+      tone: "pushed",
+    });
+  }
   // About to lose you: the engine swaps a sure hit into the queue.
   if (feed.upNext.ranking.source === "rescue") {
     pulses.push({
@@ -353,6 +382,7 @@ function lensOf(target: string): string {
   const [kind] = target.split(":");
   if (["topic", "signal", "trait"].includes(kind)) return "you";
   if (kind === "auction" || kind === "sold") return "market";
+  if (kind === "network" || kind === "pushed") return "influence";
   return kind === "scan" ? "content" : "engine";
 }
 

@@ -6,6 +6,14 @@ import {
 } from "../algorithm/impression";
 import { inferTraits } from "../algorithm/inference";
 import {
+  disguisesOf,
+  persuadableOf,
+  PUSHES,
+  pushDue,
+  pushesSince,
+  pushRanking,
+} from "../algorithm/influence";
+import {
   AD_EVERY,
   adDue,
   adRanking,
@@ -29,7 +37,8 @@ import {
 import { readSignals } from "../algorithm/signals";
 import { summarizeSession } from "../algorithm/session";
 import { paidPostOf } from "../data/ads";
-import { CATEGORIES } from "../data/categories";
+import { campaignVideo } from "../data/campaign";
+import { CATEGORIES, type Category } from "../data/categories";
 import { VIDEOS, type Video } from "../data/videos";
 
 /** How often the live numbers (watch time, session time) refresh. */
@@ -108,6 +117,16 @@ type State = {
   likedIds: string[];
   savedIds: string[];
   followedCreators: string[];
+  /**
+   * A bot network you released: when, the feed position its pushes count
+   * from, and the topics its pushes are dressed as (picked on release).
+   * Null until you release one.
+   */
+  network: {
+    releasedAt: number;
+    start: number;
+    disguises: readonly Category[];
+  } | null;
 };
 
 // Time and random seeds are passed in, so the reducer itself stays pure.
@@ -117,7 +136,8 @@ type Action =
   | { type: "view"; index: number; now: number; seed: number }
   | { type: "togglePause"; now: number }
   | { type: "hold"; held: boolean; now: number }
-  | { type: "react"; kind: ReactionKind; now: number; seed: number };
+  | { type: "react"; kind: ReactionKind; now: number; seed: number }
+  | { type: "release"; now: number; seed: number };
 
 function feedReducer(state: State, action: Action): State {
   switch (action.type) {
@@ -235,6 +255,21 @@ function feedReducer(state: State, action: Action): State {
         applyReaction({ ...state, now: action.now }, action.kind),
         action.seed,
       );
+
+    case "release": {
+      // One campaign at a time; once it has run its course, another.
+      if (!state.started || campaignLeft(state) > 0) return state;
+      const impressions = [...state.history, liveImpression(state, action.now)];
+      const network = {
+        releasedAt: action.now,
+        start: state.maxSeenIndex + 1,
+        disguises: disguisesOf(buildProfile(impressions).topics),
+      };
+      return queueNextVideo(
+        { ...state, now: action.now, network },
+        action.seed,
+      );
+    }
   }
 }
 
@@ -295,33 +330,49 @@ function queueNextVideo(state: State, seed: number): State {
   const risk = riskOf(state);
   const rescue = rescueDue(state, risk.value);
   const profile = buildProfile(impressions);
+  const traits = inferTraits(impressions, profile.topics);
   const sources = seen.map((item) => item.ranking.source);
+  // A released bot network gets its video in next, dressed as what you
+  // like. It goes first: a trend is worth more while it is fresh.
+  const pushed =
+    state.started && !rescue && pushDue(sources, state.network?.start ?? null)
+      ? nextPush(state)
+      : null;
   // Every few videos the slot is sold, unless you look about to leave:
   // then keeping you beats selling you.
   const auction =
-    state.started && !rescue && adDue(sources)
+    pushed === null && state.started && !rescue && adDue(sources)
       ? runAuction({
           topics: profile.topics,
-          weaknesses: weaknessesOf(
-            inferTraits(impressions, profile.topics),
-            pastPlan(state),
-          ),
+          weaknesses: weaknessesOf(traits, pastPlan(state)),
           seen: impressions.length,
           slot: sources.filter((source) => source === "ad").length + 1,
         })
       : null;
   const ranking =
-    auction === null
-      ? rankNext({
-          videos: VIDEOS,
-          profile,
-          history: seen.map((item) => item.video),
-          explorationRate: session.explorationRate,
-          rescue,
-          holdMs: (video) => predictWatchMs(video, state.history, true),
-          random: createRandom(seed),
-        })
-      : adRanking(auction, session.explorationRate);
+    auction !== null
+      ? adRanking(auction, session.explorationRate)
+      : pushed !== null
+        ? pushRanking(
+            pushed,
+            persuadableOf(
+              impressions,
+              traits,
+              pastPlan(state),
+              new Date(state.now).getHours(),
+            ),
+            profile.topics.get(pushed.category) ?? 0,
+            session.explorationRate,
+          )
+        : rankNext({
+            videos: VIDEOS,
+            profile,
+            history: seen.map((item) => item.video),
+            explorationRate: session.explorationRate,
+            rescue,
+            holdMs: (video) => predictWatchMs(video, state.history, true),
+            random: createRandom(seed),
+          });
   return {
     ...state,
     items: [
@@ -342,6 +393,27 @@ function queueNextVideo(state: State, seed: number): State {
     ],
     nextKey: state.nextKey + 1,
   };
+}
+
+/** The campaign's next video: the same message, in its next disguise. */
+function nextPush(state: State): Video | null {
+  if (state.network === null || campaignLeft(state) === 0) return null;
+  const { disguises } = state.network;
+  const made = PUSHES - campaignLeft(state);
+  return campaignVideo(disguises[made % disguises.length]);
+}
+
+/** Pushes the running campaign still has to make; 0 when none is running. */
+function campaignLeft(state: State): number {
+  if (state.network === null) return 0;
+  const seen = state.items.slice(0, state.maxSeenIndex + 1);
+  return (
+    PUSHES -
+    pushesSince(
+      seen.map((item) => item.ranking.source),
+      state.network.start,
+    )
+  );
 }
 
 /** You set a limit and you are past it. */
@@ -464,6 +536,7 @@ function createInitialState(): State {
     likedIds: [],
     savedIds: [],
     followedCreators: [],
+    network: null,
   };
   return queueNextVideo(state, Math.random());
 }
@@ -534,8 +607,38 @@ export function useFeed() {
         seen: impressions.length,
         slot: sales.filter((sale) => sale.kind === "ad").length + 1,
       }),
-    /** Swipes until the next ad, while the bidding is open. */
-    swipesToAd: Math.max(AD_EVERY - since, 1),
+    /** Swipes until the next ad, while the bidding is open. A push queued
+        first puts it back by one. */
+    swipesToAd:
+      Math.max(AD_EVERY - since, 1) +
+      (upNext.ranking.source === "pushed" && since >= AD_EVERY - 1 ? 1 : 0),
+  };
+  // Influence: the bot network you can release, and who it is pushed to.
+  const pushedItems = seenItems.filter(
+    (item) => item.ranking.source === "pushed",
+  );
+  // The one on the phone or next; else the one still to come; else the last.
+  const boosted =
+    [currentItem, upNext].find((item) => item.ranking.source === "pushed")
+      ?.video ??
+    nextPush(state) ??
+    pushedItems.at(-1)?.video ??
+    campaignVideo(disguisesOf(profile.topics)[0]);
+  const influence = {
+    /** When you released the bots, or null if you have not. */
+    releasedAt: state.network?.releasedAt ?? null,
+    /** Pushes still to come; 0 when no campaign is running. */
+    left: campaignLeft(state),
+    /** The campaign videos you have seen, oldest first. */
+    pushed: pushedItems.map((item) => ({ key: item.key, video: item.video })),
+    /** The video the bots are boosting now. */
+    boosted,
+    persuadable: persuadableOf(
+      impressions,
+      traits,
+      pastPlan(state),
+      new Date(state.now).getHours(),
+    ),
   };
   const loops = impressions.reduce(
     (sum, i) => sum + Math.min(Math.floor(watchRatio(i)), 3),
@@ -565,6 +668,7 @@ export function useFeed() {
     predictionMiss: predictionMiss(state.history),
     traits,
     market,
+    influence,
     counters: {
       autoplays: state.started ? impressions.length : 0,
       loops,
@@ -590,6 +694,9 @@ export function useFeed() {
     hold,
     react: (kind: ReactionKind) =>
       dispatch({ type: "react", kind, now: Date.now(), seed: Math.random() }),
+    /** Releases a bot network on a video, which then gets pushed to you. */
+    release: () =>
+      dispatch({ type: "release", now: Date.now(), seed: Math.random() }),
   };
 }
 

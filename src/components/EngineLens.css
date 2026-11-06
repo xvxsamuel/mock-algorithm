@@ -171,6 +171,11 @@
   background: var(--platform);
 }
 
+/* Faked by outsiders: fake accounts made it look popular. */
+.why-bar.is-pushed {
+  background: var(--influence);
+}
+
 /* "You were about to leave" outweighs everything: pink, from the zero line
    of the bars below to the end. Its words get the other three quarters. */
 .why-part.is-rescue {
@@ -235,6 +240,11 @@
 .why-source.is-ad {
   background: rgb(255 181 71 / 0.14);
   color: var(--platform);
+}
+
+.why-source.is-pushed {
+  background: rgb(167 139 250 / 0.16);
+  color: var(--influence);
 }
 
 @media (prefers-reduced-motion: reduce) {

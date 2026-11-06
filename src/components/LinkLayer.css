@@ -39,6 +39,11 @@
   color: var(--platform);
 }
 
+/* Outsiders pushing something in: violet. */
+.link.is-pushed {
+  color: var(--influence);
+}
+
 /* The line draws itself from the phone to the target. */
 .link-trail {
   fill: none;

@@ -24,9 +24,9 @@ export type ScorePart = {
   value: number;
   /**
    * "you": it follows from what you watched. "engine": the engine's own
-   * rule. "paid": an advertiser bought it.
+   * rule. "paid": an advertiser bought it. "pushed": fake accounts did.
    */
-  from: "you" | "engine" | "paid";
+  from: "you" | "engine" | "paid" | "pushed";
 };
 
 export type ScoredVideo = {
