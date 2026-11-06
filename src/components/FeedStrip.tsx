@@ -39,11 +39,12 @@ function FeedStrip({ feed }: FeedStripProps) {
       </div>
       <ol className="strip-cells" data-link="strip">
         {past.map((impression) => cell(impression))}
-        {cell(feed.current, "is-now")}
+        {cell(feed.current, "is-now", "now")}
         <li
           className={`strip-cell is-next is-${feed.upNext.ranking.source}`}
           title={`Up next, already chosen: ${SOURCE_LABELS[feed.upNext.ranking.source]}`}
           data-link="queue-cell"
+          data-tag="next"
         >
           <span className="strip-emoji">{feed.upNext.video.emoji}</span>
         </li>
@@ -52,7 +53,7 @@ function FeedStrip({ feed }: FeedStripProps) {
   );
 }
 
-function cell(impression: Impression, extra = "") {
+function cell(impression: Impression, extra = "", tag?: string) {
   const source: FeedSource = impression.source;
   const ratio = Math.min(watchRatio(impression), 1);
   return (
@@ -60,9 +61,12 @@ function cell(impression: Impression, extra = "") {
       key={impression.index}
       className={`strip-cell is-${source} ${extra}`}
       title={`#${impression.index} ${impression.video.category}, ${SOURCE_LABELS[source]}`}
+      data-tag={tag}
     >
       <span className="strip-emoji">{impression.video.emoji}</span>
-      <span className="strip-watch" style={{ width: `${ratio * 100}%` }} />
+      <span className="strip-watch">
+        <span style={{ width: `${ratio * 100}%` }} />
+      </span>
     </li>
   );
 }

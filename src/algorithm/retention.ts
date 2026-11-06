@@ -13,6 +13,11 @@ export type ExitRisk = {
   reason: ExitReason | null;
 };
 
+/** A video that held you: mostly watched, or reacted to. */
+export function isHit(impression: Impression): boolean {
+  return watchRatio(impression) >= 0.6 || hasReaction(impression);
+}
+
 /**
  * Guesses how close you are to closing the app. Made-up weights, but real
  * apps model exactly this ("session end prediction") and act on it.
@@ -32,9 +37,7 @@ export function exitRisk(
   }
   parts.push(["skipping", Math.min(streak * 0.2, 0.6)]);
 
-  const lastHit = finished.findLastIndex(
-    (i) => watchRatio(i) >= 0.6 || hasReaction(i),
-  );
+  const lastHit = finished.findLastIndex(isHit);
   const sinceHit = finished.length - 1 - lastHit;
   parts.push(["no hits", Math.min(Math.max(sinceHit - 2, 0) * 0.08, 0.4)]);
 

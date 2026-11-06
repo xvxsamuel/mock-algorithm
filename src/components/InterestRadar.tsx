@@ -25,7 +25,9 @@ function InterestRadar({ topics, current }: InterestRadarProps) {
   const max = Math.max(FULL, ...topics.map((topic) => topic.score));
   const points = CATEGORIES.map((name, i) => {
     const score = scores.get(name) ?? 0;
-    const r = score > 0 ? CORE + (1 - CORE) * (score / max) : CORE * 0.5;
+    // Square root, so a small interest is still visible next to a big one.
+    const r =
+      score > 0 ? CORE + (1 - CORE) * Math.sqrt(score / max) : CORE * 0.5;
     return polar(i, r);
   });
   const shape = `M ${points.map((p) => `${p.x.toFixed(1)} ${p.y.toFixed(1)}`).join(" L ")} Z`;

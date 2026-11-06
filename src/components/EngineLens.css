@@ -1,10 +1,10 @@
-/* --- Prediction: the one pane that grows to fill the height --- */
+/* --- Prediction: the hero, it grows to fill the height --- */
 
-.eng-predict {
+.lens > .eng-predict {
   display: flex;
   flex: 1 1 0;
   flex-direction: column;
-  min-height: 130px;
+  min-height: 170px;
 }
 
 .eng-title {
@@ -42,64 +42,18 @@
   background: var(--you);
 }
 
-/* --- Exit risk and "why this video" --- */
-
-.eng-middle {
-  grid-template-columns: minmax(0, 0.8fr) minmax(0, 1.2fr);
-}
-
-.eng-risk {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 4px;
-}
-
-.eng-risk .eyebrow {
-  align-self: flex-start;
-}
-
-.eng-rescue {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  padding: 3px 10px;
-  border-radius: 999px;
-  color: var(--muted);
-  font-size: 12px;
-}
-
-.eng-rescue.is-on {
-  background: rgb(254 44 85 / 0.14);
-  color: var(--take);
-  font-weight: 600;
-  animation: eng-pulse 1.4s ease-in-out infinite;
-}
-
-.eng-rescue-emoji {
-  font-size: 15px;
-}
-
-@keyframes eng-pulse {
-  50% {
-    box-shadow: 0 0 0 6px rgb(254 44 85 / 0);
-  }
-  0%,
-  100% {
-    box-shadow: 0 0 0 0 rgb(254 44 85 / 0.35);
-  }
-}
+/* --- Why this video --- */
 
 .why {
   display: flex;
   flex-direction: column;
-  gap: 7px;
-  margin-top: 10px;
+  gap: 8px;
+  margin-top: 12px;
 }
 
 .why-part {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) minmax(0, 1.1fr);
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
   align-items: center;
   gap: 10px;
 }
@@ -178,55 +132,31 @@
   color: var(--take);
 }
 
-/* --- Friction: the things that make stopping hard --- */
+/* --- Built in: quiet facts, no card --- */
 
-.eng-friction {
-  display: grid;
-  grid-template-columns: repeat(5, minmax(0, 1fr));
-  padding: 10px 6px;
-}
-
-.eng-friction li {
-  display: grid;
-  grid-template-columns: auto 1fr;
-  grid-template-rows: auto auto;
-  align-items: center;
-  gap: 0 8px;
-  padding: 0 10px;
-  border-left: 1px solid var(--line);
+.eng-built {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px 22px;
+  padding: 0 4px;
   color: var(--muted);
+  font-size: 12px;
 }
 
-.eng-friction li:first-child {
-  border-left: 0;
+.eng-built li {
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
 }
 
-.eng-friction-value {
+.eng-built-value {
   color: var(--text);
-  font-size: 20px;
-  font-weight: 600;
+  font-size: 15px;
+  font-weight: 650;
   font-variant-numeric: tabular-nums;
 }
 
-.eng-friction-label {
-  grid-column: 1 / -1;
-  font-size: 11px;
-  white-space: nowrap;
-}
-
-/* --- Experiments and the year --- */
-
-.eng-foot {
-  margin-top: 8px;
-  color: var(--muted);
-  font-size: 11px;
-}
-
 @media (prefers-reduced-motion: reduce) {
-  .eng-rescue.is-on {
-    animation: none;
-  }
-
   .why-bar {
     transition: none;
   }
@@ -235,12 +165,5 @@
 @media (max-width: 900px) {
   .lens > .eng-predict {
     flex: none;
-  }
-}
-
-@media (max-width: 560px) {
-  .eng-friction {
-    grid-template-columns: repeat(3, minmax(0, 1fr));
-    row-gap: 10px;
   }
 }

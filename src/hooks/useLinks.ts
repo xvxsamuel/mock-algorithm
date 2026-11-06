@@ -9,14 +9,12 @@ const PRESS_MEMORY_MS = 1000;
 const SNAP_MAX_WIDTH = 120;
 /** Pause between the steps of one chain: signal → interest → re-rank. */
 const STEP_MS = 220;
-/** While watching, a dot is sent every time topic interest grows by this much. */
-const WATCH_STEP = 0.1;
 /** A change this big (or bigger) gets the strongest animation. */
 const FULL_CHANGE = 2;
 /** Changes smaller than this are not worth a line. */
 const MIN_CHANGE = 0.05;
-/** How strong the line to "why this video" is after a swipe. */
-const WHY_CHANGE = 0.5;
+/** How strong the lines to "why this video" and the prediction are after a swipe. */
+const SWIPE_CHANGE = 0.5;
 /** Safety cap, in case a finished link never reports back. */
 const MAX_LINKS = 24;
 
@@ -31,10 +29,12 @@ export type Link = {
   /** 0-1: how big the change was. Sets thickness, brightness and lifetime. */
   strength: number;
   /**
-   * "line" for things the user did, "dot" for small passive updates,
-   * "ping" for a lens tab whose content is not on screen (no line, just a glow).
+   * "line" runs from the phone to the target. "ping" only makes a lens tab
+   * glow, for a target on a lens that is not open.
    */
-  style: "line" | "dot" | "ping";
+  style: "line" | "ping";
+  /** A short note shown where the line lands, e.g. "+0.4 comedy". */
+  label: string | null;
   from: Point;
   d: string;
   box: Box;
@@ -44,8 +44,8 @@ export type Link = {
 type Pulse = {
   target: string;
   change: number;
-  style: "line" | "dot";
   delay: number;
+  label?: string;
 };
 
 /** What the panel showed at the previous render. */
@@ -53,12 +53,11 @@ type Snapshot = {
   index: number;
   signals: Signal[];
   queueKey: number;
-  watchLevel: number;
 };
 
 /**
- * Watches the feed and sends a small animated line from the phone to every
- * part of the panel that just changed, sized by how big the change was.
+ * Watches the feed and sends an animated line from the phone to every part
+ * of the panel that just changed, sized by how big the change was.
  */
 export function useLinks(feed: FeedController) {
   const [links, setLinks] = useState<Link[]>([]);
@@ -80,7 +79,7 @@ export function useLinks(feed: FeedController) {
     lastPress.current = { y, time: performance.now() };
   }
 
-  function send({ target, change, style, delay }: Pulse) {
+  function send({ target, change, delay, label }: Pulse) {
     const timer = window.setTimeout(() => {
       timers.current.delete(timer);
       // The phone is the only element inside the feed area.
@@ -93,7 +92,6 @@ export function useLinks(feed: FeedController) {
 
       const press = lastPress.current;
       const recent =
-        style === "line" &&
         press !== null &&
         performance.now() - press.time < PRESS_MEMORY_MS + delay;
       const from = sideOf(
@@ -109,7 +107,8 @@ export function useLinks(feed: FeedController) {
         id: nextId.current++,
         tone: change >= 0 ? "up" : "down",
         strength: Math.min(Math.sqrt(Math.abs(change) / FULL_CHANGE), 1),
-        style: shown === null ? "ping" : style,
+        style: shown === null ? "ping" : "line",
+        label: shown === null ? null : (label ?? null),
         from,
         d: curve(from, to),
         box,
@@ -132,7 +131,6 @@ export function useLinks(feed: FeedController) {
       index: feed.current.index,
       signals: feed.currentSignals,
       queueKey: feed.upNext.key,
-      watchLevel: watchLevel(feed.currentSignals),
     };
     const before = previous.current;
     previous.current = now;
@@ -160,7 +158,7 @@ export function useLinks(feed: FeedController) {
   };
 }
 
-/** Same video still on screen: watch time grew, or the user reacted. */
+/** Same video still on screen: the user reacted (liked, saved, looped...). */
 function changesWhileWatching(
   before: Snapshot,
   now: Snapshot,
@@ -169,18 +167,7 @@ function changesWhileWatching(
   const pulses: Pulse[] = [];
   const topic = `topic:${category}`;
 
-  // Watching: faint dots, more often on short videos (interest grows faster).
-  const watched = now.watchLevel - before.watchLevel;
-  if (watched > 0) {
-    pulses.push({
-      target: topic,
-      change: watched * WATCH_STEP,
-      style: "dot",
-      delay: 0,
-    });
-  }
-
-  // Everything else (likes, saves, loops...): signal, then interest.
+  // Plain watching moves the radar by itself; only reactions get lines.
   let total = 0;
   const codes = new Set([...before.signals, ...now.signals].map((s) => s.code));
   codes.delete("WATCH");
@@ -194,76 +181,72 @@ function changesWhileWatching(
     }
     total += change;
     pulses.push(
-      { target: `signal:${code}`, change, style: "line", delay: 0 },
-      { target: topic, change, style: "line", delay: STEP_MS },
+      { target: `signal:${code}`, change, delay: 0 },
+      {
+        target: topic,
+        change,
+        delay: STEP_MS,
+        label: delta(change, category),
+      },
     );
     if (Math.abs(creator) >= 1) {
-      pulses.push({
-        target: "creators",
-        change: creator,
-        style: "line",
-        delay: STEP_MS,
-      });
+      pulses.push({ target: "creators", change: creator, delay: STEP_MS });
     }
   }
 
   // Reacting re-ranks the queued video.
   if (now.queueKey !== before.queueKey) {
-    pulses.push({
-      target: "queue",
-      change: total,
-      style: "line",
-      delay: 2 * STEP_MS,
-    });
+    pulses.push({ target: "queue", change: total, delay: 2 * STEP_MS });
   }
   return pulses;
 }
 
 /**
- * The user swiped: the new video is explained. (The strip logs the old one
- * by itself, so it needs no line.)
+ * The user swiped: what they did to the old video settles, and the new one
+ * is explained. (The strip logs the old one by itself, so it needs no line.)
  */
 function changesOnSwipe(before: Snapshot, feed: FeedController): Pulse[] {
   const finished = feed.history.at(-1);
   if (finished === undefined) return [];
   // Swiping can still change the score, e.g. a quick skip replaces WATCH.
   const settled = topicDelta(finished.signals) - topicDelta(before.signals);
+  const category = finished.impression.video.category;
 
   const pulses: Pulse[] = [];
   if (Math.abs(settled) >= MIN_CHANGE) {
     pulses.push({
-      target: `topic:${finished.impression.video.category}`,
+      target: `topic:${category}`,
       change: settled,
-      style: "line",
       delay: STEP_MS,
+      label: delta(settled, category),
     });
   }
   pulses.push(
-    { target: "why", change: WHY_CHANGE, style: "line", delay: 2 * STEP_MS },
-    {
-      target: "predict",
-      change: WHY_CHANGE,
-      style: "dot",
-      delay: 3 * STEP_MS,
-    },
+    { target: "why", change: SWIPE_CHANGE, delay: 2 * STEP_MS },
+    { target: "predict", change: SWIPE_CHANGE, delay: 3 * STEP_MS },
   );
   if (feed.upNext.ranking.source === "rescue") {
     pulses.push({
       target: "risk",
       change: -FULL_CHANGE,
-      style: "line",
       delay: 3 * STEP_MS,
+      label: "sure hit queued",
     });
   }
   if (feed.current.revisit) {
     pulses.push({
       target: "signal:REVISIT",
-      change: WHY_CHANGE,
-      style: "line",
+      change: SWIPE_CHANGE,
       delay: 2 * STEP_MS,
     });
   }
   return pulses;
+}
+
+/** "+0.4 comedy" or "−1.2 finance". */
+function delta(change: number, category: Category): string {
+  const sign = change >= 0 ? "+" : "−";
+  return `${sign}${Math.abs(change).toFixed(1)} ${category}`;
 }
 
 /** Which lens shows a target, for when that lens is not on screen. */
@@ -272,12 +255,6 @@ function lensOf(target: string): string {
   return ["topic", "signal", "creators", "trait"].includes(kind)
     ? "you"
     : "engine";
-}
-
-/** How many watch steps the live video has earned so far. */
-function watchLevel(signals: Signal[]): number {
-  const watch = signals.find((signal) => signal.code === "WATCH");
-  return watch === undefined ? 0 : Math.floor(watch.topic / WATCH_STEP);
 }
 
 function topicDelta(signals: Signal[]): number {

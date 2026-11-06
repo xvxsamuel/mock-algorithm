@@ -81,22 +81,85 @@ button {
   background: var(--bg);
 }
 
-/* Narrow screens: phone on top, panel underneath. */
+/* Only used on narrow screens, see below. */
+.sheet-handle {
+  display: none;
+}
+
+/* Narrow screens: the phone fills the screen and the panel is a sheet that
+   slides up over the lower part of the video, so the video stays in view. */
 @media (max-width: 900px) {
   .app {
-    grid-template-columns: 1fr;
-    height: auto;
+    display: block;
+  }
+
+  .app-feed {
+    height: 100dvh;
+    padding: 12px;
   }
 
   .app-panel {
-    overflow: visible;
-    border-top: 1px solid var(--line);
-    border-left: 0;
+    position: fixed;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    z-index: 40;
+    height: 68dvh;
+    overflow: hidden;
+    border: 1px solid var(--line-strong);
+    border-bottom: 0;
+    border-radius: 20px 20px 0 0;
+    background: rgb(11 11 15 / 0.97);
+    box-shadow: 0 -20px 60px rgb(0 0 0 / 0.6);
+    transform: translateY(calc(100% - 52px));
+    transition: transform 0.45s var(--ease);
+  }
+
+  .app-panel.is-open {
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    transform: none;
+  }
+
+  .sheet-handle {
+    position: sticky;
+    top: 0;
+    z-index: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 6px;
+    width: 100%;
+    padding: 8px 0 10px;
+    border: 0;
+    background: rgb(11 11 15 / 0.97);
+    color: var(--text);
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+  }
+
+  .sheet-grip {
+    width: 36px;
+    height: 4px;
+    border-radius: 2px;
+    background: var(--line-strong);
+  }
+
+  .sheet-handle:focus-visible {
+    outline: 2px solid var(--you);
+    outline-offset: -2px;
   }
 }
 
 @media (max-width: 600px) {
   .app-feed {
     padding: 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .app-panel {
+    transition: none;
   }
 }

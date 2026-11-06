@@ -9,7 +9,7 @@ import { predictionAccuracy, predictWatchMs } from "../algorithm/prediction";
 import { buildProfile } from "../algorithm/profile";
 import { createRandom } from "../algorithm/random";
 import { rankNext, type Ranking } from "../algorithm/ranking";
-import { exitRisk, RESCUE_AT } from "../algorithm/retention";
+import { exitRisk, isHit, RESCUE_AT } from "../algorithm/retention";
 import { readSignals } from "../algorithm/signals";
 import { summarizeSession } from "../algorithm/session";
 import { CATEGORIES } from "../data/categories";
@@ -30,6 +30,8 @@ export type FeedItem = {
   ranking: Ranking;
   /** How long the app expects you to watch it, decided before it plays. */
   predictedMs: number;
+  /** The exit risk when this video was picked, 0-1. */
+  riskWhenQueued: number;
 };
 
 export type ReactionKind =
@@ -229,15 +231,21 @@ function queueNextVideo(state: State, seed: number): State {
         video: ranking.pick.video,
         ranking,
         predictedMs: predictWatchMs(ranking.pick.video, state.history),
+        riskWhenQueued: risk.value,
       },
     ],
     nextKey: state.nextKey + 1,
   };
 }
 
+/**
+ * The exit risk right now. A video that is already holding you counts at
+ * once, so the risk falls while a "sure hit" plays.
+ */
 function riskOf(state: State) {
+  const live = liveImpression(state, state.now);
   return exitRisk(
-    state.history,
+    isHit(live) ? [...state.history, live] : state.history,
     state.now - state.sessionStart,
     state.intentMs,
     new Date(state.now).getHours(),
@@ -271,6 +279,7 @@ function createInitialState(): State {
     video: ranking.pick.video,
     ranking,
     predictedMs,
+    riskWhenQueued: 0,
   };
   const state: State = {
     started: false,

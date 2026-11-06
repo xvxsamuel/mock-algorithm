@@ -34,6 +34,7 @@
   display: grid;
   grid-template-columns: repeat(22, minmax(0, 1fr));
   gap: 4px;
+  padding-bottom: 13px;
 }
 
 .strip-cell,
@@ -56,10 +57,9 @@
   display: grid;
   place-items: center;
   aspect-ratio: 1;
-  overflow: hidden;
   border: 1px solid color-mix(in srgb, var(--tone) 45%, transparent);
   border-radius: 7px;
-  background: color-mix(in srgb, var(--tone) 14%, var(--bg));
+  background: color-mix(in srgb, var(--tone) 30%, var(--bg));
   animation: strip-in 0.5s var(--ease);
 }
 
@@ -78,10 +78,35 @@
 /* How much of the video you watched, as a thin bar along the bottom. */
 .strip-watch {
   position: absolute;
-  left: 0;
-  bottom: 0;
+  left: 3px;
+  right: 3px;
+  bottom: 2px;
   height: 3px;
+  overflow: hidden;
+  border-radius: 2px;
+}
+
+.strip-watch span {
+  display: block;
+  height: 100%;
   background: var(--tone);
+}
+
+/* "now" and "next" under the last two tiles. */
+.strip-cell[data-tag]::after {
+  content: attr(data-tag);
+  position: absolute;
+  top: calc(100% + 2px);
+  left: 50%;
+  color: var(--muted);
+  font-size: 9.5px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  transform: translateX(-50%);
+}
+
+.strip-cell.is-now::after {
+  color: var(--text);
 }
 
 .strip-cell.is-now {
@@ -94,6 +119,16 @@
   border-style: dashed;
   background: transparent;
   opacity: 0.75;
+}
+
+/* A rescue stays loud, queued or playing. */
+.strip-cell.is-next.is-rescue,
+.strip-cell.is-now.is-rescue {
+  border-style: solid;
+  border-color: var(--take);
+  background: rgb(254 44 85 / 0.22);
+  box-shadow: 0 0 12px rgb(254 44 85 / 0.55);
+  opacity: 1;
 }
 
 @media (prefers-reduced-motion: reduce) {

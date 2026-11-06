@@ -1,9 +1,12 @@
 /* --- Who you are to the app --- */
 
+/* Who the model is about, at the top of the model pane. */
 .you-id {
   display: flex;
   align-items: center;
   gap: 14px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid var(--line);
 }
 
 .you-avatar {
@@ -35,7 +38,6 @@
   display: flex;
   align-items: center;
   gap: 6px;
-  margin-right: auto;
   padding: 3px 9px;
   border-radius: 999px;
   background: rgb(254 44 85 / 0.12);
@@ -44,6 +46,7 @@
   font-weight: 600;
   letter-spacing: 0.06em;
   text-transform: uppercase;
+  animation: you-rec-in 0.6s var(--ease);
 }
 
 .you-rec-dot {
@@ -54,6 +57,13 @@
   animation: you-blink 1.6s ease-in-out infinite;
 }
 
+@keyframes you-rec-in {
+  from {
+    opacity: 0;
+    transform: scale(1.4);
+  }
+}
+
 @keyframes you-blink {
   50% {
     opacity: 0.2;
@@ -61,17 +71,26 @@
 }
 
 .you-points {
+  margin-left: auto;
   text-align: right;
 }
 
 /* --- The model: a shape and a list of guesses --- */
 
 .lens > .you-model {
-  display: grid;
+  display: flex;
   flex: 1 1 0;
+  flex-direction: column;
+  gap: 14px;
+  min-height: 300px;
+}
+
+.you-model-body {
+  display: grid;
+  flex: 1;
   grid-template-columns: minmax(0, 1.1fr) minmax(0, 0.9fr);
   gap: 22px;
-  min-height: 220px;
+  min-height: 0;
 }
 
 .you-radar {
@@ -226,6 +245,50 @@
   }
 }
 
+@media (max-height: 860px) {
+  .you-avatar {
+    width: 38px;
+    height: 38px;
+    font-size: 13px;
+  }
+
+  .you-id .figure {
+    font-size: 22px;
+  }
+
+  /* One line per guess: label, value and certainty side by side. */
+  .trait {
+    grid-template-columns: auto minmax(0, 1fr) auto;
+    gap: 3px 10px;
+  }
+
+  .trait-value {
+    grid-row: 1;
+    grid-column: 2;
+    font-size: 15px;
+  }
+
+  .trait-sure {
+    grid-row: 1;
+    grid-column: 3;
+  }
+
+  /* Signals as icons only. */
+  .signal {
+    padding: 7px 2px;
+  }
+
+  .signal span {
+    display: none;
+  }
+
+  .you-thumb {
+    width: 36px;
+    height: 48px;
+    font-size: 20px;
+  }
+}
+
 @media (max-width: 900px) {
   .lens > .you-model {
     flex: none;
@@ -239,7 +302,7 @@
 }
 
 @media (max-width: 560px) {
-  .lens > .you-model {
+  .you-model-body {
     grid-template-columns: 1fr;
   }
 
@@ -249,5 +312,10 @@
 
   .you-id {
     flex-wrap: wrap;
+  }
+
+  .you-points {
+    margin-left: 0;
+    text-align: left;
   }
 }

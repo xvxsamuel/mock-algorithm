@@ -5,6 +5,8 @@ import "./PredictionChart.css";
 const CAP_MS = 20_000;
 const MIN_SCALE_MS = 8000;
 const COLUMNS = 16;
+/** Room under the bars for the emoji, in px. Matches the CSS padding. */
+const LABEL_SPACE = 22;
 
 type PredictionChartProps = {
   finished: Impression[];
@@ -25,8 +27,21 @@ function PredictionChart({ finished, current }: PredictionChartProps) {
     CAP_MS,
   );
 
+  // One reference line, at a round number of seconds.
+  const tickMs = scale > 12_000 ? 10_000 : 5000;
+  const tick = tickMs / scale;
+
   return (
     <ol className="pchart" aria-label="Predicted against actual watch time">
+      <li
+        className="pchart-grid"
+        aria-hidden="true"
+        style={{
+          bottom: `calc(${LABEL_SPACE}px + (100% - ${LABEL_SPACE}px) * ${tick})`,
+        }}
+      >
+        <span>{tickMs / 1000}s</span>
+      </li>
       {Array.from({ length: COLUMNS }, (_, slot) => {
         const impression = shown[slot - (COLUMNS - shown.length)];
         if (impression === undefined) {

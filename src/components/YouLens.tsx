@@ -30,56 +30,61 @@ function YouLens({ feed }: YouLensProps) {
 
   return (
     <div className="lens">
-      <section className="pane you-id">
-        <span className="you-avatar" aria-hidden="true">
-          {initials(USER.name)}
-        </span>
-        <div className="you-who">
-          <p className="you-name">{USER.name}</p>
-          <p className="tone-muted">@{USER.handle}</p>
-        </div>
-        <p className="you-rec">
-          <span className="you-rec-dot" aria-hidden="true" /> recording
-        </p>
-        <div className="you-points">
-          <p className="figure">{counters.dataPoints.toLocaleString("en")}</p>
-          <p className="eyebrow">data points</p>
-        </div>
-      </section>
-
       <section className="pane you-model">
-        <div className="you-radar">
-          <h2 className="eyebrow">The model of you</h2>
-          <InterestRadar topics={feed.topicScores} current={video.category} />
-        </div>
-        <div className="you-guesses">
-          <h2 className="eyebrow">Guessed, never asked</h2>
-          <ul className="traits">
-            {traits.map((trait) => (
-              <li
-                key={trait.key}
-                className="trait"
-                data-link={`trait:${trait.key}`}
-              >
-                <span className="trait-label">{trait.label}</span>
-                <span className="trait-value">{trait.value}</span>
-                <span className="trait-bar">
-                  <span style={{ width: `${trait.confidence * 100}%` }} />
-                </span>
-                <span className="trait-sure">
-                  {Math.round(trait.confidence * 100)}% sure
-                </span>
-              </li>
-            ))}
-          </ul>
-          <p className="you-creators" data-link="creators">
-            {feed.creatorScores.length === 0
-              ? "No favourite creators yet"
-              : feed.creatorScores
-                  .slice(0, 3)
-                  .map((creator) => `@${creator.name}`)
-                  .join("  ·  ")}
-          </p>
+        <header className="you-id">
+          <span className="you-avatar" aria-hidden="true">
+            {initials(USER.name)}
+          </span>
+          <div className="you-who">
+            <p className="you-name">{USER.name}</p>
+            <p className="tone-muted">@{USER.handle}</p>
+          </div>
+          {/* Switches on the moment you start scrolling. */}
+          {feed.started && (
+            <p className="you-rec">
+              <span className="you-rec-dot" aria-hidden="true" /> profiling
+            </p>
+          )}
+          <div className="you-points">
+            <p className="figure">{counters.dataPoints.toLocaleString("en")}</p>
+            <p className="eyebrow">data points</p>
+          </div>
+        </header>
+
+        <div className="you-model-body">
+          <div className="you-radar">
+            <h2 className="eyebrow">The model of you</h2>
+            <InterestRadar topics={feed.topicScores} current={video.category} />
+          </div>
+          <div className="you-guesses">
+            <h2 className="eyebrow">Guessed, never asked</h2>
+            <ul className="traits">
+              {traits.map((trait) => (
+                <li
+                  key={trait.key}
+                  className="trait"
+                  data-link={`trait:${trait.key}`}
+                >
+                  <span className="trait-label">{trait.label}</span>
+                  <span className="trait-value">{trait.value}</span>
+                  <span className="trait-bar">
+                    <span style={{ width: `${trait.confidence * 100}%` }} />
+                  </span>
+                  <span className="trait-sure">
+                    {Math.round(trait.confidence * 100)}% sure
+                  </span>
+                </li>
+              ))}
+            </ul>
+            <p className="you-creators" data-link="creators">
+              {feed.creatorScores.length === 0
+                ? "No favourite creators yet"
+                : `You linger on ${feed.creatorScores
+                    .slice(0, 3)
+                    .map((creator) => `@${creator.name}`)
+                    .join(" · ")}`}
+            </p>
+          </div>
         </div>
       </section>
 
