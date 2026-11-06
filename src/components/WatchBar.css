@@ -5,12 +5,18 @@
 
 .watchbar-numbers {
   display: flex;
+  flex-wrap: wrap;
   justify-content: space-between;
   align-items: baseline;
-  gap: 12px;
+  gap: 2px 12px;
   margin-bottom: 8px;
   font-size: 12px;
   white-space: nowrap;
+}
+
+/* The guess stays on the right, also when it wraps under a long note. */
+.watchbar-numbers > :last-child {
+  margin-left: auto;
 }
 
 .watchbar-big {
