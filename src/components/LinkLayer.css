@@ -34,6 +34,11 @@
   color: var(--take);
 }
 
+/* Money changing hands: amber. */
+.link.is-sold {
+  color: var(--platform);
+}
+
 /* The line draws itself from the phone to the target. */
 .link-trail {
   fill: none;

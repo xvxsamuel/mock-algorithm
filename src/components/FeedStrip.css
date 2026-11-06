@@ -52,6 +52,25 @@
   --tone: var(--take);
 }
 
+.strip-cell.is-ad,
+.strip-legend .is-ad {
+  --tone: var(--platform);
+}
+
+/* Paid for, with no label on the phone: whoever chose it, plus an amber
+   coin in the corner. */
+.strip-cell.is-paid::before {
+  content: "";
+  position: absolute;
+  top: -4px;
+  right: -4px;
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--platform);
+  box-shadow: 0 0 0 1.5px var(--bg);
+}
+
 .strip-cell {
   position: relative;
   display: grid;

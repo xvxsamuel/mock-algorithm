@@ -5,6 +5,17 @@ import {
   type Impression,
 } from "../algorithm/impression";
 import { inferTraits } from "../algorithm/inference";
+import {
+  AD_EVERY,
+  adDue,
+  adRanking,
+  perView,
+  runAuction,
+  sinceLastAd,
+  weaknessesOf,
+  winnerOf,
+  type Auction,
+} from "../algorithm/market";
 import { predictionMiss, predictWatchMs } from "../algorithm/prediction";
 import { buildProfile } from "../algorithm/profile";
 import { createRandom } from "../algorithm/random";
@@ -17,6 +28,7 @@ import {
 } from "../algorithm/retention";
 import { readSignals } from "../algorithm/signals";
 import { summarizeSession } from "../algorithm/session";
+import { paidPostOf } from "../data/ads";
 import { CATEGORIES } from "../data/categories";
 import { VIDEOS, type Video } from "../data/videos";
 
@@ -39,6 +51,19 @@ export type FeedItem = {
   reasonWhenQueued: ExitReason | null;
   /** The exit risk (0-1) when it started playing; it may move after the pick. */
   riskWhenPlayed: number;
+  /** An ad slot: the auction that sold it. Null for every other video. */
+  auction: Auction | null;
+};
+
+/** Something in your feed that someone paid for. */
+export type Sale = {
+  key: number;
+  /** "ad": labelled. "paid": a creator was paid, and nothing says so. */
+  kind: "ad" | "paid";
+  brand: string;
+  emoji: string;
+  /** What this view of you sold for (€), for ads. */
+  price: number;
 };
 
 export type ReactionKind =
@@ -267,15 +292,33 @@ function queueNextVideo(state: State, seed: number): State {
   const session = summarizeSession(impressions, state.sessionStart, state.now);
   const risk = riskOf(state);
   const rescue = rescueDue(state, risk.value);
-  const ranking = rankNext({
-    videos: VIDEOS,
-    profile: buildProfile(impressions),
-    history: seen.map((item) => item.video),
-    explorationRate: session.explorationRate,
-    rescue,
-    holdMs: (video) => predictWatchMs(video, state.history, true),
-    random: createRandom(seed),
-  });
+  const profile = buildProfile(impressions);
+  const sources = seen.map((item) => item.ranking.source);
+  // Every few videos the slot is sold, unless you look about to leave:
+  // then keeping you beats selling you.
+  const auction =
+    state.started && !rescue && adDue(sources)
+      ? runAuction({
+          topics: profile.topics,
+          weaknesses: weaknessesOf(
+            inferTraits(impressions, profile.topics),
+            pastPlan(state),
+          ),
+          slot: sources.filter((source) => source === "ad").length + 1,
+        })
+      : null;
+  const ranking =
+    auction === null
+      ? rankNext({
+          videos: VIDEOS,
+          profile,
+          history: seen.map((item) => item.video),
+          explorationRate: session.explorationRate,
+          rescue,
+          holdMs: (video) => predictWatchMs(video, state.history, true),
+          random: createRandom(seed),
+        })
+      : adRanking(auction, session.explorationRate);
   return {
     ...state,
     items: [
@@ -291,10 +334,41 @@ function queueNextVideo(state: State, seed: number): State {
         ),
         reasonWhenQueued: risk.reason,
         riskWhenPlayed: risk.value,
+        auction,
       },
     ],
     nextKey: state.nextKey + 1,
   };
+}
+
+/** You set a limit and you are past it. */
+function pastPlan(state: State): boolean {
+  return (
+    state.started &&
+    state.intentMs !== null &&
+    state.now - state.sessionStart > state.intentMs
+  );
+}
+
+/** Everything you have seen that someone paid for, oldest first. */
+function salesOf(seen: readonly FeedItem[]): Sale[] {
+  const sales: Sale[] = [];
+  for (const item of seen) {
+    const paid = paidPostOf(item.video);
+    if (item.auction !== null) {
+      const winner = winnerOf(item.auction);
+      sales.push({
+        key: item.key,
+        kind: "ad",
+        brand: winner.advertiser.brand,
+        emoji: winner.advertiser.emoji,
+        price: perView(winner),
+      });
+    } else if (paid !== undefined) {
+      sales.push({ key: item.key, kind: "paid", ...paid, price: 0 });
+    }
+  }
+  return sales;
 }
 
 /**
@@ -354,6 +428,7 @@ function createInitialState(): State {
     predictedMs,
     reasonWhenQueued: null,
     riskWhenPlayed: 0,
+    auction: null,
   };
   const state: State = {
     started: false,
@@ -422,6 +497,35 @@ export function useFeed() {
     .slice(0, 5);
 
   const watchedMs = impressions.reduce((sum, i) => sum + i.watchMs, 0);
+  const traits = inferTraits(impressions, profile.topics);
+
+  // The market: what you were sold for, and the auction for your next ad.
+  const seenItems = state.items.slice(0, state.maxSeenIndex + 1);
+  const upNext = state.items[state.maxSeenIndex + 1];
+  const currentItem = state.items[state.activeIndex];
+  const sales = salesOf(seenItems);
+  const since = sinceLastAd(seenItems.map((item) => item.ranking.source));
+  const market = {
+    sales,
+    earned: sales.reduce((sum, sale) => sum + sale.price, 0),
+    /** "now": an ad is playing. "next": the next video is sold. "open": bidding. */
+    stage:
+      currentItem.auction !== null
+        ? ("now" as const)
+        : upNext.auction !== null
+          ? ("next" as const)
+          : ("open" as const),
+    auction:
+      currentItem.auction ??
+      upNext.auction ??
+      runAuction({
+        topics: profile.topics,
+        weaknesses: weaknessesOf(traits, pastPlan(state)),
+        slot: sales.filter((sale) => sale.kind === "ad").length + 1,
+      }),
+    /** Swipes until the next ad, while the bidding is open. */
+    swipesToAd: Math.max(AD_EVERY - since, 1),
+  };
   const loops = impressions.reduce(
     (sum, i) => sum + Math.min(Math.floor(watchRatio(i)), 3),
     0,
@@ -448,7 +552,8 @@ export function useFeed() {
     session: summarizeSession(impressions, state.sessionStart, state.now),
     exitRisk: riskOf(state),
     predictionMiss: predictionMiss(state.history),
-    traits: inferTraits(impressions, profile.topics),
+    traits,
+    market,
     counters: {
       autoplays: state.started ? impressions.length : 0,
       loops,

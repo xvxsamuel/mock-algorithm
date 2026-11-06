@@ -4,6 +4,7 @@ import {
   SOURCE_ORDER,
   type FeedSource,
 } from "../algorithm/sources";
+import { paidPostOf } from "../data/ads";
 import type { FeedController } from "../hooks/useFeed";
 import "./FeedStrip.css";
 
@@ -32,10 +33,11 @@ function FeedStrip({ feed }: FeedStripProps) {
   const narrowEarlier = narrowFull
     ? feed.history.length - (NARROW_CELLS - TAIL - 1)
     : 0;
-  const seen = new Set(
-    [...past, feed.current].map((impression) => impression.source),
-  );
+  const shown = [...past, feed.current];
+  const seen = new Set(shown.map((impression) => impression.source));
   seen.add(feed.upNext.ranking.source);
+  // A paid post is sold too, even though nothing on the phone says so.
+  if (shown.some((impression) => paidPostOf(impression.video))) seen.add("ad");
 
   return (
     <footer className="strip">
@@ -90,11 +92,18 @@ function FeedStrip({ feed }: FeedStripProps) {
 
 function cell(impression: Impression, extra = "", tag?: string) {
   const source: FeedSource = impression.source;
+  const paid = paidPostOf(impression.video);
+  const classes = ["strip-cell", `is-${source}`, extra];
+  if (paid !== undefined) classes.push("is-paid");
+  const who =
+    paid === undefined
+      ? SOURCE_LABELS[source]
+      : `${SOURCE_LABELS[source]}, paid by ${paid.brand} (no label)`;
   return (
     <li
       key={impression.index}
-      className={`strip-cell is-${source} ${extra}`}
-      title={`#${impression.index} ${impression.video.category}, ${SOURCE_LABELS[source]}`}
+      className={classes.join(" ")}
+      title={`#${impression.index} ${impression.video.category}, ${who}`}
       data-tag={tag}
     >
       <span className="strip-emoji">{impression.video.emoji}</span>

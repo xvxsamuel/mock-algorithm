@@ -166,6 +166,11 @@
   background: var(--engine);
 }
 
+/* Bought by an advertiser. */
+.why-bar.is-paid {
+  background: var(--platform);
+}
+
 /* "You were about to leave" outweighs everything: pink, from the zero line
    of the bars below to the end. Its words get the other three quarters. */
 .why-part.is-rescue {
@@ -225,6 +230,11 @@
 .why-source.is-rescue {
   background: rgb(254 44 85 / 0.14);
   color: var(--take);
+}
+
+.why-source.is-ad {
+  background: rgb(255 181 71 / 0.14);
+  color: var(--platform);
 }
 
 @media (prefers-reduced-motion: reduce) {

@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from "react";
+import { advertiserOf } from "../data/ads";
 import type { FeedController } from "../hooks/useFeed";
 import CommentsSheet from "./CommentsSheet";
 import Icon from "./Icon";
@@ -134,6 +135,7 @@ function PhoneFeed({ feed }: PhoneFeedProps) {
             {Math.abs(index - activeIndex) <= RENDER_DISTANCE && (
               <VideoCard
                 video={item.video}
+                sponsor={advertiserOf(item.video)}
                 active={index === activeIndex}
                 playing={feed.playing}
                 impressionIndex={feed.current.index}

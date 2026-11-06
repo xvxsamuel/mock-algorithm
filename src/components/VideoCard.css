@@ -159,6 +159,32 @@
   line-height: 1.35;
 }
 
+/* An ad says it is one. (A paid post does not.) */
+.card-sponsored {
+  display: inline-block;
+  margin: 6px 0 0;
+  padding: 1px 6px;
+  border-radius: 4px;
+  background: rgb(255 255 255 / 0.22);
+  font-size: 12px;
+  font-weight: 600;
+  text-shadow: none;
+}
+
+.card-cta {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin: 12px 0 0;
+  padding: 9px 12px;
+  border-radius: 6px;
+  background: var(--platform);
+  color: #1a1206;
+  font-size: 14px;
+  font-weight: 700;
+  text-shadow: none;
+}
+
 .card-sound {
   display: flex;
   align-items: center;

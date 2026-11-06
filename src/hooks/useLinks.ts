@@ -35,9 +35,9 @@ export type Link = {
   id: number;
   /**
    * up = the algorithm now likes this more, down = less,
-   * keep = the engine acting to keep you in the app.
+   * keep = the engine acting to keep you in the app, sold = money changing hands.
    */
-  tone: "up" | "down" | "keep";
+  tone: "up" | "down" | "keep" | "sold";
   /** 0-1: how big the change was. Sets thickness, brightness and lifetime. */
   strength: number;
   /**
@@ -307,6 +307,23 @@ function changesOnSwipe(before: Snapshot, feed: FeedController): Pulse[] {
     { target: "predict", change: SWIPE_CHANGE, delay: 3 * STEP_MS },
     { target: "scan", change: SWIPE_CHANGE, delay: STEP_MS },
   );
+  // The next slot was just sold, or what you are watching was paid for.
+  if (feed.upNext.ranking.source === "ad") {
+    pulses.push({
+      target: "auction",
+      change: FULL_CHANGE,
+      delay: 3 * STEP_MS,
+      tone: "sold",
+    });
+  }
+  if (feed.market.sales.at(-1)?.key === feed.currentItem.key) {
+    pulses.push({
+      target: "sold",
+      change: FULL_CHANGE,
+      delay: STEP_MS,
+      tone: "sold",
+    });
+  }
   // About to lose you: the engine swaps a sure hit into the queue.
   if (feed.upNext.ranking.source === "rescue") {
     pulses.push({
@@ -335,6 +352,7 @@ function delta(change: number): string {
 function lensOf(target: string): string {
   const [kind] = target.split(":");
   if (["topic", "signal", "trait"].includes(kind)) return "you";
+  if (kind === "auction" || kind === "sold") return "market";
   return kind === "scan" ? "content" : "engine";
 }
 

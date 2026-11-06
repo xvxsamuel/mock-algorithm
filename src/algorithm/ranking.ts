@@ -22,8 +22,11 @@ const SOFT_REPEAT_WINDOW = 24;
 export type ScorePart = {
   label: string;
   value: number;
-  /** "you": it follows from what you watched. "engine": the engine's own rule. */
-  from: "you" | "engine";
+  /**
+   * "you": it follows from what you watched. "engine": the engine's own
+   * rule. "paid": an advertiser bought it.
+   */
+  from: "you" | "engine" | "paid";
 };
 
 export type ScoredVideo = {

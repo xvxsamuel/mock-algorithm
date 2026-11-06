@@ -5,15 +5,17 @@ import ContentLens from "./ContentLens";
 import EngineLens from "./EngineLens";
 import FeedStrip from "./FeedStrip";
 import LeaveMeter from "./LeaveMeter";
+import MarketLens from "./MarketLens";
 import YouLens from "./YouLens";
 import "./AlgorithmPanel.css";
 
-export type Lens = "you" | "engine" | "content";
+export type Lens = "you" | "engine" | "content" | "market";
 
 const LENSES: { id: Lens; label: string }[] = [
   { id: "you", label: "You" },
   { id: "engine", label: "Engine" },
   { id: "content", label: "Content" },
+  { id: "market", label: "Market" },
 ];
 
 /** Where your plan ends on the time bar. It never moves. */
@@ -101,6 +103,7 @@ function AlgorithmPanel({ feed }: AlgorithmPanelProps) {
         {lens === "you" && <YouLens feed={feed} />}
         {lens === "engine" && <EngineLens feed={feed} />}
         {lens === "content" && <ContentLens feed={feed} />}
+        {lens === "market" && <MarketLens feed={feed} />}
       </div>
 
       <FeedStrip feed={feed} />

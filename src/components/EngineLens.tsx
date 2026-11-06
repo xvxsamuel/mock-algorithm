@@ -161,9 +161,10 @@ function whyParts(
   return [...shown.slice(0, count - 1), yours];
 }
 
-/** Right for, left against; cyan when it comes from you, grey when not. */
+/** Right for, left against; cyan from you, amber bought, grey the engine's. */
 function barClass(part: ScorePart): string {
   if (part.value < 0) return "is-down";
+  if (part.from === "paid") return "is-up is-paid";
   return part.from === "you" ? "is-up" : "is-up is-engine";
 }
 
