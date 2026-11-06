@@ -85,6 +85,14 @@
   border-color: var(--take);
 }
 
+.swap-age {
+  display: none;
+}
+
+.swap-tile.is-cut .swap-looks b {
+  color: var(--take);
+}
+
 .swap-tile.is-cut .swap-looks {
   color: var(--take);
   font-weight: 600;
@@ -221,6 +229,25 @@
     aspect-ratio: 1;
   }
 
+  /* Square tiles: smaller faces, so the camera controls clear the bubble. */
+  .swap-face {
+    width: 52cqw;
+    font-size: 34cqw;
+  }
+
+  .swap-off {
+    top: 3px;
+    left: 3px;
+    width: 18px;
+    height: 18px;
+    font-size: 12px;
+  }
+
+  .swap-local {
+    bottom: 3px;
+    font-size: 8px;
+  }
+
   .swap {
     row-gap: 6px;
   }
@@ -252,9 +279,26 @@
     white-space: normal;
   }
 
-  .swap-off {
-    width: 20px;
-    height: 20px;
-    font-size: 12px;
+  /* Every label on two lines, so the row lines up: the word, then the value. */
+  .swap-looks {
+    line-height: 1.3;
+    white-space: normal;
+  }
+
+  .swap-looks b {
+    display: block;
+  }
+
+  /* The quote stays in the footnote; the tile says the age. */
+  .swap-rule {
+    display: none;
+  }
+
+  .swap-age {
+    display: inline;
+  }
+
+  .swap-local-long {
+    display: none;
   }
 }

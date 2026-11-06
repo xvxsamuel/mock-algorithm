@@ -56,7 +56,12 @@ function FaceSwap({ video, scanKey }: FaceSwapProps) {
                     looks <b>{face.looks.toFixed(1)}</b>
                   </>
                 ) : (
-                  <q>{rule}</q>
+                  <>
+                    <q className="swap-rule">{rule}</q>
+                    <span className="swap-age">
+                      age <b>{face.age}</b>
+                    </span>
+                  </>
                 )}
               </span>
               <ReachBar key={scanKey} reach={faceReach(face)} />
@@ -105,7 +110,9 @@ function FaceSwap({ video, scanKey }: FaceSwapProps) {
                 >
                   ×
                 </button>
-                <span className="swap-local">stays on device</span>
+                <span className="swap-local">
+                  <span className="swap-local-long">stays </span>on device
+                </span>
               </>
             )}
           </span>

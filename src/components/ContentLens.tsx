@@ -38,11 +38,14 @@ function ContentLens({ feed }: ContentLensProps) {
             }}
           >
             <p className="con-box is-text">
-              <span className="con-mini-sticker">{video.overlay}</span>
+              <span className="con-mini-sticker">
+                {wholeWords(video.overlay)}
+              </span>
             </p>
             <span className="con-box is-subject">
               <span className="con-tag">
-                {scan.sees} {percent(scan.sure)}
+                {scan.sees}{" "}
+                <span className="con-tag-sure">{percent(scan.sure)}</span>
               </span>
               <span className="con-mini-art" aria-hidden="true">
                 {video.emoji}
@@ -92,6 +95,11 @@ function ContentLens({ feed }: ContentLensProps) {
       <FaceSwap video={video} scanKey={currentItem.key} />
     </div>
   );
+}
+
+/** Hyphens that do not break, so a cut line never ends in "self-". */
+function wholeWords(text: string): string {
+  return text.replaceAll("-", "‑");
 }
 
 function percent(share: number): string {

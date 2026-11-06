@@ -79,17 +79,16 @@
   line-height: 1;
 }
 
-/* The creator, on camera: where the face model looks. */
+/* The creator, on camera (round, like on the phone), and the square box
+   the face model draws around them. */
 .con-box.is-face {
   position: absolute;
-  bottom: 7%;
-  left: 9%;
+  bottom: 6%;
+  left: 8%;
   display: grid;
   place-items: center;
-  width: 34px;
-  height: 34px;
-  border-radius: 50%;
-  background: rgb(0 0 0 / 0.2);
+  width: 38px;
+  height: 38px;
   animation-delay: 0.8s;
 }
 
@@ -98,7 +97,14 @@
 }
 
 .con-face {
-  font-size: 22px;
+  display: grid;
+  place-items: center;
+  width: 30px;
+  height: 30px;
+  border: 1.5px solid #fff;
+  border-radius: 50%;
+  background: rgb(0 0 0 / 0.2);
+  font-size: 19px;
   line-height: 1;
 }
 
@@ -217,7 +223,10 @@
   quotes: "“" "”";
 }
 
+/* As tall as a reading, so the reach bar stays put from video to video. */
 .con-who.is-none {
+  align-content: center;
+  min-height: 71px;
   color: var(--muted);
   font-size: 20px;
   font-weight: 600;
@@ -273,13 +282,32 @@
     font-size: 9px;
   }
 
+  .con-box.is-subject {
+    top: 48%;
+  }
+
+  .con-tag {
+    font-size: 9px;
+  }
+
+  /* No room for the percentage: the label alone. */
+  .con-tag-sure {
+    display: none;
+  }
+
   .con-box.is-face {
-    width: 28px;
-    height: 28px;
+    width: 30px;
+    height: 30px;
   }
 
   .con-face {
-    font-size: 18px;
+    width: 24px;
+    height: 24px;
+    font-size: 15px;
+  }
+
+  .con-who.is-none {
+    min-height: 59px;
   }
 
   .con-read {
@@ -314,5 +342,17 @@
 
   .con-who-big {
     font-size: 40px;
+  }
+
+  .con-who.is-none {
+    min-height: 63px;
+  }
+
+  .con-tag {
+    font-size: 10px;
+  }
+
+  .con-tag-sure {
+    display: inline;
   }
 }
