@@ -418,11 +418,16 @@
   }
 
   .panel.is-folded .leave {
-    padding-block: 2px;
+    gap: 6px;
+    padding-block: 0;
   }
 
   .panel.is-folded .leave .gauge {
-    width: 52px;
+    width: 42px;
+  }
+
+  .panel.is-folded .leave-text {
+    gap: 0;
   }
 
   .panel.is-folded .strip {
