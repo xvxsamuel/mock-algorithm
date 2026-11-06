@@ -7,11 +7,15 @@ import {
 import { inferTraits } from "../algorithm/inference";
 import {
   disguisesOf,
+  LANDS_MS,
+  leansOf,
   persuadableOf,
   PUSHES,
   pushDue,
   pushesSince,
   pushRanking,
+  RELEASES_AFTER,
+  type Lean,
 } from "../algorithm/influence";
 import {
   AD_EVERY,
@@ -118,15 +122,18 @@ type State = {
   savedIds: string[];
   followedCreators: string[];
   /**
-   * A bot network you released: when, the feed position its pushes count
-   * from, and the topics its pushes are dressed as (picked on release).
-   * Null until you release one.
+   * A bot network, released by you or by itself: when, the feed position
+   * its pushes count from, the topics its pushes are dressed as and how
+   * persuadable you looked (both read on release). Null until one is.
    */
   network: {
     releasedAt: number;
     start: number;
     disguises: readonly Category[];
+    score: number;
   } | null;
+  /** Weak moments it has read in you so far. It never forgets one. */
+  leans: readonly Lean[];
 };
 
 // Time and random seeds are passed in, so the reducer itself stays pure.
@@ -162,7 +169,11 @@ function feedReducer(state: State, action: Action): State {
       const next = { ...state, now: action.now };
       const queued = next.items[next.maxSeenIndex + 1];
       if (queued.ranking.source === "rescue") return next;
-      return rescueDue(next, riskOf(next).value)
+      // A released campaign gets in line the moment it reaches you.
+      const pushReady =
+        queued.ranking.source !== "pushed" &&
+        pushDue(sourcesOf(next), next.network?.start ?? null, landed(next));
+      return rescueDue(next, riskOf(next).value) || pushReady
         ? queueNextVideo(next, action.seed)
         : next;
     }
@@ -204,6 +215,11 @@ function feedReducer(state: State, action: Action): State {
         // What it is worth is measured from here, not from when it was queued.
         const played = { ...item, riskWhenPlayed: riskOf(next).value };
         next.items = next.items.map((it, i) => (i === index ? played : it));
+      }
+      next.leans = [...new Set([...state.leans, ...liveLeans(next)])];
+      // Nobody released the bots? Halfway in, someone does.
+      if (next.network === null && history.length >= RELEASES_AFTER) {
+        next.network = networkOf(next);
       }
       return queueNextVideo(next, seed);
     }
@@ -259,16 +275,8 @@ function feedReducer(state: State, action: Action): State {
     case "release": {
       // One campaign at a time; once it has run its course, another.
       if (!state.started || campaignLeft(state) > 0) return state;
-      const impressions = [...state.history, liveImpression(state, action.now)];
-      const network = {
-        releasedAt: action.now,
-        start: state.maxSeenIndex + 1,
-        disguises: disguisesOf(buildProfile(impressions).topics),
-      };
-      return queueNextVideo(
-        { ...state, now: action.now, network },
-        action.seed,
-      );
+      const next = { ...state, now: action.now };
+      return queueNextVideo({ ...next, network: networkOf(next) }, action.seed);
     }
   }
 }
@@ -335,7 +343,9 @@ function queueNextVideo(state: State, seed: number): State {
   // A released bot network gets its video in next, dressed as what you
   // like. It goes first: a trend is worth more while it is fresh.
   const pushed =
-    state.started && !rescue && pushDue(sources, state.network?.start ?? null)
+    state.started &&
+    !rescue &&
+    pushDue(sources, state.network?.start ?? null, landed(state))
       ? nextPush(state)
       : null;
   // Every few videos the slot is sold, unless you look about to leave:
@@ -355,12 +365,7 @@ function queueNextVideo(state: State, seed: number): State {
       : pushed !== null
         ? pushRanking(
             pushed,
-            persuadableOf(
-              impressions,
-              traits,
-              pastPlan(state),
-              new Date(state.now).getHours(),
-            ),
+            persuadableOf(state.leans, liveLeans(state)),
             profile.topics.get(pushed.category) ?? 0,
             session.explorationRate,
           )
@@ -393,6 +398,41 @@ function queueNextVideo(state: State, seed: number): State {
     ],
     nextKey: state.nextKey + 1,
   };
+}
+
+/** A bot network released now: it reads you as it starts. */
+function networkOf(state: State): NonNullable<State["network"]> {
+  const impressions = [...state.history, liveImpression(state, state.now)];
+  return {
+    releasedAt: state.now,
+    start: state.maxSeenIndex + 1,
+    disguises: disguisesOf(buildProfile(impressions).topics),
+    score: persuadableOf(state.leans, liveLeans(state)).score,
+  };
+}
+
+/** The campaign has played out to the point where it picks you. */
+function landed(state: State): boolean {
+  return (
+    state.network !== null && state.now - state.network.releasedAt >= LANDS_MS
+  );
+}
+
+/** The weak moments it reads in you right now. */
+function liveLeans(state: State): Lean[] {
+  const impressions = [...state.history, liveImpression(state, state.now)];
+  return leansOf(
+    impressions,
+    inferTraits(impressions, buildProfile(impressions).topics),
+    pastPlan(state),
+    new Date(state.now).getHours(),
+  );
+}
+
+function sourcesOf(state: State) {
+  return state.items
+    .slice(0, state.maxSeenIndex + 1)
+    .map((item) => item.ranking.source);
 }
 
 /** The campaign's next video: the same message, in its next disguise. */
@@ -537,6 +577,7 @@ function createInitialState(): State {
     savedIds: [],
     followedCreators: [],
     network: null,
+    leans: [],
   };
   return queueNextVideo(state, Math.random());
 }
@@ -625,20 +666,17 @@ export function useFeed() {
     pushedItems.at(-1)?.video ??
     campaignVideo(disguisesOf(profile.topics)[0]);
   const influence = {
-    /** When you released the bots, or null if you have not. */
+    /** When the bots were released, or null if they have not been. */
     releasedAt: state.network?.releasedAt ?? null,
+    /** How persuadable you looked then: it picks people at least as easy. */
+    scoreAtRelease: state.network?.score ?? null,
     /** Pushes still to come; 0 when no campaign is running. */
     left: campaignLeft(state),
     /** The campaign videos you have seen, oldest first. */
     pushed: pushedItems.map((item) => ({ key: item.key, video: item.video })),
     /** The video the bots are boosting now. */
     boosted,
-    persuadable: persuadableOf(
-      impressions,
-      traits,
-      pastPlan(state),
-      new Date(state.now).getHours(),
-    ),
+    persuadable: persuadableOf(state.leans, liveLeans(state)),
   };
   const loops = impressions.reduce(
     (sum, i) => sum + Math.min(Math.floor(watchRatio(i)), 3),

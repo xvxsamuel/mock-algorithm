@@ -18,8 +18,6 @@ const MIN_CHANGE = 0.05;
 const SWIPE_CHANGE = 0.5;
 /** Targets that never make a hidden lens's tab glow: they change too often. */
 const QUIET = new Set(["scan"]);
-/** After a release, the line waits for the video to turn "trending" (ms). */
-const TRENDING_DELAY = 1700;
 /** Safety cap, in case a finished link never reports back. */
 const MAX_LINKS = 24;
 /** Lines enter the card around a target; these hold a whole card. */
@@ -275,8 +273,8 @@ function changesWhileWatching(
   }
 
   // Reacting re-ranks the queued video. So does the risk crossing the
-  // line mid-video: then a sure hit is swapped in, in pink. Releasing bots
-  // puts their video next: a violet line once it is trending.
+  // line mid-video: then a sure hit is swapped in, in pink. A bot campaign
+  // that just reached you puts its video next: violet.
   if (now.queueKey !== before.queueKey) {
     pulses.push(
       queued === "rescue"
@@ -285,7 +283,7 @@ function changesWhileWatching(
           ? {
               target: "network",
               change: FULL_CHANGE,
-              delay: TRENDING_DELAY,
+              delay: 0,
               tone: "pushed",
             }
           : { target: "queue", change: total, delay: 2 * STEP_MS },

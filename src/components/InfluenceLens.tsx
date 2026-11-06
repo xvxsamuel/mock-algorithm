@@ -1,4 +1,5 @@
-import { PUSHES } from "../algorithm/influence";
+import { LANDS_MS, PUSHES } from "../algorithm/influence";
+import { createRandom } from "../algorithm/random";
 import { BOTS, COST, LIKES_AFTER, LIKES_BEFORE } from "../data/campaign";
 import { CATEGORY_COLORS } from "../data/categories";
 import { formatCount } from "../data/stats";
@@ -16,13 +17,12 @@ const COUNT_FROM = 250;
 const COUNT_MS = 1600;
 /** Then it counts as trending, and goes out to the people it picks. */
 const TRENDING_AT = 1700;
-const PICK_AT = 2000;
 const PICK_STAGGER = 110;
 const PICK_MS = 380;
 /** The accounts come back, spent but still there for the next one. */
-const BACK_AT = 3000;
+const BACK_AT = LANDS_MS;
 const BACK_MS = 700;
-const DONE_MS = 3800;
+const DONE_MS = BACK_AT + BACK_MS;
 
 type Point = { x: number; y: number };
 
@@ -40,8 +40,12 @@ const PEOPLE: readonly Point[] = Array.from({ length: 20 }, (_, i) => ({
   y: 28 + Math.floor(i / COLUMNS) * 15,
 }));
 const YOU = 17;
-/** The others it picks: the ones its model rates most persuadable. */
-const PICKED = [0, 3, 6, 9, 11, 14, 18];
+/** How many others it picks, besides you. */
+const PICKS = 7;
+/** The rays reach you last, the moment the campaign lands (LANDS_MS). */
+const PICK_AT = LANDS_MS - PICK_MS - PICKS * PICK_STAGGER;
+/** Before any release, the crowd it would choose from. */
+const PREVIEW_SEED = 0.37;
 
 type InfluenceLensProps = { feed: FeedController };
 
@@ -56,6 +60,12 @@ function InfluenceLens({ feed }: InfluenceLensProps) {
   const t = useSince(releasedAt, DONE_MS);
   const running = left > 0;
   const [from, to] = CATEGORY_COLORS[boosted.category];
+  const yours = Math.round(persuadable.score * 100);
+  // How movable it rates everyone. It picks the ones at least as easy as you.
+  const crowd = crowdOf(
+    releasedAt === null ? PREVIEW_SEED : (releasedAt % 9973) / 9973,
+    influence.scoreAtRelease ?? persuadable.score,
+  );
 
   const likes =
     t === null
@@ -65,13 +75,15 @@ function InfluenceLens({ feed }: InfluenceLensProps) {
           easeOut(progress(t, COUNT_FROM, COUNT_MS));
   const trending = t !== null && t >= TRENDING_AT;
   // The people it picks, you last, each reached a little after the one before.
-  const reached = [...PICKED, YOU].map((person, i) => ({
+  const reached = [...crowd.picked, YOU].map((person, i) => ({
     person,
     p: t === null ? 0 : progress(t, PICK_AT + i * PICK_STAGGER, PICK_MS),
   }));
   const reach = (person: number) =>
     reached.find((entry) => entry.person === person)?.p ?? 0;
 
+  // Newest first, as in Market, so a line from the phone lands on it
+  // without crossing the others.
   const shownPushes = pushed.slice(-(PUSHES * 2)).reverse();
   const empty = running ? left : pushed.length === 0 ? PUSHES : 0;
   const now = pushed.find((push) => push.key === currentItem.key);
@@ -82,15 +94,12 @@ function InfluenceLens({ feed }: InfluenceLensProps) {
       <section className="pane inf-network">
         <div className="pane-head">
           <h2 className="eyebrow">A bot network</h2>
-          <p className="inf-cost">
-            costs <b>€{COST}</b>
-          </p>
         </div>
         <div className="inf-stage">
           <p className="inf-label is-bots">
             {BOTS.toLocaleString("en")} fake accounts
           </p>
-          <p className="inf-label is-people">who it picks</p>
+          <p className="inf-label is-people">engine picks</p>
 
           {/* Fan-out: the boosted video goes to the people it picked. */}
           <svg
@@ -141,7 +150,13 @@ function InfluenceLens({ feed }: InfluenceLensProps) {
             data-link="network"
             style={{ background: `linear-gradient(160deg, ${from}, ${to})` }}
           >
-            {trending && <span className="inf-trending">trending</span>}
+            {/* The engine takes the fake likes for a real trend. */}
+            {trending && (
+              <span className="inf-trending">
+                <span className="inf-trending-who">engine sees</span>
+                trending
+              </span>
+            )}
             <span className="inf-emoji" aria-hidden="true">
               {boosted.emoji}
             </span>
@@ -156,11 +171,19 @@ function InfluenceLens({ feed }: InfluenceLensProps) {
             const classes = ["inf-person"];
             if (lit) classes.push("is-lit");
             if (i === YOU) classes.push("is-you");
+            // Brighter: rated easier to move.
+            const score = i === YOU ? persuadable.score : crowd.scores[i];
             return (
               <span
                 key={i}
                 className={classes.join(" ")}
-                style={{ left: `${at.x}%`, top: `${at.y}%` }}
+                style={{
+                  left: `${at.x}%`,
+                  top: `${at.y}%`,
+                  color: lit
+                    ? undefined
+                    : `rgb(255 255 255 / ${0.1 + 0.45 * score})`,
+                }}
               />
             );
           })}
@@ -168,7 +191,7 @@ function InfluenceLens({ feed }: InfluenceLensProps) {
             className="inf-you-label"
             style={{ left: `${PEOPLE[YOU].x}%`, top: `${PEOPLE[YOU].y + 9}%` }}
           >
-            you
+            you · {yours}%
           </span>
 
           <button
@@ -179,9 +202,7 @@ function InfluenceLens({ feed }: InfluenceLensProps) {
           >
             {running
               ? "Released"
-              : releasedAt === null
-                ? "Release"
-                : "Release again"}
+              : `${releasedAt === null ? "Release" : "Again"} · €${COST}`}
           </button>
         </div>
       </section>
@@ -213,11 +234,15 @@ function InfluenceLens({ feed }: InfluenceLensProps) {
             </ol>
             {now === undefined ? (
               <p className="inf-why">
-                {persuadable.reasons.slice(0, 3).map((reason) => (
-                  <span key={reason} className="inf-chip">
-                    {reason}
-                  </span>
-                ))}
+                {persuadable.reasons.length === 0 ? (
+                  <span className="inf-none">not enough signals yet</span>
+                ) : (
+                  persuadable.reasons.map((reason) => (
+                    <span key={reason} className="inf-chip">
+                      {reason}
+                    </span>
+                  ))
+                )}
               </p>
             ) : (
               <p key={now.key} className="inf-now">
@@ -227,9 +252,9 @@ function InfluenceLens({ feed }: InfluenceLensProps) {
             )}
           </div>
           <div className="inf-score">
-            <p className="inf-kicker">persuadable</p>
+            <p className="inf-kicker">it rates you persuadable</p>
             <p className="inf-figure">
-              {Math.round(persuadable.score * 100)}
+              {yours}
               <span className="inf-pct">%</span>
             </p>
           </div>
@@ -237,6 +262,26 @@ function InfluenceLens({ feed }: InfluenceLensProps) {
       </section>
     </div>
   );
+}
+
+/**
+ * How movable it rates each person (0-1), and the ones it picks: always
+ * PICKS of them, all rated at least as easy to move as you.
+ */
+function crowdOf(seed: number, yours: number) {
+  const random = createRandom(seed);
+  const others = PEOPLE.map((_, i) => i).filter((i) => i !== YOU);
+  for (let i = others.length - 1; i > 0; i--) {
+    const j = Math.floor(random() * (i + 1));
+    [others[i], others[j]] = [others[j], others[i]];
+  }
+  const picked = others.slice(0, PICKS).sort((a, b) => a - b);
+  const scores = PEOPLE.map((_, i) =>
+    picked.includes(i)
+      ? yours + random() * (0.97 - yours)
+      : 0.04 + random() * Math.max(yours - 0.08, 0),
+  );
+  return { picked, scores };
 }
 
 /** Where a fake account is `t` ms after release (null: not yet released). */

@@ -8,17 +8,6 @@
   min-height: 0;
 }
 
-.inf-cost {
-  margin: 0;
-  color: var(--muted);
-  font-size: 12px;
-}
-
-.inf-cost b {
-  color: var(--text);
-  font-weight: 650;
-}
-
 /* Everything on it is placed in % of its size, so it scales as one. */
 .inf-stage {
   position: relative;
@@ -85,8 +74,8 @@
   justify-content: center;
   align-items: center;
   gap: 6px;
-  padding: 10px 8px 26px;
-  aspect-ratio: 9 / 16;
+  padding: 10px 9px 26px;
+  aspect-ratio: 3 / 5;
   border-radius: 12px;
   box-shadow: 0 8px 28px rgb(0 0 0 / 0.5);
   transform: translateX(-50%);
@@ -108,14 +97,14 @@
   display: -webkit-box;
   overflow: hidden;
   color: #fff;
-  font-size: 11px;
+  font-size: 13px;
   font-weight: 700;
   line-height: 1.2;
   text-align: center;
   text-shadow: 0 1px 3px rgb(0 0 0 / 0.55);
   -webkit-box-orient: vertical;
-  -webkit-line-clamp: 4;
-  line-clamp: 4;
+  -webkit-line-clamp: 6;
+  line-clamp: 6;
 }
 
 .inf-likes {
@@ -131,11 +120,16 @@
   font-variant-numeric: tabular-nums;
 }
 
+/* What the engine makes of the fake likes: grey is the engine, violet the
+   trend the outsiders bought. */
 .inf-trending {
   position: absolute;
   top: 0;
   left: 50%;
-  padding: 2px 8px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 2px 9px 2px 2px;
   border-radius: 999px;
   background: var(--influence);
   color: #160f2a;
@@ -146,6 +140,16 @@
   white-space: nowrap;
   transform: translate(-50%, -50%);
   animation: inf-pop 0.4s var(--ease);
+}
+
+.inf-trending-who {
+  padding: 1px 7px;
+  border-radius: 999px;
+  background: var(--surface-2);
+  color: var(--engine);
+  font-weight: 650;
+  letter-spacing: 0.02em;
+  text-transform: none;
 }
 
 @keyframes inf-pop {
@@ -173,39 +177,70 @@
 }
 
 .inf-ray.is-you {
-  stroke-width: 2.5;
-  stroke-opacity: 0.95;
+  stroke-width: 3;
+  stroke-opacity: 1;
 }
 
+/* A person: a head and shoulders. Brighter means rated easier to move. */
 .inf-person {
   position: absolute;
   z-index: 2;
-  width: 10px;
-  height: 10px;
+  width: 12px;
+  height: 14px;
   border-radius: 50%;
-  background: rgb(255 255 255 / 0.14);
+  color: rgb(255 255 255 / 0.2);
   transform: translate(-50%, -50%);
   transition:
-    background 0.3s var(--ease),
-    box-shadow 0.3s var(--ease);
+    color 0.3s var(--ease),
+    filter 0.3s var(--ease);
+}
+
+.inf-person::before,
+.inf-person::after {
+  content: "";
+  position: absolute;
+  left: 50%;
+  background: currentColor;
+  transform: translateX(-50%);
+}
+
+.inf-person::before {
+  top: 0;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+}
+
+.inf-person::after {
+  bottom: 0;
+  width: 12px;
+  height: 6px;
+  border-radius: 6px 6px 2px 2px;
 }
 
 .inf-person.is-lit {
-  background: var(--influence);
-  box-shadow: 0 0 8px rgb(167 139 250 / 0.6);
+  color: var(--influence);
+  filter: drop-shadow(0 0 4px rgb(167 139 250 / 0.7));
 }
 
 /* You: ringed in your colour, picked like the rest. */
 .inf-person.is-you {
-  width: 14px;
-  height: 14px;
-  box-shadow: 0 0 0 2px var(--you);
+  outline: 2px solid var(--you);
+  outline-offset: 4px;
 }
 
 .inf-person.is-you.is-lit {
-  box-shadow:
-    0 0 0 2px var(--you),
-    0 0 12px rgb(167 139 250 / 0.8);
+  animation: inf-hit 0.9s var(--ease);
+}
+
+/* The moment it lands on you: one hard ring. */
+@keyframes inf-hit {
+  0% {
+    box-shadow: 0 0 0 4px rgb(37 244 238 / 0.9);
+  }
+  100% {
+    box-shadow: 0 0 0 22px rgb(37 244 238 / 0);
+  }
 }
 
 .inf-you-label {
@@ -213,6 +248,8 @@
   color: var(--you);
   font-size: 11px;
   font-weight: 650;
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
   transform: translateX(-50%);
 }
 
@@ -321,6 +358,11 @@
 }
 
 /* What about you it reads as easy to move. Cyan: it is yours. */
+.inf-none {
+  color: var(--muted);
+  font-size: 12px;
+}
+
 .inf-chip {
   padding: 2px 9px;
   border-radius: 999px;
@@ -372,6 +414,7 @@
 
 @media (prefers-reduced-motion: reduce) {
   .inf-bot > span,
+  .inf-person.is-you.is-lit,
   .inf-trending,
   .inf-tile,
   .inf-now {
@@ -404,30 +447,29 @@
   }
 
   .inf-overlay {
-    font-size: 10px;
+    font-size: 12px;
   }
 
   .inf-emoji {
-    font-size: 22px;
+    font-size: 20px;
   }
 }
 
-/* Stacked layout: the page scrolls, so the stage gets a fixed height. */
+/* Stacked layout: the stage takes whatever height the sheet has spare. */
 @media (max-width: 900px) {
   .lens > .inf-network {
-    flex: none;
+    flex: 1 0 auto;
   }
 
   .inf-stage {
-    flex: none;
-    height: 250px;
+    flex: 1 0 250px;
   }
 }
 
 /* Phones: the score first, then the tiles across the full width. */
 @media (max-width: 560px) {
   .inf-stage {
-    height: 220px;
+    flex-basis: 220px;
   }
 
   .inf-label {
@@ -435,9 +477,11 @@
   }
 
   .inf-overlay {
-    font-size: 9.5px;
-    -webkit-line-clamp: 5;
-    line-clamp: 5;
+    font-size: 12px;
+  }
+
+  .inf-emoji {
+    font-size: 18px;
   }
 
   .inf-release {
