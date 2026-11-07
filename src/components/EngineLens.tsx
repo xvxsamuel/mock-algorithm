@@ -1,3 +1,4 @@
+import { HITS_WINDOW, RIGHT_WITHIN_MS } from "../algorithm/prediction";
 import type { ScorePart } from "../algorithm/ranking";
 import { SOURCE_LABELS } from "../algorithm/sources";
 import type { FeedController } from "../hooks/useFeed";
@@ -5,9 +6,6 @@ import ExperimentField from "./ExperimentField";
 import PredictionChart from "./PredictionChart";
 import "./EngineLens.css";
 
-/** Its typical miss turns cyan only when it is at most this share of the
-    average's: clearly closer, not noise. */
-const CLEARLY_CLOSER = 0.8;
 /** Beside a sure hit's reason, the other bars use at most this share of
     the half track, so the pink one clearly outweighs them. */
 const UNDER_RESCUE = 0.6;
@@ -24,9 +22,7 @@ type EngineLensProps = { feed: FeedController };
  */
 function EngineLens({ feed }: EngineLensProps) {
   const { current, currentItem, upNext } = feed;
-  const miss = feed.predictionMiss;
-  // Only a real edge gets the accent: clearly closer than your average.
-  const knowsYou = miss !== null && miss.model <= miss.average * CLEARLY_CLOSER;
+  const hits = feed.predictionHits;
   const finished = feed.history.map((entry) => entry.impression);
 
   // A sure hit's first reason is that you were about to leave.
@@ -51,38 +47,26 @@ function EngineLens({ feed }: EngineLensProps) {
                 <span className="eng-key is-guess" /> its guess
               </span>
               <span>
-                <span className="eng-key is-actual" /> you
+                <span className="eng-key is-actual" /> you watched
               </span>
               <span>
-                <span className="eng-key is-over" /> over
-              </span>
-              <span>
-                <span className="eng-key is-under" /> under
+                <span className="eng-key is-over" /> longer than guessed
               </span>
             </p>
           </div>
-          {/* "1.1s vs 2.9s": what knowing you is worth. Not knowing you is
-              a blind guess of your average. Over your latest videos. */}
+          {/* "7 of 10": it predicts you, and mostly gets it right. */}
           <p
-            className="eng-hits"
-            title={
-              miss === null
-                ? undefined
-                : `Median over your last ${miss.count} videos`
-            }
+            className="eng-hit"
+            title={`Right within ${RIGHT_WITHIN_MS / 1000}s, or a quarter of the time you watched, on your latest videos`}
           >
-            <span className="unit">typical miss</span>
-            <span className={knowsYou ? "eng-hit" : "eng-hit is-baseline"}>
-              <b className={knowsYou ? "tone-you" : undefined}>
-                {miss === null ? "–" : seconds(miss.model)}
-              </b>
-              <small>knowing you</small>
-            </span>
-            <span className="eng-vs">vs</span>
-            <span className="eng-hit is-baseline">
-              <b>{miss === null ? "–" : seconds(miss.average)}</b>
-              <small>not knowing you</small>
-            </span>
+            <b>
+              {hits === null ? "–" : hits.right}
+              <span className="eng-of">
+                {" "}
+                of {hits === null ? HITS_WINDOW : hits.count}
+              </span>
+            </b>
+            <small>guessed right</small>
           </p>
         </div>
         <PredictionChart
@@ -186,10 +170,6 @@ function barClass(part: ScorePart): string {
   if (part.from === "paid") return "is-up is-paid";
   if (part.from === "pushed") return "is-up is-pushed";
   return part.from === "you" ? "is-up" : "is-up is-engine";
-}
-
-function seconds(ms: number): string {
-  return `${(ms / 1000).toFixed(1)}s`;
 }
 
 export default EngineLens;

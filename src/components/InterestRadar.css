@@ -46,10 +46,9 @@
   font-weight: 700;
 }
 
-/* A topic you turned away from: struck out, not alarmed. */
+/* A topic you turned away from: dimmer, its dot pulled to the centre. */
 .radar-label.is-down {
-  fill: var(--faint);
-  text-decoration: line-through;
+  fill: color-mix(in srgb, var(--muted), var(--surface) 12%);
 }
 
 @media (prefers-reduced-motion: reduce) {

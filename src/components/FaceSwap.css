@@ -176,6 +176,16 @@
   content: "";
 }
 
+/* When the rules are from: in the heading, so no one reads them as today's. */
+.swap-when {
+  padding: 2px 8px;
+  border-radius: 999px;
+  background: rgb(255 255 255 / 0.07);
+  color: color-mix(in srgb, var(--muted), var(--text) 30%);
+  font-size: 12px;
+  white-space: nowrap;
+}
+
 .swap-private {
   color: var(--muted);
   font-size: 11px;
@@ -247,9 +257,10 @@
     font-size: 13px;
   }
 
-  /* "followers only" no longer fits: "followers". */
-  .swap .reach-only {
-    display: none;
+  /* "followers only" in full, over two lines. */
+  .swap .reach-value {
+    line-height: 1.2;
+    white-space: normal;
   }
 
   .swap-tile.is-you .swap-looks {

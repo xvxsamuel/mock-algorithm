@@ -10,6 +10,15 @@
   font-size: 13px;
 }
 
+/* Everything in the panel is a model of the app, not a measurement. */
+.panel-note {
+  flex-shrink: 0;
+  margin: -2px 0 0;
+  color: color-mix(in srgb, var(--muted), var(--text) 30%);
+  font-size: 11px;
+  text-align: right;
+}
+
 /* Before you start, everything is dim except the guesses about you,
    which are already there. */
 .panel.is-idle > :not(.panel-head, .panel-body),

@@ -30,9 +30,10 @@ function FaceSwap({ video }: FaceSwapProps) {
     <section className="pane con-swap">
       <div className="pane-head">
         <h2 className="eyebrow">Same video, different face</h2>
+        <span className="swap-when">2019–20 rules</span>
       </div>
       <ul className="swap">
-        {FACE_SWAPS.map((stock) => {
+        {FACE_SWAPS.map((stock, i) => {
           const rule = faceRule(stock);
           const face = rule !== null && cutNow !== null ? cutNow : stock;
           return (
@@ -65,7 +66,10 @@ function FaceSwap({ video }: FaceSwapProps) {
                   </>
                 )}
               </span>
-              <ReachBar reach={faceReach(face)} />
+              <ReachBar
+                reach={faceReach(face)}
+                label={{ text: "reach", hidden: i > 0 }}
+              />
             </li>
           );
         })}
@@ -128,13 +132,16 @@ function FaceSwap({ video }: FaceSwapProps) {
           {score === null ? (
             <span className="swap-private">stays on this device</span>
           ) : (
-            <ReachBar reach={score.reach} you />
+            <ReachBar
+              reach={score.reach}
+              you
+              label={{ text: "reach", hidden: true }}
+            />
           )}
         </li>
       </ul>
       <p className="swap-source">
-        Leaked TikTok moderation rules, 2019–20. TikTok says they are no longer
-        used.
+        Leaked TikTok moderation rules. TikTok says they are no longer used.
       </p>
     </section>
   );

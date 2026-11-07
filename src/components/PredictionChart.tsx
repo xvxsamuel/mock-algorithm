@@ -3,6 +3,7 @@ import "./PredictionChart.css";
 
 /** Bars taller than this many seconds are cut off at the top. */
 const CAP_MS = 20_000;
+const CAP_LABEL = `${CAP_MS / 1000}s+`;
 const MIN_SCALE_MS = 8000;
 /** Room above the tallest bar, so it never touches the top. */
 const HEADROOM = 1.1;
@@ -23,9 +24,9 @@ type PredictionChartProps = {
 /**
  * One column per video. The white cap is how long the app guessed you would
  * watch, decided before the video started. The bar is how long you did:
- * pink above the cap where you gave it more than it guessed, a hatched gap
- * where you gave less. Watch the caps and bars line up. A sure hit, played
- * to stop you leaving, is marked pink.
+ * pink above the cap where you gave it more than it guessed. Watch the caps
+ * and bars line up. A sure hit, played to stop you leaving, is marked pink.
+ * A bar past the chart's cap fades out under "20s+".
  */
 function PredictionChart({ finished, current, playing }: PredictionChartProps) {
   const shown = [...finished.slice(-(COLUMNS - 1)), current];
@@ -57,6 +58,7 @@ function PredictionChart({ finished, current, playing }: PredictionChartProps) {
         const actual = Math.min(impression.watchMs / scale, 1);
         const live = impression === current;
         const sureHit = impression.source === "rescue";
+        const clipped = impression.watchMs > scale;
         const classes = ["pchart-col"];
         if (live) classes.push("is-live");
         if (sureHit) classes.push("is-sure-hit");
@@ -73,11 +75,7 @@ function PredictionChart({ finished, current, playing }: PredictionChartProps) {
             />
             {actual > guess ? (
               <span
-                className={
-                  impression.watchMs > scale
-                    ? "pchart-extra is-clipped"
-                    : "pchart-extra"
-                }
+                className={clipped ? "pchart-extra is-clipped" : "pchart-extra"}
                 style={{ bottom: pct(guess), height: pct(actual - guess) }}
               />
             ) : (
@@ -88,15 +86,23 @@ function PredictionChart({ finished, current, playing }: PredictionChartProps) {
               />
             )}
             <span className="pchart-guess" style={{ bottom: pct(guess) }} />
-            {live && (
+            {live ? (
               <span
                 className={
                   sureHit && playing ? "pchart-tag is-sure-hit" : "pchart-tag"
                 }
                 style={{ bottom: pct(Math.max(guess, actual)) }}
               >
-                {!playing ? "paused" : sureHit ? "sure hit" : "now"}
+                {sureHit && playing
+                  ? "sure hit"
+                  : clipped
+                    ? CAP_LABEL
+                    : playing
+                      ? "now"
+                      : "paused"}
               </span>
+            ) : (
+              clipped && <span className="pchart-cap">{CAP_LABEL}</span>
             )}
             <span className="pchart-emoji" aria-hidden="true">
               {impression.video.emoji}

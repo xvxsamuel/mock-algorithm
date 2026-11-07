@@ -295,6 +295,11 @@
     gap: 14px;
   }
 
+  /* What it concluded first, the shape it read it from after. */
+  .you-guesses {
+    order: -1;
+  }
+
   .you-id {
     gap: 10px;
     padding-bottom: 10px;

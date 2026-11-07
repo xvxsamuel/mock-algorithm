@@ -159,12 +159,12 @@
 
 /* --- The auction: every advertiser's bid for you, grown by your data --- */
 
-/* Rows grow up to a cap, and give way first when the screen is short. */
+/* Rows grow up to a cap. Never squeezed below its bids: on a short screen
+   the lens scrolls instead. */
 .lens > .mkt-auction {
   display: flex;
-  flex: 0 1 auto;
+  flex: none;
   flex-direction: column;
-  min-height: 0;
 }
 
 .mkt-stage {

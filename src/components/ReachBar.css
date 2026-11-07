@@ -7,6 +7,16 @@
   min-width: 0;
 }
 
+.reach-label {
+  color: color-mix(in srgb, var(--muted), var(--text) 30%);
+  font-size: 11px;
+  line-height: 1.2;
+}
+
+.reach-label.is-hidden {
+  visibility: hidden;
+}
+
 .reach-track {
   position: relative;
   height: 6px;

@@ -29,7 +29,7 @@ import {
   winnerOf,
   type Auction,
 } from "../algorithm/market";
-import { predictionMiss, predictWatchMs } from "../algorithm/prediction";
+import { predictionHits, predictWatchMs } from "../algorithm/prediction";
 import { buildProfile } from "../algorithm/profile";
 import { createRandom } from "../algorithm/random";
 import { rankNext, type Ranking } from "../algorithm/ranking";
@@ -749,7 +749,7 @@ export function useFeed() {
     })),
     session: summarizeSession(impressions, state.sessionStart, state.now),
     exitRisk: riskOf(state),
-    predictionMiss: predictionMiss(state.history),
+    predictionHits: predictionHits(state.history),
     traits,
     market,
     influence,

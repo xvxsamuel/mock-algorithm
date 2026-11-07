@@ -217,7 +217,12 @@ function SessionEnd({ feed, onBack, onRestart, returnTo }: SessionEndProps) {
 
           {/* Not your year: the average teen's, even with the limit on. */}
           <section className="pane end-pane end-year">
-            <h3 className="eyebrow">A year at the teen average</h3>
+            <div className="end-year-head">
+              <h3 className="eyebrow">A year at the teen average</h3>
+              <span className="end-year-key">
+                <span className="end-year-square" aria-hidden="true" />1 day
+              </span>
+            </div>
             <YearGrid filled={YEAR_DAYS} delayMs={YEAR_AT_MS} />
             <p className="end-days">
               <b>{YEAR_DAYS} days</b>

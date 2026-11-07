@@ -19,8 +19,12 @@ const MOOD_FROM = 3;
 const MOOD_NORMAL = 0.7;
 /** Restless, it guesses you will give each video as little as this share. */
 const MOOD_MIN = 0.2;
-/** The typical miss is taken over this many of your latest videos. */
-export const MISS_WINDOW = 10;
+/** Right guesses are counted over this many of your latest videos. */
+export const HITS_WINDOW = 10;
+/** A guess is right within this many ms of what you watched... */
+export const RIGHT_WITHIN_MS = 1500;
+/** ...or within this share of it, so a long watch is not held to a second. */
+const RIGHT_WITHIN_SHARE = 0.25;
 
 /**
  * Predicts how long you will watch a video before it plays: how long you
@@ -78,46 +82,24 @@ export function moodOf(finished: readonly Impression[]): number {
   return Math.min(Math.max(sum / weight / MOOD_NORMAL, MOOD_MIN), 1);
 }
 
-/**
- * How far off its guesses usually are on your latest videos (the median, so
- * one odd video does not swing it), against an app that knows nothing about
- * topics or moods and just guesses your average each time. The gap is what
- * knowing you is worth to it.
- */
-export type PredictionMiss = {
-  /** Its typical miss, in ms, knowing you. */
-  model: number;
-  /** The typical miss of guessing your average watch time, in ms. */
-  average: number;
-  /** How many videos it is taken over. */
+/** How many of its guesses on your latest videos were right. */
+export type PredictionHits = {
+  right: number;
+  /** How many videos it is counted over. */
   count: number;
 };
 
-export function predictionMiss(
+export function predictionHits(
   finished: readonly Impression[],
-): PredictionMiss | null {
+): PredictionHits | null {
   if (finished.length === 0) return null;
-  const from = Math.max(finished.length - MISS_WINDOW, 0);
-  const model: number[] = [];
-  const average: number[] = [];
-  for (let i = from; i < finished.length; i++) {
-    const { watchMs, predictedMs } = finished[i];
-    model.push(Math.abs(watchMs - predictedMs));
-    average.push(Math.abs(watchMs - averageMs(finished.slice(0, i))));
-  }
-  return {
-    model: median(model),
-    average: median(average),
-    count: finished.length - from,
-  };
-}
-
-function median(values: number[]): number {
-  const sorted = [...values].sort((a, b) => a - b);
-  const middle = Math.floor(sorted.length / 2);
-  return sorted.length % 2 === 1
-    ? sorted[middle]
-    : (sorted[middle - 1] + sorted[middle]) / 2;
+  const latest = finished.slice(-HITS_WINDOW);
+  const right = latest.filter(
+    ({ watchMs, predictedMs }) =>
+      Math.abs(watchMs - predictedMs) <=
+      Math.max(RIGHT_WITHIN_MS, watchMs * RIGHT_WITHIN_SHARE),
+  ).length;
+  return { right, count: latest.length };
 }
 
 /** Mean of `values` (oldest first), newest weighted most, pulled towards `prior`. */

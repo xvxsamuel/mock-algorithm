@@ -33,6 +33,13 @@ const CLOUD: readonly Point[] = Array.from({ length: DOTS }, (_, i) => {
   return { x: 17 + 12 * r * Math.cos(turn), y: 48 + 30 * r * Math.sin(turn) };
 });
 
+/** Where the lines from the fake accounts to the video start: the right
+    edge of the swarm. */
+const FEEDS: readonly Point[] = [-0.7, -0.35, 0, 0.35, 0.7].map((dy) => ({
+  x: 17 + 12 * Math.sqrt(1 - dy * dy),
+  y: 48 + 30 * dy,
+}));
+
 /** People the campaign could reach: 5 by 4, and you among them. */
 const COLUMNS = 5;
 const PEOPLE: readonly Point[] = Array.from({ length: 20 }, (_, i) => ({
@@ -101,13 +108,27 @@ function InfluenceLens({ feed }: InfluenceLensProps) {
           </p>
           <p className="inf-label is-people">most persuadable</p>
 
-          {/* Fan-out: the boosted video goes to the people it picked. */}
+          {/* Fan-in: the fake accounts made the video. Fan-out: the boosted
+              video goes to the people it picked. */}
           <svg
             className="inf-fan"
             viewBox="0 0 100 100"
             preserveAspectRatio="none"
             aria-hidden="true"
           >
+            {t !== null &&
+              FEEDS.map((from) => (
+                <line
+                  key={from.y}
+                  className="inf-feed"
+                  x1={from.x}
+                  y1={from.y}
+                  x2={50}
+                  y2={50 + (from.y - 50) * 0.3}
+                  style={{ opacity: progress(t, 0, FLY_MS) }}
+                  vectorEffect="non-scaling-stroke"
+                />
+              ))}
             {reached.map(({ person, p }) => {
               if (p === 0) return null;
               const end = PEOPLE[person];
@@ -187,7 +208,7 @@ function InfluenceLens({ feed }: InfluenceLensProps) {
             className="inf-you-label"
             style={{ left: `${PEOPLE[YOU].x}%`, top: `${PEOPLE[YOU].y + 9}%` }}
           >
-            you<span className="inf-you-pct">{yours}%</span>
+            you
           </span>
 
           <button

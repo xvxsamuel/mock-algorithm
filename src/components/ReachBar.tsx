@@ -11,17 +11,33 @@ type ReachBarProps = {
   you?: boolean;
   /** Name the tick: "×1", an ordinary video. */
   tickLabel?: boolean;
+  /** A word over the bar ("reach"). Hidden keeps its room, so bars in a
+      row line up when only the first is named. */
+  label?: { text: string; hidden?: boolean };
 };
 
 /**
  * How many people the engine shows a video to, against an ordinary video
  * (the tick). Kept out of For You, only a pink sliver is left.
  */
-function ReachBar({ reach, you = false, tickLabel = false }: ReachBarProps) {
+function ReachBar({
+  reach,
+  you = false,
+  tickLabel = false,
+  label,
+}: ReachBarProps) {
   const cut = reach <= FOLLOWERS_ONLY;
   const tone = cut ? " is-cut" : you ? " is-you" : "";
   return (
     <span className={`reach${tone}`}>
+      {label !== undefined && (
+        <span
+          className={label.hidden ? "reach-label is-hidden" : "reach-label"}
+          aria-hidden={label.hidden}
+        >
+          {label.text}
+        </span>
+      )}
       <span className="reach-track">
         <span
           className="reach-fill"

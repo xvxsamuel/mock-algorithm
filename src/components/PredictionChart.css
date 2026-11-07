@@ -68,7 +68,8 @@
   box-shadow: 0 0 10px rgb(254 44 85 / 0.35);
 }
 
-/* The video still playing: the gap to the guess is not decided yet. */
+/* You gave less than it guessed: the cap floats over an empty gap. While
+   the video still plays, the gap is not decided yet: a faint fill. */
 .pchart-short.is-pending {
   background: rgb(255 255 255 / 0.05);
 }
@@ -77,15 +78,6 @@
 .pchart-extra.is-clipped {
   border-radius: 0;
   background: linear-gradient(to top, var(--take) 60%, rgb(254 44 85 / 0.1));
-}
-
-/* You gave less than it guessed: an empty, hatched gap. */
-.pchart-short {
-  background: repeating-linear-gradient(
-    -45deg,
-    rgb(214 214 224 / 0.16) 0 3px,
-    transparent 3px 6px
-  );
 }
 
 /* The guess: a white cap, set before the video started. */
@@ -136,6 +128,20 @@
   white-space: nowrap;
   transform: translateX(-50%);
   transition: bottom 0.25s linear;
+}
+
+/* Over a bar that ran past the top: how long it really was. */
+.pchart-cap {
+  position: absolute;
+  bottom: 100%;
+  left: 50%;
+  margin-bottom: 4px;
+  color: var(--take);
+  font-size: 11px;
+  font-weight: 700;
+  line-height: 1.3;
+  white-space: nowrap;
+  transform: translateX(-50%);
 }
 
 .pchart-tag.is-sure-hit {

@@ -172,6 +172,14 @@
   overflow: visible;
 }
 
+/* From the fake accounts into the video they made popular. */
+.inf-feed {
+  stroke: var(--influence);
+  stroke-width: 1;
+  stroke-dasharray: 3 4;
+  stroke-opacity: 0.4;
+}
+
 .inf-ray {
   stroke: var(--influence);
   stroke-width: 1.5;
@@ -548,10 +556,6 @@
 }
 
 /* The two halves of a label, set apart by space rather than a dot. */
-.inf-you-pct {
-  margin-left: 5px;
-}
-
 .inf-cost {
   margin-left: 8px;
   opacity: 0.75;

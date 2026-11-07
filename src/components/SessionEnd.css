@@ -329,6 +329,30 @@
   margin: 0;
 }
 
+.end-year-head {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 4px 16px;
+}
+
+/* One square of the calendar, and what it is. */
+.end-year-key {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--muted);
+  font-size: 12px;
+}
+
+.end-year-square {
+  width: 8px;
+  height: 8px;
+  border-radius: 2px;
+  background: var(--take);
+}
+
 .end-points {
   display: grid;
   gap: 4px;

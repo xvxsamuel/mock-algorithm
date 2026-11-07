@@ -126,6 +126,7 @@ function AlgorithmPanel({ feed, onLeave }: AlgorithmPanelProps) {
       </div>
 
       <FeedStrip feed={feed} />
+      <p className="panel-note">Simulated model</p>
     </div>
   );
 }
