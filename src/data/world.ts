@@ -120,9 +120,9 @@ export const WORLD_FACTS: Record<WorldNodeId, WorldFact> = {
   },
   advertisers: {
     kind: "simulated",
-    text: "Bid on every ad slot. What the app knows about you raises the price.",
-    source: "TikTok Ads Help: auction ads",
-    url: "https://ads.tiktok.com/help/article/tiktok-auction-ads",
+    text: "Bid on every ad slot, about $4 to $10 per 1,000 views on TikTok. What the app knows about you raises the price.",
+    source: "Ad agency benchmarks, 2025; TikTok Ads Help",
+    url: "https://www.scrumball.com/blog/tiktok-cpm-rates",
   },
   moderators: {
     kind: "worldwide",

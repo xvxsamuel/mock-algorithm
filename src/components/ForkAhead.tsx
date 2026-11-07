@@ -151,13 +151,17 @@ function sayOf(fork: Fork, lever: Lever): string {
       otherTop !== undefined &&
       yourTop !== undefined &&
       shareOf(otherTop) > shareOf(yourTop)
-        ? ` More ${otherTop} than ${yourTop}.`
+        ? ` ${capitalised(otherTop)} leads, not ${yourTop}.`
         : "";
     // The skip shown is the one that changes the most, and it says so.
     return `${fork.pivot.video.emoji} steered you most: skip it and ${fork.changed} of the next ${AHEAD} are different.${turn}`;
   }
   const most = Math.round((otherShares[0]?.share ?? 0) * 100);
   return `Not based on you: no topic over ${most}%. EU law makes TikTok offer it.`;
+}
+
+function capitalised(text: string): string {
+  return text.charAt(0).toUpperCase() + text.slice(1);
 }
 
 function paint(category: Category): CSSProperties {
