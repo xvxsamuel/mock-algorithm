@@ -24,7 +24,7 @@ export type PickCause = {
   topic: Category;
   /** The videos in that topic that raised the guess most, strongest first. */
   watched: Impression[];
-  /** What it would have picked without the guess. */
+  /** A video of another topic it would have picked without the guess. */
   instead: ScoredVideo;
 };
 
@@ -47,15 +47,19 @@ export function causeOfPick(
           (score, part) => score - (guessed.has(part.label) ? part.value : 0),
           entry.score,
         );
-  const instead = runnersUp.reduce<ScoredVideo | null>(
-    (best, entry) =>
-      best === null || without(entry) > without(best) ? entry : best,
-    null,
-  );
+  // "Over" sets two topics side by side: the best runner-up of another one.
+  const instead = runnersUp
+    .filter((entry) => entry.video.category !== topic)
+    .reduce<ScoredVideo | null>(
+      (best, entry) =>
+        best === null || without(entry) > without(best) ? entry : best,
+      null,
+    );
   const lowest = runnersUp.at(-1);
   if (instead === null || lowest === undefined) return null;
   // Only the best few runners-up are kept, and anything below them scored
-  // at most the last one: below that, the real "instead" is not known.
+  // at most the last one: below that, the best of the other topics is not
+  // known.
   if (without(instead) < lowest.score) return null;
   // It tipped the pick, or the chain would claim too much.
   if (without(pick) >= without(instead)) return null;

@@ -30,6 +30,7 @@ function App() {
   // waits under what you gave so far.
   const planBreak =
     live &&
+    !current.revisit &&
     breakAt === null &&
     whyAt !== current.index &&
     current.clockAt >= (feed.intentMs ?? OPEN_BREAK_MS);
