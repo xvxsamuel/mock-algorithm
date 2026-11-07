@@ -1,5 +1,6 @@
 import type { SignalCode } from "../algorithm/signals";
 import { CATEGORY_COLORS } from "../data/categories";
+import { useDevice } from "../hooks/useDevice";
 import type { FeedController } from "../hooks/useFeed";
 import Icon, { type IconName } from "./Icon";
 import InterestRadar from "./InterestRadar";
@@ -30,6 +31,7 @@ type YouLensProps = { feed: FeedController };
 /** What the app has learned about you: a shape, some guesses, a live feed of signals. */
 function YouLens({ feed }: YouLensProps) {
   const { current, currentSignals, counters, traits } = feed;
+  const device = useDevice();
   const { video } = current;
   const [from, to] = CATEGORY_COLORS[video.category];
   const fired = currentSignals.flatMap((signal) => {
@@ -59,6 +61,21 @@ function YouLens({ feed }: YouLensProps) {
             <p className="eyebrow">data points</p>
           </div>
         </header>
+
+        {/* The one thing here that is not simulated. */}
+        <div className="you-device">
+          <p className="you-device-head">
+            <span className="you-real">real</span>
+            from your device
+          </p>
+          <ul className="you-facts">
+            {device.map((fact) => (
+              <li key={fact.key} className="you-fact">
+                {fact.value}
+              </li>
+            ))}
+          </ul>
+        </div>
 
         <div className="you-model-body">
           <div className="you-radar">

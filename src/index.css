@@ -33,6 +33,8 @@
   --engine: #b9b9c8;
   --platform: #ffb547;
   --influence: #a78bfa;
+  /* The physical world: energy, materials, what is left over. */
+  --earth: #8fd694;
   /* "Less": the engine turning away from something. Direction, not a colour of its own. */
   --less: #d6d6e0;
 

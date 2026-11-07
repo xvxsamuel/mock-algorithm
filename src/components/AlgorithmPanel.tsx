@@ -8,10 +8,12 @@ import FeedStrip from "./FeedStrip";
 import InfluenceLens from "./InfluenceLens";
 import LeaveMeter from "./LeaveMeter";
 import MarketLens from "./MarketLens";
+import WorldLens from "./WorldLens";
 import YouLens from "./YouLens";
 import "./AlgorithmPanel.css";
 
-export type Lens = "you" | "engine" | "content" | "market" | "influence";
+export type Lens =
+  "you" | "engine" | "content" | "market" | "influence" | "world";
 
 const LENSES: { id: Lens; label: string }[] = [
   { id: "you", label: "You" },
@@ -19,6 +21,7 @@ const LENSES: { id: Lens; label: string }[] = [
   { id: "content", label: "Content" },
   { id: "market", label: "Market" },
   { id: "influence", label: "Influence" },
+  { id: "world", label: "World" },
 ];
 
 /** Where your plan ends on the time bar. It never moves. */
@@ -124,6 +127,7 @@ function AlgorithmPanel({ feed, onLeave }: AlgorithmPanelProps) {
         {lens === "content" && <ContentLens feed={feed} />}
         {lens === "market" && <MarketLens feed={feed} />}
         {lens === "influence" && <InfluenceLens feed={feed} />}
+        {lens === "world" && <WorldLens feed={feed} />}
       </div>
 
       <FeedStrip feed={feed} />

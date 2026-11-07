@@ -1,0 +1,380 @@
+/* --- Everything one scroll touches: people, machines, matter --- */
+
+.lens > .world {
+  display: flex;
+  flex: 1 1 auto;
+  flex-direction: column;
+  gap: 10px;
+  min-height: 0;
+}
+
+.world-head {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 4px 16px;
+}
+
+.world-head .eyebrow {
+  margin: 0;
+}
+
+/* Your scroll's CO2 so far, and how far a car goes on it. */
+.world-total {
+  margin: 0;
+  color: color-mix(in srgb, var(--muted), var(--text) 30%);
+  font-size: 13px;
+}
+
+/* Each gram split by where it comes from, widths to scale. The data
+   centres' sliver keeps a minimum so its label has somewhere to sit. */
+.world-split {
+  display: flex;
+  gap: 3px;
+}
+
+.world-split-part {
+  display: grid;
+  flex-basis: 0;
+  gap: 5px;
+  min-width: 96px;
+}
+
+.world-split-bar {
+  height: 8px;
+  border-radius: 4px;
+  background: var(--earth);
+}
+
+.world-split-part.is-network .world-split-bar {
+  background: color-mix(in srgb, var(--earth) 55%, var(--surface));
+}
+
+.world-split-part.is-servers .world-split-bar {
+  width: 4px;
+  background: color-mix(in srgb, var(--earth) 30%, var(--surface));
+}
+
+.world-split-label {
+  color: color-mix(in srgb, var(--muted), var(--text) 30%);
+  font-size: 12px;
+  white-space: nowrap;
+}
+
+.world-split-label b {
+  color: var(--text);
+  font-variant-numeric: tabular-nums;
+}
+
+.world-total b {
+  color: var(--earth);
+  font-size: 26px;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  font-variant-numeric: tabular-nums;
+}
+
+/* Everything on it is placed from its measured size. */
+.world-map {
+  position: relative;
+  flex: 1 1 auto;
+  min-height: 220px;
+}
+
+.world-lines {
+  position: absolute;
+  inset: 0;
+  overflow: visible;
+}
+
+.world-line {
+  stroke: var(--tone);
+  stroke-width: 1.5;
+  stroke-opacity: 0.55;
+}
+
+.world-line.is-data,
+.world-pulse.is-data,
+.world-key .is-data {
+  --tone: var(--you);
+}
+
+.world-line.is-money,
+.world-pulse.is-money,
+.world-key .is-money {
+  --tone: var(--platform);
+}
+
+.world-line.is-work,
+.world-key .is-work {
+  --tone: var(--text);
+}
+
+.world-line.is-video,
+.world-pulse.is-video,
+.world-key .is-video {
+  --tone: var(--engine);
+}
+
+.world-line.is-matter,
+.world-key .is-matter {
+  --tone: var(--earth);
+}
+
+.world-line.is-work {
+  stroke-dasharray: 2 5;
+  stroke-linecap: round;
+  stroke-opacity: 0.7;
+}
+
+/* One part of the world: what it is, and one number about it. */
+.world-node {
+  position: absolute;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 3px;
+  width: 104px;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--text);
+  font: inherit;
+  text-align: center;
+  cursor: pointer;
+  transform: translate(-50%, -24px);
+}
+
+.world-icon {
+  display: grid;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  border: 1px solid var(--line-strong);
+  border-radius: 50%;
+  background: var(--surface-2);
+  font-size: 21px;
+  line-height: 1;
+  transition:
+    border-color 0.2s var(--ease),
+    box-shadow 0.2s var(--ease);
+}
+
+.world-node.is-big {
+  transform: translate(-50%, -32px);
+}
+
+.world-node.is-big .world-icon {
+  width: 60px;
+  height: 60px;
+  border-color: var(--earth);
+  font-size: 30px;
+}
+
+.world-node:hover .world-icon {
+  border-color: var(--text);
+}
+
+.world-node.is-picked .world-icon {
+  border-color: var(--text);
+  box-shadow: 0 0 0 3px rgb(255 255 255 / 0.14);
+}
+
+.world-node:focus-visible {
+  outline: none;
+}
+
+.world-node:focus-visible .world-icon {
+  outline: 2px solid var(--you);
+  outline-offset: 3px;
+}
+
+/* Labels sit on the card colour, so lines pass behind them. */
+.world-name,
+.world-value {
+  padding: 0 4px;
+  border-radius: 4px;
+  background: var(--surface);
+}
+
+.world-name {
+  font-size: 12.5px;
+  font-weight: 650;
+  line-height: 1.15;
+  white-space: nowrap;
+}
+
+.world-value {
+  color: color-mix(in srgb, var(--muted), var(--text) 30%);
+  font-size: 12px;
+  font-weight: 650;
+  line-height: 1.1;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.world-value.is-tiktok,
+.world-value.is-advertisers {
+  color: var(--platform);
+}
+
+.world-value.is-sites {
+  color: var(--you);
+  font-family: ui-monospace, "Cascadia Mono", Consolas, monospace;
+  font-size: 11.5px;
+}
+
+.world-value.is-phone,
+.world-value.is-network,
+.world-value.is-servers,
+.world-value.is-factory {
+  color: var(--earth);
+}
+
+/* A swipe: the video runs down to you, your data runs up. */
+.world-pulse {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 8px;
+  height: 8px;
+  margin: -4px 0 0 -4px;
+  border-radius: 50%;
+  background: var(--tone);
+  box-shadow: 0 0 10px var(--tone);
+  offset-rotate: 0deg;
+  pointer-events: none;
+  animation: world-run 1.4s var(--ease) both;
+}
+
+.world-pulse.is-data {
+  animation-delay: 0.5s;
+}
+
+@keyframes world-run {
+  from {
+    offset-distance: 0%;
+    opacity: 1;
+  }
+  85% {
+    opacity: 1;
+  }
+  to {
+    offset-distance: 100%;
+    opacity: 0;
+  }
+}
+
+/* What the line colours mean. */
+.world-key {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 14px;
+  margin: 0;
+  padding: 0;
+  color: color-mix(in srgb, var(--muted), var(--text) 30%);
+  font-size: 12px;
+  list-style: none;
+}
+
+.world-key li {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.world-key li::before {
+  content: "";
+  width: 14px;
+  height: 2px;
+  border-radius: 1px;
+  background: var(--tone);
+}
+
+.world-key .is-work::before {
+  background: repeating-linear-gradient(
+    90deg,
+    var(--tone) 0 2px,
+    transparent 2px 5px
+  );
+}
+
+/* The part you picked: one line about it, and who says so. */
+.world-fact {
+  display: grid;
+  gap: 4px;
+  padding-top: 10px;
+  border-top: 1px solid var(--line);
+}
+
+.world-fact-text {
+  margin: 0;
+  font-size: 14px;
+  font-weight: 550;
+  line-height: 1.4;
+}
+
+.world-hash {
+  display: block;
+  margin-bottom: 4px;
+  color: var(--you);
+  font-family: ui-monospace, "Cascadia Mono", Consolas, monospace;
+  font-size: 12.5px;
+  overflow-wrap: anywhere;
+}
+
+.world-source {
+  justify-self: start;
+  color: color-mix(in srgb, var(--muted), var(--text) 30%);
+  font-size: 12px;
+}
+
+.world-source:hover {
+  color: var(--text);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .world-pulse {
+    display: none;
+  }
+}
+
+@media (max-width: 900px) {
+  .lens > .world {
+    flex: 1 0 auto;
+  }
+
+  .world-map {
+    flex: 1 0 500px;
+  }
+}
+
+/* Four rows need the height: on a phone the page scrolls anyway. */
+.world-map.is-stacked {
+  min-height: 330px;
+}
+
+.world-map.is-compact .world-node {
+  width: 92px;
+}
+
+.world-map.is-compact .world-icon {
+  width: 38px;
+  height: 38px;
+  font-size: 18px;
+}
+
+.world-map.is-compact .world-node.is-big .world-icon {
+  width: 52px;
+  height: 52px;
+  font-size: 26px;
+}
+
+.world-map.is-compact .world-name {
+  font-size: 11.5px;
+}
+
+.world-map.is-compact .world-value {
+  font-size: 11px;
+}

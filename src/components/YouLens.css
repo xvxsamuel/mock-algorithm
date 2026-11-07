@@ -44,6 +44,55 @@
   line-height: 1.2;
 }
 
+/* What your own device says about you: read for real, in white. */
+.you-device {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 12px;
+  padding: 12px 0;
+  border-bottom: 1px solid var(--line);
+}
+
+.you-device-head {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  color: color-mix(in srgb, var(--muted), var(--text) 30%);
+  font-size: 12px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.you-real {
+  padding: 1px 7px;
+  border-radius: 999px;
+  background: var(--text);
+  color: var(--bg);
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.you-facts {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.you-fact {
+  padding: 2px 9px;
+  border: 1px solid var(--line-strong);
+  border-radius: 999px;
+  color: var(--text);
+  font-size: 12px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
 /* A recording light beside your name. */
 .you-rec {
   display: flex;
@@ -277,6 +326,18 @@
     width: 36px;
     height: 48px;
     font-size: 20px;
+  }
+
+  .you-id {
+    padding-bottom: 8px;
+  }
+
+  .you-device {
+    padding: 7px 0;
+  }
+
+  .traits {
+    gap: 6px;
   }
 }
 

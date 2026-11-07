@@ -1,0 +1,195 @@
+/* --- Your next videos, two ways: as you are, and with one thing changed --- */
+
+.fork {
+  display: grid;
+  gap: 12px;
+  animation-delay: 1.9s;
+}
+
+.fork-head {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px 16px;
+}
+
+.fork-head .eyebrow {
+  margin: 0;
+}
+
+.fork-levers {
+  display: flex;
+  gap: 4px;
+  padding: 3px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+}
+
+.fork-lever {
+  padding: 5px 14px;
+  border: 0;
+  border-radius: 999px;
+  background: transparent;
+  color: color-mix(in srgb, var(--muted), var(--text) 30%);
+  font-size: 13px;
+  font-weight: 650;
+  cursor: pointer;
+  transition:
+    background 0.2s var(--ease),
+    color 0.2s var(--ease);
+}
+
+.fork-lever:hover {
+  color: var(--text);
+}
+
+.fork-lever.is-on {
+  background: var(--surface-2);
+  color: var(--text);
+  box-shadow: inset 0 0 0 1px var(--line-strong);
+}
+
+.fork-lever:focus-visible {
+  outline: 2px solid var(--you);
+  outline-offset: 2px;
+}
+
+.fork-rows {
+  display: grid;
+  gap: 10px;
+}
+
+.fork-row {
+  display: grid;
+  grid-template-columns: 96px minmax(0, 1fr) 132px;
+  align-items: center;
+  gap: 14px;
+}
+
+.fork-label {
+  margin: 0;
+  overflow: hidden;
+  color: var(--you);
+  font-size: 14px;
+  font-weight: 700;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.fork-row.is-other .fork-label {
+  color: var(--text);
+}
+
+.fork-tiles {
+  display: grid;
+  grid-template-columns: repeat(20, minmax(0, 1fr));
+  gap: 4px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+/* A video ahead: a tiny phone screen of its topic. */
+.fork-tile {
+  display: grid;
+  place-items: center;
+  aspect-ratio: 3 / 4;
+  min-width: 0;
+  border-radius: 5px;
+  font-size: clamp(11px, 1.3vw, 17px);
+  line-height: 1;
+  animation: end-pop 0.3s var(--ease) both;
+}
+
+/* The same video you get at that point: only the differences stand out. */
+.fork-tile.is-same {
+  opacity: 0.28;
+  filter: grayscale(0.6);
+}
+
+/* What the run is about: each topic's share, biggest first. */
+.fork-mix {
+  display: grid;
+  gap: 5px;
+}
+
+.fork-bar {
+  display: flex;
+  overflow: hidden;
+  height: 8px;
+  border-radius: 4px;
+  background: var(--line);
+}
+
+.fork-bar span {
+  height: 100%;
+}
+
+.fork-top {
+  color: color-mix(in srgb, var(--muted), var(--text) 30%);
+  font-size: 12.5px;
+}
+
+.fork-top b {
+  color: var(--text);
+  font-variant-numeric: tabular-nums;
+}
+
+.fork-says {
+  margin: 2px 0 0;
+  color: var(--text);
+  font-size: 15px;
+  font-weight: 600;
+}
+
+/* What happened when real people switched it off for a week. */
+.fork-study {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px 18px;
+  margin: 0;
+  padding: 0;
+  color: color-mix(in srgb, var(--muted), var(--text) 30%);
+  font-size: 13.5px;
+  list-style: none;
+}
+
+.fork-study-who {
+  font-size: 12.5px;
+}
+
+.fork-study b {
+  color: var(--text);
+  font-size: 18px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .fork-tile {
+    animation: none;
+  }
+}
+
+/* Narrow: two rows of ten, the topic mix under them. */
+@media (max-width: 760px) {
+  .fork-row {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 6px;
+  }
+
+  .fork-tiles {
+    grid-template-columns: repeat(10, minmax(0, 1fr));
+  }
+
+  .fork-tile {
+    font-size: 15px;
+  }
+
+  .fork-mix {
+    grid-template-columns: minmax(0, 1fr) auto;
+    align-items: center;
+    gap: 10px;
+  }
+}

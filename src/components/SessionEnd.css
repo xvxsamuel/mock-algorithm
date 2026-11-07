@@ -62,7 +62,7 @@
 
 .end-keeps,
 .end-year {
-  animation-delay: 2.1s;
+  animation-delay: 2.3s;
 }
 
 @keyframes end-rise {
@@ -258,6 +258,12 @@
   box-shadow: 0 0 0 1.5px var(--surface);
 }
 
+/* The video that steered what comes next the most (see "Your next"). */
+.end-tile.is-pivot {
+  outline: 2px solid #fff;
+  outline-offset: 2px;
+}
+
 /* Watched after your plan ran out: time it took, underlined in pink. */
 .end-tile.is-late::after {
   content: "";
@@ -426,6 +432,10 @@
   letter-spacing: -0.02em;
 }
 
+.end-days.is-earth b {
+  color: var(--earth);
+}
+
 .end-days span {
   color: color-mix(in srgb, var(--muted), var(--text) 30%);
   font-size: 13.5px;
@@ -438,7 +448,7 @@
   justify-content: center;
   gap: 12px;
   padding-top: 6px;
-  animation: end-rise 0.6s var(--ease) 2.6s both;
+  animation: end-rise 0.6s var(--ease) 2.8s both;
 }
 
 .end-button {
