@@ -1,6 +1,5 @@
 import type { SignalCode } from "../algorithm/signals";
 import { CATEGORY_COLORS } from "../data/categories";
-import { USER } from "../data/user";
 import type { FeedController } from "../hooks/useFeed";
 import Icon, { type IconName } from "./Icon";
 import InterestRadar from "./InterestRadar";
@@ -20,6 +19,12 @@ const SIGNALS: { code: SignalCode; icon: IconName; label: string }[] = [
   { code: "NOT_INTERESTED", icon: "ban", label: "not for me" },
 ];
 
+/** No name: the app knows you by a number. A new one each visit, 19 digits
+    long like a TikTok user ID. */
+const USER_ID =
+  "7" +
+  Array.from({ length: 18 }, () => Math.floor(Math.random() * 10)).join("");
+
 type YouLensProps = { feed: FeedController };
 
 /** What the app has learned about you: a shape, some guesses, a live feed of signals. */
@@ -37,11 +42,11 @@ function YouLens({ feed }: YouLensProps) {
       <section className="pane you-model">
         <header className="you-id">
           <span className="you-avatar" aria-hidden="true">
-            {initials(USER.name)}
+            <Icon name="profile" size={22} />
           </span>
           <div className="you-who">
-            <p className="you-name">{USER.name}</p>
-            <p className="tone-muted">@{USER.handle}</p>
+            <p className="you-name">You</p>
+            <p className="you-number">user {USER_ID}</p>
           </div>
           {/* A recording light: on the moment you start scrolling. */}
           {feed.started && (
@@ -118,15 +123,6 @@ function YouLens({ feed }: YouLensProps) {
       </section>
     </div>
   );
-}
-
-function initials(name: string): string {
-  return name
-    .split(" ")
-    .map((part) => part.charAt(0))
-    .join("")
-    .slice(0, 2)
-    .toUpperCase();
 }
 
 export default YouLens;

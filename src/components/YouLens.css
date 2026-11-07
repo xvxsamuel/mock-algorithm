@@ -28,6 +28,16 @@
   min-width: 0;
 }
 
+/* The number it knows you by: muted, digits all the same width. */
+.you-number {
+  overflow: hidden;
+  color: color-mix(in srgb, var(--muted), var(--text) 30%);
+  font-size: 12px;
+  font-variant-numeric: tabular-nums;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
 .you-name {
   font-size: 17px;
   font-weight: 650;
