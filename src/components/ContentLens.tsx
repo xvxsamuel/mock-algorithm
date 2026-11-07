@@ -244,9 +244,7 @@ function Crowd({ reach }: { reach: VideoReach }) {
           );
         })}
       </div>
-      <span className="con-ordinary" title="An ordinary video">
-        ×1
-      </span>
+      <span className="con-ordinary">ordinary video</span>
     </div>
   );
 }

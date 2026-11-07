@@ -19,6 +19,9 @@ export type Impression = {
   index: number;
   video: Video;
   startedAt: number;
+  /** The session clock when it started: time given to the feed, not
+      counting time the clock stood still. */
+  clockAt: number;
   /** null while the video is still on screen. */
   endedAt: number | null;
   /** Time actually spent watching (pauses not included). */
@@ -36,6 +39,7 @@ export function startImpression(
   video: Video,
   index: number,
   now: number,
+  clockAt: number,
   revisit: boolean,
   predictedMs: number,
   source: FeedSource,
@@ -44,6 +48,7 @@ export function startImpression(
     index,
     video,
     startedAt: now,
+    clockAt,
     endedAt: null,
     watchMs: 0,
     revisit,

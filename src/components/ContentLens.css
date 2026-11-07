@@ -293,7 +293,7 @@
   letter-spacing: 0;
 }
 
-/* The crowd, and "×1" at the end of its first row: what an ordinary video
+/* The crowd, and "ordinary video" at the end of its first row: what one
    reaches. */
 .con-crowd-wrap {
   display: grid;
@@ -327,6 +327,7 @@
   font-size: 11px;
   font-weight: 650;
   line-height: 14px;
+  white-space: nowrap;
 }
 
 /* Tall screens: a bigger frame and bigger people, in the room the lens has. */

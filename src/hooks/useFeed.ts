@@ -117,6 +117,13 @@ type State = {
   /** The video was playing when it was held, so it plays again after. */
   resumeAfterHold: boolean;
   sessionStart: number;
+  /**
+   * When the session clock stopped, or null while it runs. It stands still
+   * while playback is held (the panel or the break card is over the video)
+   * and after you leave: reading about the app is not scrolling it. When it
+   * runs again, `sessionStart` moves on by the time it stood still.
+   */
+  asideSince: number | null;
   now: number;
   nextKey: number;
   likedIds: string[];
@@ -168,6 +175,7 @@ function feedReducer(state: State, action: Action): State {
         playingSince: null,
         resumeAfterEnd: state.playingSince !== null,
         endedAt: now,
+        asideSince: state.asideSince ?? now,
         now,
       };
     }
@@ -180,6 +188,9 @@ function feedReducer(state: State, action: Action): State {
         playingSince: state.resumeAfterEnd ? now : null,
         resumeAfterEnd: false,
         endedAt: null,
+        ...clockRuns(state, now),
+        // Still held: the clock waits for that too.
+        asideSince: state.held ? now : null,
         now,
       };
     }
@@ -192,7 +203,8 @@ function feedReducer(state: State, action: Action): State {
         started: true,
         intentMs: action.intentMs,
         sessionStart: now,
-        current: { ...state.current, startedAt: now },
+        asideSince: state.held ? now : null,
+        current: { ...state.current, startedAt: now, clockAt: 0 },
         playingSince: state.held ? null : now,
         resumeAfterHold: state.held,
         now,
@@ -233,6 +245,7 @@ function feedReducer(state: State, action: Action): State {
         item.video,
         history.length + 1,
         now,
+        clockOf({ ...state, now }),
         revisit,
         predictedMs,
         item.ranking.source,
@@ -272,6 +285,7 @@ function feedReducer(state: State, action: Action): State {
           playingSince: null,
           held: true,
           resumeAfterHold: state.playingSince !== null,
+          asideSince: state.started ? (state.asideSince ?? now) : null,
           now,
         };
       }
@@ -280,6 +294,7 @@ function feedReducer(state: State, action: Action): State {
         playingSince: state.resumeAfterHold ? now : state.playingSince,
         held: false,
         resumeAfterHold: false,
+        ...clockRuns(state, now),
         now,
       };
     }
@@ -372,7 +387,7 @@ function applyReaction(state: State, kind: ReactionKind): State {
 function queueNextVideo(state: State, seed: number): State {
   const seen = state.items.slice(0, state.maxSeenIndex + 1);
   const impressions = [...state.history, liveImpression(state, state.now)];
-  const session = summarizeSession(impressions, state.sessionStart, state.now);
+  const session = summarizeSession(impressions, clockOf(state), state.now);
   const risk = riskOf(state);
   const rescue = rescueDue(state, risk.value);
   const profile = buildProfile(impressions);
@@ -501,9 +516,7 @@ function campaignLeft(state: State): number {
 /** You set a limit and you are past it. */
 function pastPlan(state: State): boolean {
   return (
-    state.started &&
-    state.intentMs !== null &&
-    state.now - state.sessionStart > state.intentMs
+    state.started && state.intentMs !== null && clockOf(state) > state.intentMs
   );
 }
 
@@ -556,10 +569,31 @@ function riskOf(state: State) {
   const live = liveImpression(state, state.now);
   return exitRisk(
     isHit(live) ? [...state.history, live] : state.history,
-    state.now - state.sessionStart,
+    clockOf(state),
     state.intentMs,
     new Date(state.now).getHours(),
   );
+}
+
+/** Time given to the feed so far: the session clock, which stands still
+    while held and after you leave. */
+function clockOf(state: State): number {
+  if (!state.started) return 0;
+  return (state.asideSince ?? state.now) - state.sessionStart;
+}
+
+/** The clock runs again: the start moves on by the time it stood still. */
+function clockRuns(
+  state: State,
+  now: number,
+): Pick<State, "sessionStart" | "asideSince"> {
+  if (state.asideSince === null) {
+    return { sessionStart: state.sessionStart, asideSince: null };
+  }
+  return {
+    sessionStart: state.sessionStart + (now - state.asideSince),
+    asideSince: null,
+  };
 }
 
 /** The current impression with watch time counted up to `now`. */
@@ -579,7 +613,7 @@ function createInitialState(): State {
     videos: VIDEOS,
     profile: buildProfile([]),
     history: [],
-    explorationRate: summarizeSession([], now, now).explorationRate,
+    explorationRate: summarizeSession([], 0, now).explorationRate,
     rescue: false,
     holdMs: (video) => predictWatchMs(video, [], true),
     random: createRandom(Math.random()),
@@ -605,6 +639,7 @@ function createInitialState(): State {
       first.video,
       1,
       now,
+      0,
       false,
       predictedMs,
       ranking.source,
@@ -613,6 +648,7 @@ function createInitialState(): State {
     held: false,
     resumeAfterHold: false,
     sessionStart: now,
+    asideSince: null,
     now,
     nextKey: 1,
     likedIds: [],
@@ -651,7 +687,7 @@ export function useFeed() {
   const current = liveImpression(state, state.now);
   const impressions = [...state.history, current];
   const profile = buildProfile(impressions);
-  const sessionMs = state.started ? state.now - state.sessionStart : 0;
+  const sessionMs = clockOf(state);
 
   const topicScores = CATEGORIES.map((name) => ({
     name,
@@ -747,7 +783,7 @@ export function useFeed() {
       impression,
       signals: readSignals(impression),
     })),
-    session: summarizeSession(impressions, state.sessionStart, state.now),
+    session: summarizeSession(impressions, sessionMs, state.now),
     exitRisk: riskOf(state),
     predictionHits: predictionHits(state.history),
     traits,

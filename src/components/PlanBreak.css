@@ -1,0 +1,267 @@
+/* --- Past your plan: what you gave so far, over the next video --- */
+
+.brk {
+  position: absolute;
+  inset: 0;
+  z-index: 20;
+  display: grid;
+  place-items: center;
+  padding: 24px 22px;
+  overflow: hidden;
+  background: rgb(5 5 7 / 0.84);
+  backdrop-filter: blur(18px) saturate(1.2);
+  touch-action: none;
+  animation: brk-in 0.45s var(--ease, ease-out);
+  transition: opacity 0.25s var(--ease, ease-out);
+}
+
+@keyframes brk-in {
+  from {
+    opacity: 0;
+  }
+}
+
+.brk:focus {
+  outline: none;
+}
+
+/* Swiped: it fades while the rest of the fling runs out. */
+.brk.is-going {
+  opacity: 0;
+}
+
+.brk-inner {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  width: 100%;
+  max-width: 320px;
+}
+
+.brk-title {
+  margin: 0 0 4px;
+  font-size: 22px;
+  font-weight: 700;
+  line-height: 1.15;
+  letter-spacing: -0.02em;
+}
+
+/* --- Your time: the same two clocks and bar as the end --- */
+
+.brk-times {
+  display: flex;
+  gap: 32px;
+}
+
+.brk-stat {
+  display: grid;
+  gap: 4px;
+  margin: 0;
+}
+
+.brk-kicker {
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.brk-clock {
+  font-size: 34px;
+  font-weight: 600;
+  line-height: 1;
+  letter-spacing: -0.03em;
+  font-variant-numeric: tabular-nums;
+}
+
+.brk-clock.is-meant {
+  color: var(--you);
+}
+
+.brk-stat.is-over .brk-clock {
+  color: var(--take);
+  text-shadow: 0 0 20px rgb(254 44 85 / 0.45);
+}
+
+/* Cyan up to your plan, then pink for what it took past it. */
+.brk-bar {
+  position: relative;
+  height: 8px;
+  overflow: hidden;
+  border-radius: 4px;
+  background: var(--line);
+}
+
+.brk-bar-part {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 0;
+  background: var(--you);
+  transform-origin: left;
+  animation: brk-grow 0.7s var(--ease, ease-out) 0.15s both;
+}
+
+.brk-bar-part.is-over {
+  background: var(--take);
+  box-shadow: 0 0 12px rgb(254 44 85 / 0.6);
+  animation-duration: 0.5s;
+  animation-delay: 0.85s;
+}
+
+@keyframes brk-grow {
+  from {
+    transform: scaleX(0);
+  }
+}
+
+/* --- Who chose them: the end's tiles, smaller --- */
+
+.brk-label {
+  margin: 10px 0 0;
+  font-size: 14px;
+  font-weight: 650;
+}
+
+.brk-tiles {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.brk-tile {
+  --tone: var(--you);
+  display: grid;
+  place-items: center;
+  width: 20px;
+  height: 20px;
+  border: 1.5px solid color-mix(in srgb, var(--tone) 80%, transparent);
+  border-radius: 5px;
+  background: color-mix(in srgb, var(--tone) 30%, var(--bg));
+  font-size: 11px;
+  line-height: 1;
+  animation: brk-pop 0.3s var(--ease, ease-out) both;
+}
+
+.brk-tiles.is-few .brk-tile {
+  width: 28px;
+  height: 28px;
+  border-radius: 6px;
+  font-size: 15px;
+}
+
+@keyframes brk-pop {
+  from {
+    opacity: 0;
+    transform: scale(0.5);
+  }
+}
+
+.brk-tile.is-explore {
+  --tone: var(--engine);
+}
+
+.brk-tile.is-rescue {
+  --tone: var(--take);
+}
+
+.brk-tile.is-ad,
+.brk-chips .is-ad {
+  --tone: var(--platform);
+}
+
+.brk-tile.is-pushed,
+.brk-chips .is-pushed {
+  --tone: var(--influence);
+}
+
+/* --- What it took: one chip each, in its owner's colour --- */
+
+.brk-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin: 4px 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.brk-chips li {
+  --tone: var(--you);
+  padding: 4px 10px;
+  border: 1px solid color-mix(in srgb, var(--tone) 45%, transparent);
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--tone) 14%, transparent);
+  color: var(--tone);
+  font-size: 12.5px;
+  font-weight: 650;
+  font-variant-numeric: tabular-nums;
+}
+
+/* --- The way on is the easy one, as in the app --- */
+
+.brk-actions {
+  display: flex;
+  gap: 10px;
+  margin-top: 12px;
+}
+
+.brk-button {
+  flex: 1;
+  padding: 12px 10px;
+  border-radius: 12px;
+  font-size: 15px;
+  font-weight: 700;
+  cursor: pointer;
+  transition:
+    background 0.2s,
+    border-color 0.2s;
+}
+
+.brk-button:focus-visible {
+  outline: 2px solid var(--you);
+  outline-offset: 2px;
+}
+
+.brk-button.is-keep {
+  border: 0;
+  background: #fff;
+  color: #000;
+}
+
+.brk-button.is-keep:hover {
+  background: #e6e6ea;
+}
+
+.brk-button.is-leave {
+  border: 1px solid var(--take);
+  background: transparent;
+  color: var(--text);
+  box-shadow: 0 0 16px rgb(254 44 85 / 0.3);
+}
+
+.brk-button.is-leave:hover {
+  background: rgb(254 44 85 / 0.12);
+}
+
+/* The closed sheet's handle sits over the bottom of the phone. */
+@media (max-width: 900px) {
+  .brk {
+    padding-bottom: 64px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .brk,
+  .brk-tile,
+  .brk-bar-part {
+    animation: none;
+  }
+
+  .brk,
+  .brk-button {
+    transition: none;
+  }
+}

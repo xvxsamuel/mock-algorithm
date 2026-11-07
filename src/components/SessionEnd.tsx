@@ -66,10 +66,8 @@ function SessionEnd({ feed, onBack, onRestart, returnTo }: SessionEndProps) {
     feed.current,
   ];
   // Where your plan ran out: the first video that started after it.
-  const planAt =
-    intentMs === null ? null : (seen[0]?.startedAt ?? 0) + intentMs;
   const overFrom =
-    planAt === null ? -1 : seen.findIndex((i) => i.startedAt >= planAt);
+    intentMs === null ? -1 : seen.findIndex((i) => i.clockAt >= intentMs);
   const counts = SOURCE_ORDER.map((source) => ({
     source,
     count: seen.filter((i) => i.source === source).length,

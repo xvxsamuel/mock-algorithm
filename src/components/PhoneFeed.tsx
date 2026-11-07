@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, type ReactNode } from "react";
 import { advertiserOf } from "../data/ads";
 import type { FeedController } from "../hooks/useFeed";
 import CommentsSheet from "./CommentsSheet";
@@ -15,10 +15,14 @@ const TOAST_MS = 1800;
 
 type Sheet = "comments" | "share" | null;
 
-type PhoneFeedProps = { feed: FeedController };
+type PhoneFeedProps = {
+  feed: FeedController;
+  /** Laid over the screen, like the start gate. */
+  children?: ReactNode;
+};
 
 /** The TikTok-like side: a phone with an endless vertical feed. */
-function PhoneFeed({ feed }: PhoneFeedProps) {
+function PhoneFeed({ feed, children }: PhoneFeedProps) {
   const scroller = useRef<HTMLDivElement>(null);
   const [sheet, setSheet] = useState<Sheet>(null);
   const [toast, setToast] = useState<string | null>(null);
@@ -63,14 +67,14 @@ function PhoneFeed({ feed }: PhoneFeedProps) {
         return;
       }
       if (event.key !== "ArrowDown" && event.key !== "ArrowUp") return;
-      if (!feed.started || feed.ended) return;
+      if (!feed.started || feed.ended || feed.held) return;
       event.preventDefault();
       const step = event.key === "ArrowDown" ? 1 : -1;
       scrollToCard(scroller.current, activeIndex + step);
     }
     window.addEventListener("keydown", handleKey);
     return () => window.removeEventListener("keydown", handleKey);
-  }, [activeIndex, sheet, feed.started, feed.ended]);
+  }, [activeIndex, sheet, feed.started, feed.ended, feed.held]);
 
   useEffect(() => {
     if (toast === null) return;
@@ -209,6 +213,8 @@ function PhoneFeed({ feed }: PhoneFeedProps) {
           </div>
         </>
       )}
+
+      {children}
 
       {!feed.started && <StartGate onStart={feed.begin} />}
 
