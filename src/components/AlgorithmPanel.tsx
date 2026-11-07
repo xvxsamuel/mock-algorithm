@@ -85,6 +85,11 @@ function AlgorithmPanel({ feed, onLeave }: AlgorithmPanelProps) {
               className={
                 lens === "world" ? "panel-grams is-active" : "panel-grams"
               }
+              title="What your scroll is made of"
+              aria-label={`${(
+                (sessionMs / 60_000) *
+                footprint(phoneYears).total
+              ).toFixed(1)} g CO2e so far. Open World`}
               onClick={() => {
                 setLens("world");
                 setFolded(false);

@@ -267,6 +267,7 @@ function SessionEnd({ feed, onBack, onRestart, returnTo }: SessionEndProps) {
             <p className="end-days is-earth">
               <b>{YEAR_KG} kg</b>
               <span>CO2e, like a new car driving {YEAR_KM} km</span>
+              <span className="kind">estimate, on Wi-Fi</span>
             </p>
             {/* What you can change about it: how long you keep the phone. */}
             <p className="end-days is-earth is-less">

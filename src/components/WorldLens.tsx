@@ -9,6 +9,7 @@ import {
   PAID_FROM_SEC,
   PHONE_YEARS,
   phoneText,
+  splitPercents,
   REMOVED_PER_MINUTE,
   SAMPLE_EMAIL,
   WORLD_FACTS,
@@ -120,6 +121,7 @@ function WorldLens({ feed, years, onYears }: WorldLensProps) {
 
   const minutes = feed.sessionMs / 60_000;
   const perMinute = footprint(years);
+  const shares = splitPercents(years);
   const grams = minutes * perMinute.total;
   const metres = grams * METRES_PER_GRAM;
   const megabytes = minutes * MB_PER_MINUTE;
@@ -147,7 +149,7 @@ function WorldLens({ feed, years, onYears }: WorldLensProps) {
     network: `${(minutes * perMinute.network).toFixed(2)} g, ${Math.round(megabytes)} MB`,
     phone: `${(minutes * perMinute.phone).toFixed(2)} g`,
     mines: "cobalt",
-    factory: "25–50 kg",
+    factory: "30–75 kg",
     drawer: "700 million",
     ewaste: "22% recycled",
   };
@@ -201,7 +203,7 @@ function WorldLens({ feed, years, onYears }: WorldLensProps) {
             >
               <span className="world-split-bar" />
               <span className="world-split-label">
-                {label} <b>{percent(perMinute[key] / perMinute.total)}</b>
+                {label} <b>{shares[key]}%</b>
               </span>
             </span>
           ))}
@@ -332,8 +334,12 @@ function WorldLens({ feed, years, onYears }: WorldLensProps) {
             )}
             {picked === "phone" && (
               <div className="world-keep">
-                <span>Keep it</span>
-                <div className="levers" role="group" aria-label="Keep it">
+                <span>Kept for</span>
+                <div
+                  className="levers"
+                  role="group"
+                  aria-label="Phone kept for"
+                >
                   {[PHONE_YEARS, LONGER_YEARS].map((option) => (
                     <button
                       key={option}
@@ -452,10 +458,6 @@ function node(
       stacked: { x: stacked[0], y: stacked[1] },
     },
   };
-}
-
-function percent(share: number): string {
-  return `${Math.round(share * 100)}%`;
 }
 
 export default WorldLens;

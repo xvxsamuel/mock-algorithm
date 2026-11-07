@@ -27,6 +27,8 @@ export const LONGER_YEARS = 5;
     LCA; Apple's iPhone reports). Only that part shrinks with a longer life. */
 const MAKING_SHARE = 0.8;
 
+export type SplitPart = "phone" | "network" | "servers";
+
 export type Footprint = {
   phone: number;
   network: number;
@@ -76,12 +78,31 @@ export type WorldNodeId =
   | "drawer"
   | "ewaste";
 
-/** The phone's line, for a phone kept this many years: its share of every
-    minute shrinks as its making is spread thinner. */
+/** Each part's share of a minute in whole percent, adding up to 100: the
+    leftover points go to the parts that lost the most in rounding. */
+export function splitPercents(years: number): Record<SplitPart, number> {
+  const minute = footprint(years);
+  const parts: SplitPart[] = ["phone", "network", "servers"];
+  const exact = parts.map((part) => (minute[part] / minute.total) * 100);
+  const whole = exact.map((share) => Math.floor(share));
+  let left = 100 - whole.reduce((sum, share) => sum + share, 0);
+  const byLoss = parts
+    .map((_, i) => i)
+    .sort((a, b) => exact[b] - whole[b] - (exact[a] - whole[a]));
+  for (const i of byLoss) {
+    if (left <= 0) break;
+    whole[i] += 1;
+    left -= 1;
+  }
+  return { phone: whole[0], network: whole[1], servers: whole[2] };
+}
+
+/** The phone's line, for a phone kept this many years. Its making is
+    already emitted; keeping it longer only counts that over more years
+    (assuming it is not replaced sooner and is used as much). */
 export function phoneText(years: number): string {
-  const { phone, total } = footprint(years);
-  const share = Math.round((phone / total) * 100);
-  return `On Wi-Fi, ${share}% of each minute's CO2e: mostly the making of it, spread over ${years} years.`;
+  const share = splitPercents(years).phone;
+  return `On Wi-Fi, ${share}% of each minute's CO2e. Mostly its making: already emitted, counted over ${years} years.`;
 }
 
 /** How the number on a part is known. */
@@ -108,7 +129,7 @@ export type WorldFact = {
 export const WORLD_FACTS: Record<WorldNodeId, WorldFact> = {
   tiktok: {
     kind: "simulated",
-    text: "Ranks every video for you and sells the space between them. Staff also push some by hand: 1 to 2% of daily views, by an internal document. TikTok says far less.",
+    text: "Ranks every video for you and sells the space between them. Staff also push some by hand: 1 to 2% of daily views, by an internal document. TikTok puts it at 0.002% of videos in the US.",
     source: "Forbes, 2023",
     url: "https://www.forbes.com.au/news/innovation/tiktoks-secret-heating-button-can-make-anyone-go-viral",
   },
@@ -120,20 +141,19 @@ export const WORLD_FACTS: Record<WorldNodeId, WorldFact> = {
   },
   advertisers: {
     kind: "simulated",
-    text: "Bid on every ad slot, about $4 to $10 per 1,000 views on TikTok. What the app knows about you raises the price.",
+    text: "Bid on every ad slot, about €4 to €9 per 1,000 ad views on TikTok. What the app knows about you raises the price.",
     source: "Ad agency benchmarks, 2025; TikTok Ads Help",
     url: "https://www.scrumball.com/blog/tiktok-cpm-rates",
   },
   moderators: {
     kind: "worldwide",
-    text: "About 1,500 videos are taken down every minute, over 9 in 10 by machines. People check what the machines miss, at 10 to 15 seconds a video, for €1 to €3 an hour in Colombia, Kenya or Morocco.",
-    source:
-      "TikTok enforcement reports; TIME and TBIJ, 2022; Le Desk, 2022; openDemocracy, 2026",
+    text: "In 2025 about 1,500 videos were taken down every minute, over 9 in 10 by machines. People check what the machines miss, with reported targets of 10 to 15 seconds a video, for €1 to €3 an hour in Colombia, Kenya or Morocco.",
+    source: "TikTok; TIME and TBIJ; Le Desk; openDemocracy",
     url: "https://time.com/6223340/tiktok-content-moderators-latin-america/",
   },
   creators: {
     kind: "simulated",
-    text: "Make every video you watch. TikTok pays only for videos over a minute, by creators with 10,000+ followers: about €0.35 to €0.85 per 1,000 views.",
+    text: "Make every video you watch. TikTok's Creator Rewards pays eligible creators only for videos over a minute: about €0.35 to €0.85 per 1,000 qualified views.",
     source: "TikTok Creator Rewards Program, as reported by creators",
     url: "https://www.zdnet.com.au/article/tiktok-rolls-out-new-creator-rewards-program-to-help-you-earn-more-money/",
   },
@@ -155,8 +175,8 @@ export const WORLD_FACTS: Record<WorldNodeId, WorldFact> = {
     url: "https://www.usgs.gov/centers/national-minerals-information-center/congo-kinshasa",
   },
   factory: {
-    text: "Making one phone emits about 25 to 50 kg CO2e: around 80% of all it will ever cause.",
-    source: "Fairphone 5 LCA, 2024; Apple iPhone 16 report",
+    text: "A phone causes about 30 to 75 kg CO2e in its life: around 80% of it in the factory, before you first switch it on.",
+    source: "Fairphone 5 and 6 reports; Apple iPhone 16 report",
     url: "https://www.fairphone.com/wp-content/uploads/2024/09/Fairphone5_LCA_Report_2024.pdf",
   },
   drawer: {

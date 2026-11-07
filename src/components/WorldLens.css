@@ -157,7 +157,7 @@
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 3px;
+  gap: 0;
   width: 104px;
   padding: 0;
   border: 0;
@@ -213,12 +213,21 @@
   outline-offset: 3px;
 }
 
-/* Labels sit on the card colour, so lines pass behind them. */
+/* Labels sit on the card colour with no gap between them, so lines pass
+   behind them without showing through. */
 .world-name,
 .world-value {
   padding: 0 4px;
   border-radius: 4px;
   background: var(--surface);
+}
+
+.world-node .world-name {
+  padding-top: 3px;
+}
+
+.world-node .world-value {
+  padding-bottom: 1px;
 }
 
 .world-name {
@@ -402,6 +411,20 @@
     flex: 1 0 auto;
   }
 
+  /* The picked part's fact comes first, so the phone and its lifespan
+     choice are in the first view; the map follows. */
+  .world-fact {
+    order: 1;
+    padding: 0 0 10px;
+    border-top: 0;
+    border-bottom: 1px solid var(--line);
+  }
+
+  .world-map,
+  .world-key {
+    order: 2;
+  }
+
   .world-map {
     flex: 1 0 420px;
   }
@@ -441,15 +464,15 @@
   font-size: 11px;
 }
 
-/* Short screens: tighter, and the key goes; the arrows and the picked
-   part's heading already say what flows where. */
+/* Short screens: tighter, with a smaller key. */
 @media (min-width: 901px) and (max-height: 760px) {
   .lens > .world {
     gap: 6px;
   }
 
   .world-key {
-    display: none;
+    gap: 2px 12px;
+    font-size: 11px;
   }
 
   .world-fact {
