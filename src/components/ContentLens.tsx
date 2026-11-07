@@ -113,7 +113,7 @@ function ContentLens({ feed }: ContentLensProps) {
               className={rule === null ? "con-read" : "con-read is-cut"}
               style={delay(AT.face)}
             >
-              <dt>rates</dt>
+              <dt>face</dt>
               {face === null ? (
                 <dd className="tone-muted">nobody on camera</dd>
               ) : rule === null ? (
@@ -142,6 +142,7 @@ function ContentLens({ feed }: ContentLensProps) {
                   {video.category}
                 </span>
                 <span className="con-extreme">
+                  calm
                   <span className="con-extreme-track" aria-hidden="true">
                     <span
                       className="con-extreme-fill"

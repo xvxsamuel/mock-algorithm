@@ -329,8 +329,12 @@
   line-height: 14px;
 }
 
-/* Tall screens: bigger people, in the room the lens has. */
+/* Tall screens: a bigger frame and bigger people, in the room the lens has. */
 @media (min-height: 900px) and (min-width: 901px) {
+  .con-mini {
+    height: 340px;
+  }
+
   .con-crowd-wrap {
     grid-template-columns: minmax(0, 540px) auto;
   }

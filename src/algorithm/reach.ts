@@ -21,8 +21,10 @@ import type { FeedSource } from "./sources";
 export const ORDINARY = 16;
 /** The whole crowd: three rows. */
 export const CROWD = ORDINARY * 3;
-/** The most an extreme video gains: ×1.5 at intensity 1. */
-const EXTREME_GAIN = 0.5;
+/** Above this intensity a video gains from being extreme... */
+const EXTREME_FROM = 0.4;
+/** ...up to ×1.6 at intensity 1. */
+const EXTREME_GAIN = 1;
 /** People an ad slot buys. */
 const PAID_PEOPLE = ORDINARY;
 /** People the bots' fake likes add. */
@@ -59,7 +61,7 @@ export function videoReach(
   // Kept out of For You: nothing else can carry it further.
   const byContent = followersOnly
     ? byFace
-    : byFace * (1 + video.intensity * EXTREME_GAIN);
+    : byFace * (1 + Math.max(video.intensity - EXTREME_FROM, 0) * EXTREME_GAIN);
   const paid = source === "ad" ? PAID_PEOPLE : 0;
   const pushed = source === "pushed" ? PUSHED_PEOPLE : 0;
   const before = byContent + paid + pushed;
