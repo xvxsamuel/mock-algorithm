@@ -52,8 +52,21 @@ function ChainCard({ cause, video, onKeep }: ChainCardProps) {
         </li>
         <li className="chain-step">
           <span className="chain-kicker">So it picked</span>
-          <span className="chain-tile is-picked" style={paint(video.category)}>
-            {video.emoji}
+          <span className="chain-picked">
+            <span
+              className="chain-tile is-picked"
+              style={paint(video.category)}
+            >
+              {video.emoji}
+            </span>
+            <span className="chain-over">over</span>
+            <span
+              className="chain-tile is-instead"
+              style={paint(cause.instead.video.category)}
+              title={cause.instead.video.category}
+            >
+              {cause.instead.video.emoji}
+            </span>
           </span>
         </li>
       </ol>

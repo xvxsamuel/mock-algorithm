@@ -1,14 +1,19 @@
 /**
  * One chain of cause and effect the model can stand behind: you watched
  * these, so it guessed you like their topic, so it picked this video. Only
- * told when that guess tipped the pick: without it, another video would
- * have ranked first.
+ * told when that guess tipped the pick: take it away from every video of
+ * the topic, and another video ranks first.
  */
 
 import type { Category } from "../data/categories";
 import type { Impression } from "./impression";
 import { MEMORY_DECAY } from "./profile";
-import { interestLabel, type Ranking } from "./ranking";
+import {
+  INTENSITY_LABEL,
+  interestLabel,
+  type Ranking,
+  type ScoredVideo,
+} from "./ranking";
 import { readSignals } from "./signals";
 
 /** The most watched videos named in a chain. */
@@ -19,6 +24,8 @@ export type PickCause = {
   topic: Category;
   /** The videos in that topic that raised the guess most, strongest first. */
   watched: Impression[];
+  /** What it would have picked without the guess. */
+  instead: ScoredVideo;
 };
 
 /** Why the engine picked this video for you, or null if what you did is
@@ -30,15 +37,28 @@ export function causeOfPick(
   const { pick, source, runnersUp } = ranking;
   if (source !== "interest") return null;
   const topic = pick.video.category;
-  const interest = pick.parts.find(
-    (part) => part.label === interestLabel(topic),
+  // A score without the guess: a video of the topic loses its interest
+  // part and the intensity boost the interest unlocks.
+  const guessed = new Set([interestLabel(topic), INTENSITY_LABEL]);
+  const without = (entry: ScoredVideo) =>
+    entry.video.category !== topic
+      ? entry.score
+      : entry.parts.reduce(
+          (score, part) => score - (guessed.has(part.label) ? part.value : 0),
+          entry.score,
+        );
+  const instead = runnersUp.reduce<ScoredVideo | null>(
+    (best, entry) =>
+      best === null || without(entry) > without(best) ? entry : best,
+    null,
   );
-  if (interest === undefined || interest.value <= 0) return null;
+  const lowest = runnersUp.at(-1);
+  if (instead === null || lowest === undefined) return null;
+  // Only the best few runners-up are kept, and anything below them scored
+  // at most the last one: below that, the real "instead" is not known.
+  if (without(instead) < lowest.score) return null;
   // It tipped the pick, or the chain would claim too much.
-  const next = runnersUp[0];
-  if (next !== undefined && pick.score - interest.value >= next.score) {
-    return null;
-  }
+  if (without(pick) >= without(instead)) return null;
 
   // What each earlier video in the topic added to the guess, as the
   // profile counts it: its signals, faded by how long ago it played.
@@ -56,5 +76,5 @@ export function causeOfPick(
     .sort((a, b) => b.added - a.added)
     .slice(0, MAX_WATCHED)
     .map(({ impression }) => impression);
-  return watched.length === 0 ? null : { topic, watched };
+  return watched.length === 0 ? null : { topic, watched, instead };
 }

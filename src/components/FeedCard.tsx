@@ -74,6 +74,7 @@ function FeedCard({ labelledBy, onKeep, more, children }: FeedCardProps) {
     <div
       ref={card}
       className={going ? "fcard is-going" : "fcard"}
+      data-feed-card=""
       role="dialog"
       aria-labelledby={labelledBy}
       tabIndex={-1}

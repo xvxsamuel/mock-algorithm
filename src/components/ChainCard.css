@@ -126,6 +126,25 @@
   text-shadow: 0 1px 2px rgb(0 0 0 / 0.35);
 }
 
+.chain-picked {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.chain-over {
+  color: var(--muted);
+  font-size: 13px;
+  font-weight: 600;
+}
+
+/* What it would have picked without the guess: there, but not chosen. */
+.chain-tile.is-instead {
+  opacity: 0.45;
+  filter: grayscale(0.5);
+  box-shadow: none;
+}
+
 /* The video under the card: it is what the chain ends in. */
 .chain-tile.is-picked {
   width: 62px;

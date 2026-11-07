@@ -144,7 +144,7 @@ function scoreVideo(
     },
     {
       // The more you like a topic, the more extreme versions of it you get.
-      label: "intensity boost",
+      label: INTENSITY_LABEL,
       value: Math.max(topicInterest, 0) * video.intensity * WEIGHTS.intensity,
       from: "engine",
     },
@@ -168,6 +168,9 @@ function scoreVideo(
   const score = parts.reduce((sum, part) => sum + part.value, 0);
   return { video, score, parts };
 }
+
+/** The score part a liked topic unlocks: more extreme videos of it. */
+export const INTENSITY_LABEL = "intensity boost";
 
 /** The score part for how much you like a topic. */
 export function interestLabel(category: Category): string {

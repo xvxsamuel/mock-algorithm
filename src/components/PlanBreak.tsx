@@ -1,5 +1,5 @@
 import { formatClock } from "../algorithm/clock";
-import { SOURCE_LABELS } from "../algorithm/sources";
+import { SOURCE_LABELS, SOURCE_ORDER } from "../algorithm/sources";
 import type { FeedController } from "../hooks/useFeed";
 import FeedCard from "./FeedCard";
 import "./PlanBreak.css";
@@ -26,6 +26,9 @@ function PlanBreak({ feed, onKeep, onLeave }: PlanBreakProps) {
   const total = Math.max(sessionMs, intentMs ?? 0, 1);
   const planned = intentMs === null ? 0 : (intentMs / total) * 100;
   const sold = seen.filter((impression) => impression.source === "ad").length;
+  const sources = SOURCE_ORDER.filter((source) =>
+    seen.some((impression) => impression.source === source),
+  );
 
   return (
     <FeedCard
@@ -80,6 +83,13 @@ function PlanBreak({ feed, onKeep, onLeave }: PlanBreakProps) {
           </li>
         ))}
       </ol>
+      <ul className="brk-key">
+        {sources.map((source) => (
+          <li key={source} className={`is-${source}`}>
+            {SOURCE_LABELS[source]}
+          </li>
+        ))}
+      </ul>
 
       <ul className="brk-chips">
         <li className="is-you">

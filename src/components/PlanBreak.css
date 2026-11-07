@@ -113,20 +113,51 @@
   }
 }
 
-.brk-tile.is-explore {
+/* Which colour is who: only the ones in the tiles. */
+.brk-key {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 12px;
+  margin: -2px 0 0;
+  padding: 0;
+  color: color-mix(in srgb, var(--muted), var(--text) 30%);
+  font-size: 12px;
+  list-style: none;
+}
+
+.brk-key li {
+  --tone: var(--you);
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.brk-key li::before {
+  content: "";
+  width: 8px;
+  height: 8px;
+  border-radius: 2px;
+  background: var(--tone);
+}
+
+.brk-tile.is-explore,
+.brk-key .is-explore {
   --tone: var(--engine);
 }
 
-.brk-tile.is-rescue {
+.brk-tile.is-rescue,
+.brk-key .is-rescue {
   --tone: var(--take);
 }
 
 .brk-tile.is-ad,
+.brk-key .is-ad,
 .brk-chips .is-ad {
   --tone: var(--platform);
 }
 
 .brk-tile.is-pushed,
+.brk-key .is-pushed,
 .brk-chips .is-pushed {
   --tone: var(--influence);
 }

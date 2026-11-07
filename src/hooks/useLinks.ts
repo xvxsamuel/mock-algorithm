@@ -105,6 +105,8 @@ export function useLinks(feed: FeedController) {
       timers.current.delete(timer);
       // The phone is the only element inside the feed area.
       const phone = feedArea.current?.firstElementChild;
+      // A card over the video: a line would seem to come from it.
+      if (phone?.querySelector("[data-feed-card]")) return;
       const shown = document.querySelector(`[data-link="${target}"]`);
       // Scrolled out of its lens's view: a line would point off the panel.
       if (shown !== null && !inView(shown)) return;
