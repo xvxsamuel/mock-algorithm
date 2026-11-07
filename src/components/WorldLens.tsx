@@ -149,7 +149,7 @@ function WorldLens({ feed, years, onYears }: WorldLensProps) {
     network: `${(minutes * perMinute.network).toFixed(2)} g, ${Math.round(megabytes)} MB`,
     phone: `${(minutes * perMinute.phone).toFixed(2)} g`,
     mines: "cobalt",
-    factory: "30–75 kg",
+    factory: "80% of CO2e",
     drawer: "700 million",
     ewaste: "22% recycled",
   };
@@ -182,7 +182,7 @@ function WorldLens({ feed, years, onYears }: WorldLensProps) {
           <h2 className="eyebrow">What your scroll is made of</h2>
           <p className="world-total">
             <b>{grams.toFixed(1)} g</b> CO2e on Wi-Fi in{" "}
-            {formatClock(feed.sessionMs)}, like a new car driving{" "}
+            {formatClock(feed.sessionMs)}, like a new car driving&nbsp;
             {Math.round(metres)}&nbsp;m
           </p>
         </div>
@@ -366,14 +366,21 @@ function WorldLens({ feed, years, onYears }: WorldLensProps) {
             {picked === "creators" &&
               paying === 0 &&
               " None you watched were."}{" "}
-            <a
-              className="world-source"
-              href={fact.url}
-              target="_blank"
-              rel="noreferrer"
-            >
-              {fact.source}
-            </a>
+            <span className="world-sources">
+              {fact.sources.map((source, i) => (
+                <span key={source.url}>
+                  {i > 0 && "; "}
+                  <a
+                    className="world-source"
+                    href={source.url}
+                    target="_blank"
+                    rel="noreferrer"
+                  >
+                    {source.name}
+                  </a>
+                </span>
+              ))}
+            </span>
           </p>
         </div>
       </section>

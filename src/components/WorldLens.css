@@ -390,6 +390,12 @@
   overflow-wrap: anywhere;
 }
 
+.world-sources {
+  color: color-mix(in srgb, var(--muted), var(--text) 30%);
+  font-size: 12px;
+  font-weight: 400;
+}
+
 .world-source {
   color: color-mix(in srgb, var(--muted), var(--text) 30%);
   font-size: 12px;

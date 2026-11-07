@@ -115,14 +115,16 @@ export const KIND_LABELS: Record<WorldKind, string> = {
   worldwide: "worldwide estimate",
 };
 
+/** Who says so, and where to check it. */
+export type Source = { name: string; url: string };
+
 export type WorldFact = {
   /** How its number is known; none for a fixed, sourced figure. */
   kind?: WorldKind;
   /** What it is, in a line. */
   text: string;
   /** Who says so. */
-  source: string;
-  url: string;
+  sources: Source[];
 };
 
 /** One line about each part of the world a scroll touches. */
@@ -130,63 +132,135 @@ export const WORLD_FACTS: Record<WorldNodeId, WorldFact> = {
   tiktok: {
     kind: "simulated",
     text: "Ranks every video for you and sells the space between them. Staff also push some by hand: 1 to 2% of daily views, by an internal document. TikTok puts it at 0.002% of videos in the US.",
-    source: "Forbes, 2023",
-    url: "https://www.forbes.com.au/news/innovation/tiktoks-secret-heating-button-can-make-anyone-go-viral",
+    sources: [
+      {
+        name: "Forbes, 2023",
+        url: "https://www.forbes.com.au/news/innovation/tiktoks-secret-heating-button-can-make-anyone-go-viral",
+      },
+    ],
   },
   sites: {
     kind: "sample",
     text: "Sites with TikTok's pixel send it what you do there, and can add your email, scrambled the same way every time. Even without an account.",
-    source: "Consumer Reports, 2022; TikTok Ads Help",
-    url: "https://www.consumerreports.org/electronics-computers/privacy/tiktok-tracks-you-across-the-web-even-if-you-dont-use-app-a4383537813/",
+    sources: [
+      {
+        name: "Consumer Reports, 2022",
+        url: "https://www.consumerreports.org/electronics-computers/privacy/tiktok-tracks-you-across-the-web-even-if-you-dont-use-app-a4383537813/",
+      },
+      {
+        name: "TikTok Ads Help",
+        url: "https://ads.tiktok.com/help/article/advanced-matching-web",
+      },
+    ],
   },
   advertisers: {
     kind: "simulated",
     text: "Bid on every ad slot, about €4 to €9 per 1,000 ad views on TikTok. What the app knows about you raises the price.",
-    source: "Ad agency benchmarks, 2025; TikTok Ads Help",
-    url: "https://www.scrumball.com/blog/tiktok-cpm-rates",
+    sources: [
+      {
+        name: "Ad agency benchmarks, 2025",
+        url: "https://www.scrumball.com/blog/tiktok-cpm-rates",
+      },
+      {
+        name: "TikTok Ads Help",
+        url: "https://ads.tiktok.com/help/article/tiktok-auction-ads",
+      },
+    ],
   },
   moderators: {
     kind: "worldwide",
-    text: "In 2025 about 1,500 videos were taken down every minute, over 9 in 10 by machines. People check what the machines miss, with reported targets of 10 to 15 seconds a video, for €1 to €3 an hour in Colombia, Kenya or Morocco.",
-    source: "TikTok; TIME and TBIJ; Le Desk; openDemocracy",
-    url: "https://time.com/6223340/tiktok-content-moderators-latin-america/",
+    text: "In 2025 about 1,500 videos were taken down every minute, over 9 in 10 by machines. People check what the machines miss, with reported targets of 10 to 15 seconds a video and reported pay of €1 to €3 an hour in Colombia, Kenya or Morocco (2022 to 2026).",
+    sources: [
+      {
+        name: "TikTok",
+        url: "https://www.tiktok.com/safety/en/transparency/community-guidelines-enforcement",
+      },
+      {
+        name: "TIME and TBIJ, 2022",
+        url: "https://time.com/6223340/tiktok-content-moderators-latin-america/",
+      },
+      {
+        name: "Le Desk, 2022",
+        url: "https://ledesk.ma/2022/08/02/lenfer-gore-et-robotise-des-moderateurs-marocains-de-tik-tok-employes-par-moulay-hafid-elalamy/",
+      },
+      {
+        name: "openDemocracy, 2026",
+        url: "https://www.opendemocracy.net/tiktok-content-moderator-death-kenya-teleperformance-ladi-olubunmi-nigeria/",
+      },
+    ],
   },
   creators: {
     kind: "simulated",
     text: "Make every video you watch. TikTok's Creator Rewards pays eligible creators only for videos over a minute: about €0.35 to €0.85 per 1,000 qualified views.",
-    source: "TikTok Creator Rewards Program, as reported by creators",
-    url: "https://www.zdnet.com.au/article/tiktok-rolls-out-new-creator-rewards-program-to-help-you-earn-more-money/",
+    sources: [
+      {
+        name: "TikTok Creator Rewards, as reported by creators",
+        url: "https://www.zdnet.com.au/article/tiktok-rolls-out-new-creator-rewards-program-to-help-you-earn-more-money/",
+      },
+    ],
   },
   network: {
     kind: "estimate",
     text: "Carries each video from TikTok's data centres to you: about half of each minute's CO2e on Wi-Fi, seven in ten on mobile data. The data centres make only about 1%.",
-    source: "ADEME Impact CO2, via Projet Celsius, 2026",
-    url: "https://projetcelsius.com/en/blog/tiktok-carbon-footprint/",
+    sources: [
+      {
+        name: "ADEME Impact CO2, via Projet Celsius, 2026",
+        url: "https://projetcelsius.com/en/blog/tiktok-carbon-footprint/",
+      },
+    ],
   },
   phone: {
     kind: "estimate",
     text: phoneText(PHONE_YEARS),
-    source: "ADEME Impact CO2, via Projet Celsius, 2026",
-    url: "https://projetcelsius.com/en/blog/tiktok-carbon-footprint/",
+    sources: [
+      {
+        name: "ADEME Impact CO2, via Projet Celsius, 2026",
+        url: "https://projetcelsius.com/en/blog/tiktok-carbon-footprint/",
+      },
+    ],
   },
   mines: {
     text: "About 3 in 4 tonnes of the world's mined cobalt, used in phone batteries, comes from DR Congo.",
-    source: "USGS, 2024",
-    url: "https://www.usgs.gov/centers/national-minerals-information-center/congo-kinshasa",
+    sources: [
+      {
+        name: "USGS, 2024",
+        url: "https://www.usgs.gov/centers/national-minerals-information-center/congo-kinshasa",
+      },
+    ],
   },
   factory: {
     text: "A phone causes about 30 to 75 kg CO2e in its life: around 80% of it in the factory, before you first switch it on.",
-    source: "Fairphone 5 and 6 reports; Apple iPhone 16 report",
-    url: "https://www.fairphone.com/wp-content/uploads/2024/09/Fairphone5_LCA_Report_2024.pdf",
+    sources: [
+      {
+        name: "Fairphone 5",
+        url: "https://www.fairphone.com/wp-content/uploads/2024/09/Fairphone5_LCA_Report_2024.pdf",
+      },
+      {
+        name: "Fairphone 6",
+        url: "https://www.fairphone.com/stories/summing-up-our-2025-impact-report",
+      },
+      {
+        name: "Apple iPhone 16",
+        url: "https://apple.com/environment/pdf/products/iphone/iPhone_16_and_iPhone_16_Plus_PER_Sept2024.pdf",
+      },
+    ],
   },
   drawer: {
     text: "About 700 million unused phones sit in drawers in the EU. Fewer than 5% are collected.",
-    source: "EU Commission Recommendation 2023/2585",
-    url: "https://eur-lex.europa.eu/eli/reco/2023/2585/oj/eng",
+    sources: [
+      {
+        name: "EU Commission Recommendation 2023/2585",
+        url: "https://eur-lex.europa.eu/eli/reco/2023/2585/oj/eng",
+      },
+    ],
   },
   ewaste: {
     text: "62 million tonnes of e-waste worldwide in 2022. 22% was formally collected and recycled.",
-    source: "Global E-waste Monitor 2024",
-    url: "https://unitar.org/about/news-stories/press/global-e-waste-monitor-2024-electronic-waste-rising-five-times-faster-documented-e-waste-recycling",
+    sources: [
+      {
+        name: "Global E-waste Monitor 2024",
+        url: "https://unitar.org/about/news-stories/press/global-e-waste-monitor-2024-electronic-waste-rising-five-times-faster-documented-e-waste-recycling",
+      },
+    ],
   },
 };
