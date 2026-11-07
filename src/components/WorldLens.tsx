@@ -149,7 +149,7 @@ function WorldLens({ feed, years, onYears }: WorldLensProps) {
     network: `${(minutes * perMinute.network).toFixed(2)} g, ${Math.round(megabytes)} MB`,
     phone: `${(minutes * perMinute.phone).toFixed(2)} g`,
     mines: "cobalt",
-    factory: "80% of CO2e",
+    factory: "80% of its CO2e",
     drawer: "700 million",
     ewaste: "22% recycled",
   };
