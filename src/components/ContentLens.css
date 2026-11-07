@@ -428,8 +428,9 @@
   font-variant-numeric: tabular-nums;
 }
 
+/* Pink, lifted a little: small type on a chip needs the contrast. */
 .con-part.is-cut b {
-  color: var(--take);
+  color: color-mix(in srgb, var(--take), #fff 22%);
 }
 
 .con-part.is-paid b {
