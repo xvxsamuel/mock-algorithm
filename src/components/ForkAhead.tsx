@@ -143,7 +143,7 @@ function sayOf(fork: Fork, lever: Lever): string {
     if (fork.pivot === null) return "Nothing you watched has steered it yet.";
     const turn =
       otherTop !== yourTop && otherTop !== undefined && yourTop !== undefined
-        ? ` Mostly ${otherTop}, not ${yourTop}.`
+        ? ` More ${otherTop} than ${yourTop}.`
         : "";
     return `Skip ${fork.pivot.video.emoji} and ${fork.changed} of the next ${AHEAD} change.${turn}`;
   }
