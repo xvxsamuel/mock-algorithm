@@ -1,5 +1,6 @@
 import { useRef, useState } from "react";
 import { formatClock } from "../algorithm/clock";
+import { footprint, PHONE_YEARS } from "../data/world";
 import type { FeedController } from "../hooks/useFeed";
 import { useMoreBelow } from "../hooks/useMoreBelow";
 import ContentLens from "./ContentLens";
@@ -52,6 +53,7 @@ type AlgorithmPanelProps = {
  */
 function AlgorithmPanel({ feed, onLeave }: AlgorithmPanelProps) {
   const [lens, setLens] = useState<Lens>("you");
+  const [phoneYears, setPhoneYears] = useState(PHONE_YEARS);
   const [folded, setFolded] = useState(false);
   const body = useRef<HTMLDivElement>(null);
   const moreBelow = useMoreBelow(body, lens);
@@ -75,6 +77,27 @@ function AlgorithmPanel({ feed, onLeave }: AlgorithmPanelProps) {
             </p>
           ) : (
             <p className="clock">{formatClock(sessionMs)}</p>
+          )}
+          {/* What the scroll is made of, always in view: opens World. */}
+          {started && (
+            <button
+              type="button"
+              className={
+                lens === "world" ? "panel-grams is-active" : "panel-grams"
+              }
+              onClick={() => {
+                setLens("world");
+                setFolded(false);
+              }}
+            >
+              <b>
+                {((sessionMs / 60_000) * footprint(phoneYears).total).toFixed(
+                  1,
+                )}{" "}
+                g
+              </b>{" "}
+              CO2e
+            </button>
           )}
         </div>
         <LeaveMeter feed={feed} />
@@ -127,7 +150,9 @@ function AlgorithmPanel({ feed, onLeave }: AlgorithmPanelProps) {
         {lens === "content" && <ContentLens feed={feed} />}
         {lens === "market" && <MarketLens feed={feed} />}
         {lens === "influence" && <InfluenceLens feed={feed} />}
-        {lens === "world" && <WorldLens feed={feed} />}
+        {lens === "world" && (
+          <WorldLens feed={feed} years={phoneYears} onYears={setPhoneYears} />
+        )}
       </div>
 
       <FeedStrip feed={feed} />

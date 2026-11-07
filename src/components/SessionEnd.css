@@ -436,6 +436,15 @@
   color: var(--earth);
 }
 
+.end-days.is-less {
+  margin-top: -6px;
+}
+
+.end-days.is-less b {
+  color: color-mix(in srgb, var(--earth) 65%, var(--surface));
+  font-size: 20px;
+}
+
 .end-days span {
   color: color-mix(in srgb, var(--muted), var(--text) 30%);
   font-size: 13.5px;

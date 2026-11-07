@@ -138,3 +138,55 @@ button {
     transition: none;
   }
 }
+
+/* --- A choice of two or three, side by side (one is always on) --- */
+
+.levers {
+  display: flex;
+  gap: 4px;
+  padding: 3px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+}
+
+.lever {
+  padding: 5px 14px;
+  border: 0;
+  border-radius: 999px;
+  background: transparent;
+  color: color-mix(in srgb, var(--muted), var(--text) 30%);
+  font-size: 13px;
+  font-weight: 650;
+  cursor: pointer;
+  transition:
+    background 0.2s var(--ease),
+    color 0.2s var(--ease);
+}
+
+.lever:hover {
+  color: var(--text);
+}
+
+.lever.is-on {
+  background: var(--surface-2);
+  color: var(--text);
+  box-shadow: inset 0 0 0 1px var(--line-strong);
+}
+
+.lever:focus-visible {
+  outline: 2px solid var(--you);
+  outline-offset: 2px;
+}
+
+/* --- How a number is known: real, an estimate, simulated --- */
+
+.kind {
+  flex-shrink: 0;
+  padding: 1px 7px;
+  border: 1px solid var(--line-strong);
+  border-radius: 999px;
+  color: color-mix(in srgb, var(--muted), var(--text) 30%);
+  font-size: 11px;
+  font-weight: 650;
+  white-space: nowrap;
+}

@@ -32,7 +32,7 @@ const MAX_RATIO = 2;
 export type Fork = {
   you: Video[];
   other: Video[];
-  /** Slots where the two futures show a different video. */
+  /** Videos in the other future that are nowhere in yours. */
   changed: number;
   /** For "skip": the video skipped, the one that steered the most. */
   pivot: Impression | null;
@@ -49,13 +49,13 @@ export function forkAhead(seen: readonly Impression[], lever: Lever): Fork {
     return {
       you,
       other,
-      changed: changedSlots(you, other),
+      changed: notIn(other, you),
       pivot: best?.pivot ?? null,
     };
   }
 
   const other = playForward(seen, taste, "off");
-  return { you, other, changed: changedSlots(you, other), pivot: null };
+  return { you, other, changed: notIn(other, you), pivot: null };
 }
 
 /** How many topics a run of videos covers. */
@@ -171,7 +171,7 @@ function mostSteering(
     const twin = [...seen.slice(0, i), skipped, ...seen.slice(i + 1)];
     const other = playForward(twin, taste, "as-is");
     const shift = topicShift(you, other);
-    const changed = changedSlots(you, other);
+    const changed = notIn(other, you);
     if (
       best === null ||
       shift > best.shift ||
@@ -198,8 +198,11 @@ function topicShift(a: readonly Video[], b: readonly Video[]): number {
   return gap / 2;
 }
 
-function changedSlots(a: readonly Video[], b: readonly Video[]): number {
-  return a.filter((video, i) => video.id !== b[i]?.id).length;
+/** How many of these videos the other run never shows. Counted by video,
+    not by place, so the same videos one place later count as the same. */
+function notIn(videos: readonly Video[], others: readonly Video[]): number {
+  const ids = new Set(others.map((video) => video.id));
+  return videos.filter((video) => !ids.has(video.id)).length;
 }
 
 function mean(values: readonly number[]): number {

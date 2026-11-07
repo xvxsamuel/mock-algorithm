@@ -38,12 +38,12 @@ function ForkAhead({ fork, lever, onLever }: ForkAheadProps) {
         <h3 id="fork-title" className="eyebrow">
           Your next {AHEAD}
         </h3>
-        <div className="fork-levers" role="group" aria-label="Change one thing">
+        <div className="levers" role="group" aria-label="Change one thing">
           {LEVERS.map(({ id, label }) => (
             <button
               key={id}
               type="button"
-              className={id === lever ? "fork-lever is-on" : "fork-lever"}
+              className={id === lever ? "lever is-on" : "lever"}
               aria-pressed={id === lever}
               onClick={() => onLever(id)}
             >
@@ -83,7 +83,7 @@ function ForkAhead({ fork, lever, onLever }: ForkAheadProps) {
 type RowProps = {
   label: string;
   videos: readonly Video[];
-  /** The row it is set against: its videos at the same place are faded. */
+  /** The row it is set against: videos that are also in it are faded. */
   against?: readonly Video[];
   className?: string;
 };
@@ -99,7 +99,7 @@ function Row({ label, videos, against, className }: RowProps) {
       <p className="fork-label">{label}</p>
       <ol className="fork-tiles">
         {videos.map((video, i) => {
-          const same = against?.[i]?.id === video.id;
+          const same = against?.some((other) => other.id === video.id) ?? false;
           return (
             <li
               key={i}
@@ -140,12 +140,21 @@ function sayOf(fork: Fork, lever: Lever): string {
   const otherShares = topicShares(fork.other);
   const otherTop = otherShares[0]?.topic;
   if (lever === "skip") {
-    if (fork.pivot === null) return "Nothing you watched has steered it yet.";
+    if (fork.pivot === null || fork.changed === 0) {
+      return "Nothing you watched has steered it yet.";
+    }
+    // Only when the skipped run really has more of its top topic than of
+    // yours: different first places can still be a tie.
+    const shareOf = (topic: string | undefined) =>
+      otherShares.find((entry) => entry.topic === topic)?.share ?? 0;
     const turn =
-      otherTop !== yourTop && otherTop !== undefined && yourTop !== undefined
+      otherTop !== undefined &&
+      yourTop !== undefined &&
+      shareOf(otherTop) > shareOf(yourTop)
         ? ` More ${otherTop} than ${yourTop}.`
         : "";
-    return `Skip ${fork.pivot.video.emoji} and ${fork.changed} of the next ${AHEAD} change.${turn}`;
+    // The skip shown is the one that changes the most, and it says so.
+    return `${fork.pivot.video.emoji} steered you most: skip it and ${fork.changed} of the next ${AHEAD} are different.${turn}`;
   }
   const most = Math.round((otherShares[0]?.share ?? 0) * 100);
   return `Not based on you: no topic over ${most}%. EU law makes TikTok offer it.`;

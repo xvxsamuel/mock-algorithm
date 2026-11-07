@@ -97,7 +97,43 @@
 }
 
 .panel-time {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 4px 14px;
   min-width: 0;
+}
+
+/* The scroll's CO2e, on every lens: a way into World. */
+.panel-grams {
+  padding: 2px 10px;
+  border: 1px solid color-mix(in srgb, var(--earth) 35%, transparent);
+  border-radius: 999px;
+  background: transparent;
+  color: color-mix(in srgb, var(--muted), var(--text) 30%);
+  font-size: 12.5px;
+  white-space: nowrap;
+  cursor: pointer;
+  transition:
+    border-color 0.2s var(--ease),
+    background 0.2s var(--ease);
+}
+
+.panel-grams b {
+  color: var(--earth);
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+
+.panel-grams:hover,
+.panel-grams.is-active {
+  border-color: var(--earth);
+  background: color-mix(in srgb, var(--earth) 10%, transparent);
+}
+
+.panel-grams:focus-visible {
+  outline: 2px solid var(--you);
+  outline-offset: 2px;
 }
 
 .eyebrow {

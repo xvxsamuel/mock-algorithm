@@ -13,7 +13,12 @@ import { SOURCE_LABELS, SOURCE_ORDER } from "../algorithm/sources";
 import type { Trait } from "../algorithm/inference";
 import { paidPostOf } from "../data/ads";
 import { TEEN_MINUTES_A_DAY } from "../data/stats";
-import { GRAMS_PER_MINUTE, METRES_PER_GRAM } from "../data/world";
+import {
+  footprint,
+  LONGER_YEARS,
+  METRES_PER_GRAM,
+  PHONE_YEARS,
+} from "../data/world";
 import type { FeedController } from "../hooks/useFeed";
 import ForkAhead from "./ForkAhead";
 import YearGrid from "./YearGrid";
@@ -21,10 +26,15 @@ import "./SessionEnd.css";
 
 /** Whole days of a year at the teen average: 107 min × 365 ≈ 27 days. */
 const YEAR_DAYS = Math.round((TEEN_MINUTES_A_DAY * 365) / (24 * 60));
-/** The CO2e of that year of scrolling, in kg, and the km a car drives on it. */
-const YEAR_GRAMS = TEEN_MINUTES_A_DAY * 365 * GRAMS_PER_MINUTE;
+/** The CO2e of that year of scrolling, in kg, and the km a new car drives
+    on it; then the same year on a phone kept twice as long. */
+const YEAR_MINUTES = TEEN_MINUTES_A_DAY * 365;
+const YEAR_GRAMS = YEAR_MINUTES * footprint(PHONE_YEARS).total;
 const YEAR_KG = Math.round(YEAR_GRAMS / 1000);
 const YEAR_KM = Math.round((YEAR_GRAMS * METRES_PER_GRAM) / 1000);
+const LONGER_KG = Math.round(
+  (YEAR_MINUTES * footprint(LONGER_YEARS).total) / 1000,
+);
 /** After the time bar has grown (pink last), the tiles come in one after
     another, all within TILES_MS; then the year fills. */
 const TILES_AT_MS = 1200;
@@ -241,7 +251,7 @@ function SessionEnd({ feed, onBack, onRestart, returnTo }: SessionEndProps) {
           {/* Not your year: the average teen's, even with the limit on. */}
           <section className="pane end-pane end-year">
             <div className="end-year-head">
-              <h3 className="eyebrow">A year at the teen average</h3>
+              <h3 className="eyebrow">A year at TikTok&apos;s teen average</h3>
               <span className="end-year-key">
                 <span className="end-year-square" aria-hidden="true" />1 day
               </span>
@@ -256,7 +266,14 @@ function SessionEnd({ feed, onBack, onRestart, returnTo }: SessionEndProps) {
             </p>
             <p className="end-days is-earth">
               <b>{YEAR_KG} kg</b>
-              <span>CO2e, like driving {YEAR_KM} km</span>
+              <span>CO2e, like a new car driving {YEAR_KM} km</span>
+            </p>
+            {/* What you can change about it: how long you keep the phone. */}
+            <p className="end-days is-earth is-less">
+              <b>{LONGER_KG} kg</b>
+              <span>
+                keeping your phone {LONGER_YEARS} years, not {PHONE_YEARS}
+              </span>
             </p>
           </section>
         </div>

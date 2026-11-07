@@ -18,7 +18,33 @@ export const GRAMS_PER_MINUTE = 1;
  */
 export const SPLIT = { phone: 0.5, network: 0.49, servers: 0.01 } as const;
 
-/** Metres an average new EU car drives on one gram of CO2 (106.7 g/km, EEA,
+/** Years ADEME spreads a phone's making over, and a longer life to set
+    against it. */
+export const PHONE_YEARS = 2.5;
+export const LONGER_YEARS = 5;
+
+/** Share of a phone's CO2e that is the making of it: about 80% (Fairphone 5
+    LCA; Apple's iPhone reports). Only that part shrinks with a longer life. */
+const MAKING_SHARE = 0.8;
+
+export type Footprint = {
+  phone: number;
+  network: number;
+  servers: number;
+  total: number;
+};
+
+/** Grams CO2e a minute on Wi-Fi, by where they come from, for a phone kept
+    this many years: kept twice as long, its making counts half as much. */
+export function footprint(years: number): Footprint {
+  const making = MAKING_SHARE * (PHONE_YEARS / years);
+  const phone = GRAMS_PER_MINUTE * SPLIT.phone * (1 - MAKING_SHARE + making);
+  const network = GRAMS_PER_MINUTE * SPLIT.network;
+  const servers = GRAMS_PER_MINUTE * SPLIT.servers;
+  return { phone, network, servers, total: phone + network + servers };
+}
+
+/** Metres an average new EU car drives on one gram of CO2e (106.7 g/km, EEA,
     2024). */
 export const METRES_PER_GRAM = 1000 / 106.7;
 
@@ -50,7 +76,27 @@ export type WorldNodeId =
   | "drawer"
   | "ewaste";
 
+/** The phone's line, for a phone kept this many years: its share of every
+    minute shrinks as its making is spread thinner. */
+export function phoneText(years: number): string {
+  const { phone, total } = footprint(years);
+  const share = Math.round((phone / total) * 100);
+  return `On Wi-Fi, ${share}% of each minute's CO2e: mostly the making of it, spread over ${years} years.`;
+}
+
+/** How the number on a part is known. */
+export type WorldKind = "estimate" | "simulated" | "sample" | "worldwide";
+
+export const KIND_LABELS: Record<WorldKind, string> = {
+  estimate: "estimate",
+  simulated: "simulated",
+  sample: "sample email",
+  worldwide: "worldwide estimate",
+};
+
 export type WorldFact = {
+  /** How its number is known; none for a fixed, sourced figure. */
+  kind?: WorldKind;
   /** What it is, in a line. */
   text: string;
   /** Who says so. */
@@ -61,38 +107,45 @@ export type WorldFact = {
 /** One line about each part of the world a scroll touches. */
 export const WORLD_FACTS: Record<WorldNodeId, WorldFact> = {
   tiktok: {
-    text: "Ranks every video for you and sells the space between them. Staff also push some by hand: 1 to 2% of daily views, by an internal document.",
+    kind: "simulated",
+    text: "Ranks every video for you and sells the space between them. Staff also push some by hand: 1 to 2% of daily views, by an internal document. TikTok says far less.",
     source: "Forbes, 2023",
     url: "https://www.forbes.com.au/news/innovation/tiktoks-secret-heating-button-can-make-anyone-go-viral",
   },
   sites: {
-    text: "Sites with TikTok's pixel send it what you click, with your email scrambled the same way every time. Even without an account.",
+    kind: "sample",
+    text: "Sites with TikTok's pixel send it what you do there, and can add your email, scrambled the same way every time. Even without an account.",
     source: "Consumer Reports, 2022; TikTok Ads Help",
     url: "https://www.consumerreports.org/electronics-computers/privacy/tiktok-tracks-you-across-the-web-even-if-you-dont-use-app-a4383537813/",
   },
   advertisers: {
+    kind: "simulated",
     text: "Bid on every ad slot. What the app knows about you raises the price.",
-    source: "Simulated auction",
+    source: "TikTok Ads Help: auction ads",
     url: "https://ads.tiktok.com/help/article/tiktok-auction-ads",
   },
   moderators: {
-    text: "About 1,500 videos are taken down every minute, 97% by machines. People check the rest at 10 to 15 seconds a video, for €1 to €3 an hour in Kenya or Morocco.",
+    kind: "worldwide",
+    text: "About 1,500 videos are taken down every minute, over 9 in 10 by machines. People check what the machines miss, at 10 to 15 seconds a video, for €1 to €3 an hour in Colombia, Kenya or Morocco.",
     source:
-      "TikTok enforcement reports; TIME and TBIJ, 2022; openDemocracy, 2026",
-    url: "https://www.thebureauinvestigates.com/stories/2022-10-20/behind-tiktoks-boom-a-legion-of-traumatised-10-a-day-content-moderators",
+      "TikTok enforcement reports; TIME and TBIJ, 2022; Le Desk, 2022; openDemocracy, 2026",
+    url: "https://time.com/6223340/tiktok-content-moderators-latin-america/",
   },
   creators: {
-    text: "Make every video you watch. TikTok pays them only for videos over a minute, about $0.40 to $1 per 1,000 views.",
+    kind: "simulated",
+    text: "Make every video you watch. TikTok pays only for videos over a minute, by creators with 10,000+ followers: about €0.35 to €0.85 per 1,000 views.",
     source: "TikTok Creator Rewards Program, as reported by creators",
     url: "https://www.zdnet.com.au/article/tiktok-rolls-out-new-creator-rewards-program-to-help-you-earn-more-money/",
   },
   network: {
-    text: "Carries each video from TikTok's data centres to you: about half of each minute's CO2 on Wi-Fi, two thirds on mobile data. The data centres make only about 1%.",
+    kind: "estimate",
+    text: "Carries each video from TikTok's data centres to you: about half of each minute's CO2e on Wi-Fi, seven in ten on mobile data. The data centres make only about 1%.",
     source: "ADEME Impact CO2, via Projet Celsius, 2026",
     url: "https://projetcelsius.com/en/blog/tiktok-carbon-footprint/",
   },
   phone: {
-    text: "Half the CO2 of every minute is your phone: mostly the making of it, spread over its life.",
+    kind: "estimate",
+    text: phoneText(PHONE_YEARS),
     source: "ADEME Impact CO2, via Projet Celsius, 2026",
     url: "https://projetcelsius.com/en/blog/tiktok-carbon-footprint/",
   },
@@ -102,7 +155,7 @@ export const WORLD_FACTS: Record<WorldNodeId, WorldFact> = {
     url: "https://www.usgs.gov/centers/national-minerals-information-center/congo-kinshasa",
   },
   factory: {
-    text: "Making one phone emits about 30 to 60 kg CO2e: around 80% of all it will ever cause.",
+    text: "Making one phone emits about 25 to 50 kg CO2e: around 80% of all it will ever cause.",
     source: "Fairphone 5 LCA, 2024; Apple iPhone 16 report",
     url: "https://www.fairphone.com/wp-content/uploads/2024/09/Fairphone5_LCA_Report_2024.pdf",
   },
@@ -112,7 +165,7 @@ export const WORLD_FACTS: Record<WorldNodeId, WorldFact> = {
     url: "https://eur-lex.europa.eu/eli/reco/2023/2585/oj/eng",
   },
   ewaste: {
-    text: "62 million tonnes of e-waste in 2022. 22% was recycled.",
+    text: "62 million tonnes of e-waste worldwide in 2022. 22% was formally collected and recycled.",
     source: "Global E-waste Monitor 2024",
     url: "https://unitar.org/about/news-stories/press/global-e-waste-monitor-2024-electronic-waste-rising-five-times-faster-documented-e-waste-recycling",
   },

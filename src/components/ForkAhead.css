@@ -18,43 +18,6 @@
   margin: 0;
 }
 
-.fork-levers {
-  display: flex;
-  gap: 4px;
-  padding: 3px;
-  border: 1px solid var(--line);
-  border-radius: 999px;
-}
-
-.fork-lever {
-  padding: 5px 14px;
-  border: 0;
-  border-radius: 999px;
-  background: transparent;
-  color: color-mix(in srgb, var(--muted), var(--text) 30%);
-  font-size: 13px;
-  font-weight: 650;
-  cursor: pointer;
-  transition:
-    background 0.2s var(--ease),
-    color 0.2s var(--ease);
-}
-
-.fork-lever:hover {
-  color: var(--text);
-}
-
-.fork-lever.is-on {
-  background: var(--surface-2);
-  color: var(--text);
-  box-shadow: inset 0 0 0 1px var(--line-strong);
-}
-
-.fork-lever:focus-visible {
-  outline: 2px solid var(--you);
-  outline-offset: 2px;
-}
-
 .fork-rows {
   display: grid;
   gap: 10px;
