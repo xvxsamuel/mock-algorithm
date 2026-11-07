@@ -407,9 +407,10 @@
   }
 }
 
-/* 720 px tall laptops: the lowest bid gives way, so the key stays in view. */
+/* 720 px tall laptops: the lowest bids give way, so every bid shown keeps
+   its reason in view. */
 @media (max-height: 760px) and (min-width: 901px) {
-  .mkt-bid:nth-child(n + 6) {
+  .mkt-bid:nth-child(n + 5) {
     display: none;
   }
 }

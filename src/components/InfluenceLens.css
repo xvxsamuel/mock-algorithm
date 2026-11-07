@@ -297,6 +297,7 @@
 
 /* Released: it runs by itself now. */
 .inf-release:disabled {
+  border-color: transparent;
   background: transparent;
   color: var(--influence);
   cursor: default;

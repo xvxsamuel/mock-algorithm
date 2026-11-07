@@ -1,16 +1,22 @@
-/* --- Video scan: compact; the faces below get the height --- */
+/* --- Scanning: the video playing now, as the app reads it --- */
+
+.con-handle {
+  color: var(--text);
+  font-weight: 650;
+}
 
 .con-body {
   display: grid;
   grid-template-columns: auto minmax(0, 1fr);
-  gap: 24px;
+  align-items: center;
+  gap: 22px;
 }
 
-/* The video playing now, small, with the boxes a vision model would draw.
-   Fixed bands, so boxes never overlap: text, subject, face. */
+/* The video playing now, small, with the boxes a vision model would draw,
+   where they sit on the phone: text, subject, face, sound. */
 .con-mini {
   position: relative;
-  height: 200px;
+  height: clamp(140px, 28vh, 300px);
   aspect-ratio: 9 / 16;
   overflow: hidden;
   border-radius: 12px;
@@ -38,9 +44,7 @@
   font-size: 10px;
   line-height: 1.7;
   text-align: center;
-  text-wrap: balance;
   transform: translateX(-50%);
-  animation-delay: 0.3s;
   -webkit-box-orient: vertical;
   -webkit-line-clamp: 2;
   line-clamp: 2;
@@ -57,18 +61,17 @@
 
 .con-box.is-subject {
   position: absolute;
-  top: 52%;
+  top: 44%;
   left: 50%;
   display: grid;
   place-items: center;
   width: 42%;
   aspect-ratio: 1;
   transform: translate(-50%, -50%);
-  animation-delay: 0.55s;
 }
 
 .con-mini-art {
-  font-size: 40px;
+  font-size: clamp(28px, 4.4vh, 52px);
   line-height: 1;
 }
 
@@ -76,13 +79,12 @@
    the face model draws around them. */
 .con-box.is-face {
   position: absolute;
-  bottom: 6%;
+  top: 64%;
   left: 8%;
   display: grid;
   place-items: center;
-  width: 38px;
-  height: 38px;
-  animation-delay: 0.8s;
+  width: 22%;
+  aspect-ratio: 1;
 }
 
 .con-box.is-face.is-cut {
@@ -92,47 +94,25 @@
 .con-face {
   display: grid;
   place-items: center;
-  width: 30px;
-  height: 30px;
+  width: 82%;
+  aspect-ratio: 1;
   border: 1.5px solid #fff;
   border-radius: 50%;
   background: rgb(0 0 0 / 0.2);
-  font-size: 19px;
+  font-size: clamp(14px, 2.2vh, 26px);
   line-height: 1;
 }
 
-/* Tags go under the subject and beside the face, clear of the text. */
-.con-box.is-subject .con-tag {
-  top: calc(100% + 5px);
-  bottom: auto;
-  left: 50%;
-  transform: translateX(-50%);
-}
-
-.con-box.is-face .con-tag {
-  top: 50%;
-  bottom: auto;
-  left: calc(100% + 7px);
-  transform: translateY(-50%);
-}
-
-/* The label a model puts on its box: "snake, toilet 95%". */
-.con-tag {
+/* The sound, bottom left like the phone's sound line. */
+.con-box.is-sound {
   position: absolute;
-  bottom: calc(100% + 4px);
-  left: -4px;
-  padding: 1px 5px;
-  border-radius: 3px;
-  background: var(--engine);
-  color: #0b0b0f;
+  bottom: 7%;
+  left: 8%;
+  padding: 0 4px;
+  color: #fff;
   font-size: 11px;
   font-weight: 700;
-  white-space: nowrap;
-}
-
-.con-box.is-face.is-cut .con-tag {
-  background: #0b0b0f;
-  color: var(--take);
+  line-height: 1.3;
 }
 
 /* One pass of the scanner over a new video. */
@@ -159,95 +139,308 @@
   }
 }
 
-/* What the face says, then how far that lets the video go. It lands once
-   the scan has found the face. */
-.con-read {
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
-  gap: 22px;
+/* Where the video is now, as it plays: the same video as the phone's. */
+.con-play {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  height: 3px;
+  background: rgb(255 255 255 / 0.85);
+  transition: width 0.25s linear;
+}
+
+/* What each box says: one row each, in the order the scanner finds them. */
+.con-reads {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  align-content: center;
+  gap: 9px 14px;
   min-width: 0;
-  animation: con-read-in 0.35s var(--ease) 0.45s both;
+  margin: 0;
+}
+
+.con-read {
+  display: contents;
+}
+
+.con-read > dt,
+.con-read > dd {
+  animation: con-read-in 0.35s var(--ease) both;
+  animation-delay: inherit;
+}
+
+.con-read > dt {
+  color: color-mix(in srgb, var(--muted), var(--text) 30%);
+  font-size: 12px;
+  line-height: 1.35;
+}
+
+.con-read > dd {
+  min-width: 0;
+  margin: 0;
+  color: var(--text);
+  font-size: 13px;
+  font-weight: 600;
+  line-height: 1.35;
 }
 
 @keyframes con-read-in {
   from {
     opacity: 0;
-    transform: translateY(4px);
+    transform: translateX(-4px);
   }
 }
 
-.con-who {
-  display: grid;
-  gap: 6px;
-  margin: 0;
+.con-quote {
+  quotes: "“" "”";
 }
 
-.con-who-big {
-  font-size: 48px;
+.con-quote::before {
+  content: open-quote;
+}
+
+.con-quote::after {
+  content: close-quote;
+}
+
+.con-sure {
+  color: color-mix(in srgb, var(--muted), var(--text) 30%);
+  font-weight: 500;
+  font-variant-numeric: tabular-nums;
+}
+
+/* A face the leaked rules keep out of For You. */
+.con-read.is-cut > dd {
+  color: var(--take);
+}
+
+.con-read.is-cut q {
+  quotes: "“" "”";
+}
+
+/* The verdict: what it files the video under, and how extreme it is. */
+.con-read.is-verdict > dt,
+.con-read.is-verdict > dd {
+  padding-top: 10px;
+  border-top: 1px solid var(--line);
+}
+
+.con-read.is-verdict > dd {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px 14px;
+}
+
+.con-topic {
+  padding: 2px 9px;
+  border-radius: 999px;
+  color: #fff;
+  font-size: 12px;
+  font-weight: 700;
+  text-shadow: 0 1px 2px rgb(0 0 0 / 0.35);
+}
+
+.con-extreme {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  color: color-mix(in srgb, var(--muted), var(--text) 30%);
+  font-size: 12px;
+  font-weight: 500;
+}
+
+.con-extreme-track {
+  position: relative;
+  width: 56px;
+  height: 6px;
+  overflow: hidden;
+  border-radius: 3px;
+  background: var(--line-strong);
+}
+
+.con-extreme-fill {
+  position: absolute;
+  inset: 0 auto 0 0;
+  border-radius: 3px;
+  background: var(--take);
+}
+
+/* --- How far it goes: the people it is shown to --- */
+
+.con-figure {
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+  margin: 0;
+  font-size: 28px;
   font-weight: 700;
   line-height: 1;
   letter-spacing: -0.02em;
   font-variant-numeric: tabular-nums;
 }
 
-.con-who-of {
-  margin-left: 3px;
+.con-figure small {
   color: var(--muted);
-  font-size: 18px;
+  font-size: 13px;
   font-weight: 600;
   letter-spacing: 0;
 }
 
-.con-who-small {
-  color: var(--muted);
-  font-size: 13px;
-}
-
-/* 65+: the leaked rule, not a score. */
-.con-who.is-cut .con-who-big,
-.con-who.is-cut .con-who-small {
+.con-figure.is-cut {
   color: var(--take);
-}
-
-.con-who.is-cut .con-who-small {
-  font-size: 15px;
-  font-weight: 600;
-  quotes: "“" "”";
-}
-
-/* As tall as a reading, so the reach bar stays put from video to video. */
-.con-who.is-none {
-  align-content: center;
-  min-height: 71px;
-  color: var(--muted);
   font-size: 20px;
-  font-weight: 600;
+  letter-spacing: 0;
 }
 
-.con-reach {
+/* The crowd, and "×1" at the end of its first row: what an ordinary video
+   reaches. */
+.con-crowd-wrap {
   display: grid;
-  gap: 12px;
+  grid-template-columns: minmax(0, 400px) auto;
+  justify-content: start;
+  align-items: start;
+  gap: 10px;
 }
 
-.con-reach .reach-track {
-  height: 10px;
-  border-radius: 5px;
+.con-crowd {
+  display: grid;
+  grid-template-columns: repeat(16, minmax(0, 1fr));
+  gap: 0.55em 0;
+  justify-items: center;
+  font-size: 12px;
+  animation: con-crowd-in 0.5s var(--ease) 0.8s both;
 }
 
-.con-reach .reach-fill {
-  border-radius: 5px;
-  animation: con-reach-in 0.7s var(--ease) 0.45s both;
-}
-
-@keyframes con-reach-in {
+@keyframes con-crowd-in {
   from {
-    width: 0;
+    clip-path: inset(0 100% 0 0);
+  }
+
+  to {
+    clip-path: inset(0 0 0 0);
   }
 }
 
-.con-reach .reach-value {
-  font-size: 24px;
+.con-ordinary {
+  color: color-mix(in srgb, var(--muted), var(--text) 30%);
+  font-size: 11px;
+  font-weight: 650;
+  line-height: 14px;
+}
+
+/* Tall screens: bigger people, in the room the lens has. */
+@media (min-height: 900px) and (min-width: 901px) {
+  .con-crowd-wrap {
+    grid-template-columns: minmax(0, 540px) auto;
+  }
+
+  .con-crowd {
+    font-size: 17px;
+  }
+
+  .con-ordinary {
+    line-height: 20px;
+  }
+}
+
+/* One person: a head and shoulders, like the Influence lens's. */
+.con-person {
+  position: relative;
+  width: 1em;
+  height: 1.17em;
+  color: rgb(255 255 255 / 0.12);
+  transition: color 0.3s var(--ease);
+}
+
+.con-person::before,
+.con-person::after {
+  content: "";
+  position: absolute;
+  left: 50%;
+  background: currentColor;
+  transform: translateX(-50%);
+}
+
+.con-person::before {
+  top: 0;
+  width: 0.5em;
+  height: 0.5em;
+  border-radius: 50%;
+}
+
+.con-person::after {
+  bottom: 0;
+  width: 1em;
+  height: 0.5em;
+  border-radius: 0.5em 0.5em 0.17em 0.17em;
+}
+
+.con-person.is-up {
+  color: var(--text);
+}
+
+.con-person.is-paid {
+  color: var(--platform);
+}
+
+.con-person.is-pushed {
+  color: var(--influence);
+}
+
+.con-person.is-you {
+  color: var(--you);
+}
+
+/* The ones its face cost it. */
+.con-person.is-cut {
+  color: color-mix(in srgb, var(--take), var(--surface) 35%);
+}
+
+/* What carried it there, in people: one chip each. */
+.con-parts {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin: 12px 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.con-part {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 6px;
+  padding: 3px 9px;
+  border-radius: 999px;
+  background: var(--line);
+  color: var(--text);
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.con-part b {
+  font-variant-numeric: tabular-nums;
+}
+
+.con-part.is-cut b {
+  color: var(--take);
+}
+
+.con-part.is-paid b {
+  color: var(--platform);
+}
+
+.con-part.is-pushed b {
+  color: var(--influence);
+}
+
+.con-part.is-you {
+  background: color-mix(in srgb, var(--you), transparent 85%);
+}
+
+.con-part.is-you b {
+  color: var(--you);
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -256,96 +449,62 @@
   }
 
   .con-box,
-  .con-read,
-  .con-reach .reach-fill {
+  .con-read > dt,
+  .con-read > dd,
+  .con-crowd,
+  .con-person,
+  .con-play {
+    transition: none;
     animation: none;
   }
 }
 
 @media (max-height: 860px) {
-  .con-mini {
-    height: 152px;
-  }
-
-  .con-mini-art {
-    font-size: 30px;
-  }
-
   .con-box.is-text {
     font-size: 9px;
   }
 
-  .con-box.is-subject {
-    top: 48%;
+  .con-reads {
+    gap: 6px 12px;
   }
 
-  .con-tag {
-    font-size: 11px;
+  .con-read.is-verdict > dt,
+  .con-read.is-verdict > dd {
+    padding-top: 7px;
   }
 
-  /* No room for the percentage: the label alone. */
-  .con-tag-sure {
-    display: none;
-  }
-
-  .con-box.is-face {
-    width: 30px;
-    height: 30px;
-  }
-
-  .con-face {
-    width: 24px;
-    height: 24px;
-    font-size: 15px;
-  }
-
-  .con-who.is-none {
-    min-height: 59px;
-  }
-
-  .con-read {
-    gap: 14px;
-  }
-
-  .con-who-big {
-    font-size: 36px;
-  }
-
-  .con-reach {
-    gap: 10px;
-  }
-
-  .con-reach .reach-value {
-    font-size: 18px;
+  .con-parts {
+    margin-top: 10px;
   }
 }
 
 @media (max-width: 560px) {
   .con-body {
+    align-items: start;
     gap: 16px;
   }
 
+  .con-mini-art {
+    font-size: 34px;
+  }
+
+  .con-face {
+    font-size: 16px;
+  }
+
   .con-mini {
-    height: 200px;
+    height: 180px;
   }
 
-  .con-box.is-text {
-    font-size: 9px;
+  .con-reads {
+    gap: 7px 10px;
   }
 
-  .con-who-big {
-    font-size: 40px;
-  }
-
-  .con-who.is-none {
-    min-height: 63px;
-  }
-
-  .con-tag {
+  .con-read > dt {
     font-size: 11px;
   }
 
-  .con-tag-sure {
-    display: inline;
+  .con-read > dd {
+    font-size: 12px;
   }
 }

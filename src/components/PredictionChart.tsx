@@ -105,10 +105,23 @@ function PredictionChart({ finished, current, playing }: PredictionChartProps) {
                       : "paused"}
               </span>
             ) : clipped ? (
-              <span className="pchart-cap">{CAP_LABEL}</span>
+              // Past the cap, the tick rides in the cap's label: both count.
+              <span className="pchart-cap">
+                {CAP_LABEL}
+                {guessedRight(impression) && (
+                  <span className="pchart-cap-hit" aria-label="guessed right">
+                    {" ✓"}
+                  </span>
+                )}
+              </span>
             ) : (
               guessedRight(impression) && (
-                <span className="pchart-hit" aria-label="guessed right">
+                // Just over its own bar or guess, whichever is higher.
+                <span
+                  className="pchart-hit"
+                  aria-label="guessed right"
+                  style={{ bottom: pct(Math.max(guess, actual)) }}
+                >
                   ✓
                 </span>
               )

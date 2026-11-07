@@ -118,6 +118,11 @@ button {
   .app-panel.is-open {
     transform: none;
   }
+
+  /* Closed, only the handle shows: the panel's note waits for it to open. */
+  .app-panel:not(.is-open) .panel-note {
+    visibility: hidden;
+  }
 }
 
 @media (max-width: 600px) {

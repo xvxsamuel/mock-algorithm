@@ -131,6 +131,10 @@
 }
 
 /* Over a bar that ran past the top: how long it really was. */
+.pchart-cap-hit {
+  color: rgb(255 255 255 / 0.8);
+}
+
 .pchart-cap {
   position: absolute;
   bottom: 100%;
@@ -147,7 +151,6 @@
 /* Over a video it guessed right: one tick each, the "N of 10". */
 .pchart-hit {
   position: absolute;
-  bottom: 100%;
   left: 50%;
   margin-bottom: 4px;
   color: rgb(255 255 255 / 0.8);

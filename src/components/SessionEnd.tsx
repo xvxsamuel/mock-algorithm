@@ -230,7 +230,8 @@ function SessionEnd({ feed, onBack, onRestart, returnTo }: SessionEndProps) {
             <p className="end-days">
               <b>{YEAR_DAYS} days</b>
               <span>
-                {TEEN_MINUTES_A_DAY} min a day, with TikTok&apos;s time limit on
+                {TEEN_MINUTES_A_DAY} min a day, even with TikTok&apos;s time
+                limit on
               </span>
             </p>
           </section>

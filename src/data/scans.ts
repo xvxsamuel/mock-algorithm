@@ -128,16 +128,6 @@ export function scanOf(video: Video): VideoScan {
   return SCANS[video.id] ?? { sees: video.category, sure: 0.8, face: null };
 }
 
-/**
- * The same video with someone else on camera. Faces no creator in the feed
- * has, so a tile never looks like the video playing.
- */
-export const FACE_SWAPS: readonly FaceReading[] = [
-  f("18–24", 8.6, "👱‍♀️"),
-  f("35–44", 6.2, "🧔"),
-  f("65+", 6.0, "👴"),
-];
-
 function f(age: string, looks: number, emoji: string): FaceReading {
   return { emoji, age, looks };
 }
