@@ -10,13 +10,17 @@
   font-size: 13px;
 }
 
-/* Everything in the panel is a model of the app, not a measurement. */
+/* Everything in the panel is a model of the app, not a measurement. Read
+   first, top right, in the panel's top padding: it takes no room. */
 .panel-note {
-  flex-shrink: 0;
-  margin: -2px 0 0;
+  position: absolute;
+  top: 3px;
+  right: 26px;
+  margin: 0;
   color: color-mix(in srgb, var(--muted), var(--text) 30%);
   font-size: 11px;
-  text-align: right;
+  line-height: 1.2;
+  pointer-events: none;
 }
 
 /* Before you start, everything is dim except the guesses about you,
@@ -402,6 +406,10 @@
     padding-top: 14px;
   }
 
+  .panel-note {
+    top: 1px;
+  }
+
   .clock {
     font-size: 38px;
   }
@@ -420,6 +428,12 @@
     height: auto;
     min-height: 0;
     padding: 0 16px 12px;
+  }
+
+  /* In the sheet's grip row, right of the grip. */
+  .panel-note {
+    top: -20px;
+    right: 16px;
   }
 
   /* Soft edges where the cards scroll under the header and the strip. */

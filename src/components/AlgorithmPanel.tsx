@@ -61,6 +61,7 @@ function AlgorithmPanel({ feed, onLeave }: AlgorithmPanelProps) {
 
   return (
     <div className={classes.join(" ")}>
+      <p className="panel-note">Simulated model</p>
       <header className="panel-head">
         {/* Once you pass your plan, the time over it is the headline. */}
         <div className="panel-time">
@@ -126,7 +127,6 @@ function AlgorithmPanel({ feed, onLeave }: AlgorithmPanelProps) {
       </div>
 
       <FeedStrip feed={feed} />
-      <p className="panel-note">Simulated model</p>
     </div>
   );
 }

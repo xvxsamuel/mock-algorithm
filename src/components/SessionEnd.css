@@ -29,6 +29,20 @@
   margin: auto;
 }
 
+.end-head {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 4px 16px;
+}
+
+.end-note {
+  margin: 0;
+  color: color-mix(in srgb, var(--muted), var(--text) 30%);
+  font-size: 12px;
+}
+
 .end-title {
   margin: 0 0 2px;
   font-size: 30px;

@@ -91,9 +91,12 @@ function SessionEnd({ feed, onBack, onRestart, returnTo }: SessionEndProps) {
       tabIndex={-1}
     >
       <div className="end-inner">
-        <h2 id="end-title" className="end-title">
-          What you gave
-        </h2>
+        <div className="end-head">
+          <h2 id="end-title" className="end-title">
+            What you gave
+          </h2>
+          <p className="end-note">Simulated model</p>
+        </div>
 
         {/* Your time: what you meant to give, and what you gave. */}
         <section className="pane end-pane end-time">
