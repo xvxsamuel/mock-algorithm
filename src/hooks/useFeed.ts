@@ -29,6 +29,7 @@ import {
   winnerOf,
   type Auction,
 } from "../algorithm/market";
+import { causeOfPick, type PickCause } from "../algorithm/cause";
 import { predictionHits, predictWatchMs } from "../algorithm/prediction";
 import { buildProfile } from "../algorithm/profile";
 import { createRandom } from "../algorithm/random";
@@ -67,6 +68,11 @@ export type FeedItem = {
   riskWhenPlayed: number;
   /** An ad slot: the auction that sold it. Null for every other video. */
   auction: Auction | null;
+  /**
+   * Picked because of what you watched: which videos, as they stood when it
+   * was ranked (not what you watched after). Null if that did not decide it.
+   */
+  cause: PickCause | null;
 };
 
 /** Something in your feed that someone paid for. */
@@ -447,6 +453,7 @@ function queueNextVideo(state: State, seed: number): State {
         reasonWhenQueued: risk.reason,
         riskWhenPlayed: risk.value,
         auction,
+        cause: causeOfPick(ranking, impressions),
       },
     ],
     nextKey: state.nextKey + 1,
@@ -596,6 +603,16 @@ function clockRuns(
   };
 }
 
+/** Data points logged from these impressions: per video, and per second
+    watched. */
+function pointsOf(impressions: readonly Impression[]): number {
+  const watchedMs = impressions.reduce((sum, i) => sum + i.watchMs, 0);
+  return Math.round(
+    (watchedMs / 1000) * POINTS_PER_SECOND +
+      impressions.length * POINTS_PER_VIDEO,
+  );
+}
+
 /** The current impression with watch time counted up to `now`. */
 function liveImpression(state: State, now: number): Impression {
   if (state.playingSince === null) return state.current;
@@ -627,6 +644,7 @@ function createInitialState(): State {
     reasonWhenQueued: null,
     riskWhenPlayed: 0,
     auction: null,
+    cause: null,
   };
   const state: State = {
     started: false,
@@ -700,7 +718,6 @@ export function useFeed() {
     .sort((a, b) => b.score - a.score)
     .slice(0, 5);
 
-  const watchedMs = impressions.reduce((sum, i) => sum + i.watchMs, 0);
   const traits = inferTraits(impressions, profile.topics);
 
   // The market: what you were sold for, and the auction for your next ad.
@@ -792,12 +809,9 @@ export function useFeed() {
     counters: {
       autoplays: state.started ? impressions.length : 0,
       loops,
-      dataPoints: state.started
-        ? Math.round(
-            (watchedMs / 1000) * POINTS_PER_SECOND +
-              impressions.length * POINTS_PER_VIDEO,
-          )
-        : 0,
+      dataPoints: state.started ? pointsOf(impressions) : 0,
+      /** The same, up to the video before the one on screen. */
+      dataPointsBefore: state.started ? pointsOf(state.history) : 0,
     },
     topicScores,
     creatorScores,

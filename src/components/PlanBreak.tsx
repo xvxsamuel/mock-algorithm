@@ -17,15 +17,19 @@ type PlanBreakProps = {
 
 /**
  * The first swipe after your plan ran out lands here, before the next
- * video: what you have given so far. The clock waits while it is up.
+ * video: what you have given so far. The clock waits while it is up, and
+ * the video under it is not counted: you have not seen it yet.
  */
 function PlanBreak({ feed, onKeep, onLeave }: PlanBreakProps) {
   const { sessionMs, intentMs, market, influence } = feed;
-  const seen = [...feed.history.map((entry) => entry.impression), feed.current];
+  const seen = feed.history.map((entry) => entry.impression);
   const over = intentMs === null ? 0 : sessionMs - intentMs;
   const total = Math.max(sessionMs, intentMs ?? 0, 1);
   const planned = intentMs === null ? 0 : (intentMs / total) * 100;
   const sold = seen.filter((impression) => impression.source === "ad").length;
+  const earned = market.sales
+    .filter((sale) => sale.key !== feed.currentItem.key)
+    .reduce((sum, sale) => sum + sale.price, 0);
   const sources = SOURCE_ORDER.filter((source) =>
     seen.some((impression) => impression.source === source),
   );
@@ -93,16 +97,16 @@ function PlanBreak({ feed, onKeep, onLeave }: PlanBreakProps) {
 
       <ul className="brk-chips">
         <li className="is-you">
-          {feed.counters.dataPoints.toLocaleString("en")} data points
+          {feed.counters.dataPointsBefore.toLocaleString("en")} data points
         </li>
         {sold > 0 && (
           <li className="is-ad">
             sold {sold === 1 ? "once" : `${sold} times`} for €
-            {market.earned.toFixed(4)}
+            {earned.toFixed(4)}
           </li>
         )}
         <li className="is-pushed">
-          {Math.round(influence.persuadable.score * 100)}% persuadable
+          guessed {Math.round(influence.persuadable.score * 100)}% persuadable
         </li>
       </ul>
     </FeedCard>

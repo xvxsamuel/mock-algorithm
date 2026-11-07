@@ -1,5 +1,4 @@
 import { useEffect, useRef, useState } from "react";
-import { causeOfPick } from "./algorithm/cause";
 import AlgorithmPanel from "./components/AlgorithmPanel";
 import ChainCard from "./components/ChainCard";
 import LinkLayer from "./components/LinkLayer";
@@ -42,10 +41,7 @@ function App() {
     breakAt !== current.index &&
     !current.revisit &&
     feed.history.length >= WHY_AFTER
-      ? causeOfPick(
-          feed.currentItem.ranking,
-          feed.history.map((entry) => entry.impression),
-        )
+      ? feed.currentItem.cause
       : null;
   const { hold, end, resume } = feed;
   // Reading the panel or a card is not watching: the video and the
