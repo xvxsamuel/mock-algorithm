@@ -1,0 +1,144 @@
+/* --- Why this video: three steps down a cyan line, one after another --- */
+
+.chain {
+  position: relative;
+  display: grid;
+  gap: 22px;
+  margin: 4px 0 0;
+  padding: 0 0 0 22px;
+  list-style: none;
+}
+
+/* The line the steps hang on: it draws down as they come in. */
+.chain::before {
+  content: "";
+  position: absolute;
+  top: 8px;
+  bottom: 28px;
+  left: 4px;
+  width: 2px;
+  border-radius: 1px;
+  background: linear-gradient(
+    var(--you),
+    color-mix(in srgb, var(--you) 30%, transparent)
+  );
+  transform-origin: top;
+  animation: chain-line 1.6s var(--ease, ease-out) 0.3s both;
+}
+
+@keyframes chain-line {
+  from {
+    transform: scaleY(0);
+  }
+}
+
+.chain-step {
+  position: relative;
+  display: grid;
+  gap: 6px;
+  animation: chain-step 0.45s var(--ease, ease-out) both;
+}
+
+.chain-step:nth-child(1) {
+  animation-delay: 0.3s;
+}
+
+.chain-step:nth-child(2) {
+  animation-delay: 1s;
+}
+
+.chain-step:nth-child(3) {
+  animation-delay: 1.7s;
+}
+
+@keyframes chain-step {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+}
+
+/* A dot on the line for each step. */
+.chain-step::before {
+  content: "";
+  position: absolute;
+  top: 4px;
+  left: -22px;
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: var(--you);
+  box-shadow: 0 0 10px rgb(37 244 238 / 0.6);
+}
+
+.chain-kicker {
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.chain-watched {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.chain-clip {
+  display: grid;
+  justify-items: center;
+  gap: 4px;
+}
+
+.chain-tile {
+  display: grid;
+  place-items: center;
+  width: 44px;
+  height: 56px;
+  border-radius: 8px;
+  font-size: 24px;
+  line-height: 1;
+  box-shadow: 0 4px 14px rgb(0 0 0 / 0.4);
+}
+
+.chain-secs {
+  color: var(--you);
+  font-size: 13px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+
+.chain-guess {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  color: var(--you);
+  font-size: 22px;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+}
+
+.chain-topic {
+  padding: 2px 12px 3px;
+  border-radius: 999px;
+  color: #fff;
+  font-size: 18px;
+  text-shadow: 0 1px 2px rgb(0 0 0 / 0.35);
+}
+
+/* The video under the card: it is what the chain ends in. */
+.chain-tile.is-picked {
+  width: 62px;
+  height: 80px;
+  border-radius: 10px;
+  font-size: 34px;
+  outline: 2px solid #fff;
+  outline-offset: 3px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .chain::before,
+  .chain-step {
+    animation: none;
+  }
+}

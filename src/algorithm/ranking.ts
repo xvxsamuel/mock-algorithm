@@ -128,7 +128,7 @@ function scoreVideo(
 
   const parts: ScorePart[] = [
     {
-      label: `interest in ${video.category}`,
+      label: interestLabel(video.category),
       value: topicInterest * WEIGHTS.interest,
       from: "you",
     },
@@ -167,6 +167,11 @@ function scoreVideo(
 
   const score = parts.reduce((sum, part) => sum + part.value, 0);
   return { video, score, parts };
+}
+
+/** The score part for how much you like a topic. */
+export function interestLabel(category: Category): string {
+  return `interest in ${category}`;
 }
 
 /** 0 for ~100K likes, 1 for ~6M likes. */
