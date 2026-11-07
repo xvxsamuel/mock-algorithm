@@ -7,6 +7,13 @@
   pointer-events: none;
 }
 
+/* A card over the feed: lines already out fade, so none seems to come
+   from it. They still run out underneath and report back. */
+.app:has([data-feed-card]) .links {
+  opacity: 0;
+  transition: opacity 0.25s;
+}
+
 /* Behind the cards (they sit at z-index 1): the lines show in the gaps. */
 .links.is-under {
   z-index: 0;
