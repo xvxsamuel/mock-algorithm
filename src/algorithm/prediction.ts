@@ -94,12 +94,16 @@ export function predictionHits(
 ): PredictionHits | null {
   if (finished.length === 0) return null;
   const latest = finished.slice(-HITS_WINDOW);
-  const right = latest.filter(
-    ({ watchMs, predictedMs }) =>
-      Math.abs(watchMs - predictedMs) <=
-      Math.max(RIGHT_WITHIN_MS, watchMs * RIGHT_WITHIN_SHARE),
-  ).length;
+  const right = latest.filter(guessedRight).length;
   return { right, count: latest.length };
+}
+
+/** Whether its guess for a finished video was right. */
+export function guessedRight({ watchMs, predictedMs }: Impression): boolean {
+  return (
+    Math.abs(watchMs - predictedMs) <=
+    Math.max(RIGHT_WITHIN_MS, watchMs * RIGHT_WITHIN_SHARE)
+  );
 }
 
 /** Mean of `values` (oldest first), newest weighted most, pulled towards `prior`. */

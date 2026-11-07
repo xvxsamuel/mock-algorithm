@@ -10,7 +10,7 @@
    Fixed bands, so boxes never overlap: text, subject, face. */
 .con-mini {
   position: relative;
-  height: 236px;
+  height: 200px;
   aspect-ratio: 9 / 16;
   overflow: hidden;
   border-radius: 12px;

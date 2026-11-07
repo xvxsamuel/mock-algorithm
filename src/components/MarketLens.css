@@ -335,8 +335,9 @@
     font-size: 36px;
   }
 
+  /* A bid without a reason is one line, so all of them and the key fit. */
   .mkt-bids {
-    grid-auto-rows: minmax(auto, 46px);
+    grid-auto-rows: auto;
     gap: 4px;
     margin-bottom: 8px;
   }
@@ -392,6 +393,13 @@
 
   .mkt-sales {
     min-height: 28px;
+  }
+}
+
+/* 720 px tall laptops: the lowest bid gives way, so the key stays in view. */
+@media (max-height: 760px) and (min-width: 901px) {
+  .mkt-bid:nth-child(n + 6) {
+    display: none;
   }
 }
 

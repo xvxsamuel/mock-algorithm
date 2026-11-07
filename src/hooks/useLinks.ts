@@ -106,6 +106,8 @@ export function useLinks(feed: FeedController) {
       // The phone is the only element inside the feed area.
       const phone = feedArea.current?.firstElementChild;
       const shown = document.querySelector(`[data-link="${target}"]`);
+      // Scrolled out of its lens's view: a line would point off the panel.
+      if (shown !== null && !inView(shown)) return;
       // Every swipe is scanned; only worth a line when you are looking.
       if (shown === null && QUIET.has(target)) return;
       // Targets on a hidden lens only make that lens's tab glow.
@@ -397,6 +399,16 @@ function sideOf(phone: DOMRect, y: number | null): Point {
     phone.bottom - margin,
   );
   return { x: phone.right + 4, y: clamped };
+}
+
+/** Whether an element's middle is inside the window of the scrolling
+    lens it sits in. */
+function inView(element: Element): boolean {
+  const scroller = element.closest(".panel-body");
+  if (scroller === null) return true;
+  const box = scroller.getBoundingClientRect();
+  const { y } = middleOf(element);
+  return y >= box.top && y <= box.bottom;
 }
 
 function outset(rect: DOMRect, by: number): Box {

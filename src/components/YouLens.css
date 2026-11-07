@@ -270,6 +270,12 @@
   }
 }
 
+@media (max-height: 760px) {
+  .lens > .you-model {
+    min-height: 260px;
+  }
+}
+
 @media (max-width: 900px) {
   .lens > .you-model {
     flex: none;

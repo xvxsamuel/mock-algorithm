@@ -1,4 +1,5 @@
 import type { Impression } from "../algorithm/impression";
+import { guessedRight, HITS_WINDOW } from "../algorithm/prediction";
 import "./PredictionChart.css";
 
 /** Bars taller than this many seconds are cut off at the top. */
@@ -7,7 +8,8 @@ const CAP_LABEL = `${CAP_MS / 1000}s+`;
 const MIN_SCALE_MS = 8000;
 /** Room above the tallest bar, so it never touches the top. */
 const HEADROOM = 1.1;
-const COLUMNS = 16;
+/** The videos "N of 10 guessed right" counts, and the one playing now. */
+const COLUMNS = HITS_WINDOW + 1;
 /** Room under the bars for the emoji, in px. Matches the CSS padding. */
 const LABEL_SPACE = 22;
 /** Room over the bars for the live tag, in px, so nothing rises out of the
@@ -26,7 +28,8 @@ type PredictionChartProps = {
  * watch, decided before the video started. The bar is how long you did:
  * pink above the cap where you gave it more than it guessed. Watch the caps
  * and bars line up. A sure hit, played to stop you leaving, is marked pink.
- * A bar past the chart's cap fades out under "20s+".
+ * A bar past the chart's cap fades out under "20s+". A tick tops each
+ * video it guessed right, as counted in "N of 10 guessed right".
  */
 function PredictionChart({ finished, current, playing }: PredictionChartProps) {
   const shown = [...finished.slice(-(COLUMNS - 1)), current];
@@ -101,8 +104,14 @@ function PredictionChart({ finished, current, playing }: PredictionChartProps) {
                       ? "now"
                       : "paused"}
               </span>
+            ) : clipped ? (
+              <span className="pchart-cap">{CAP_LABEL}</span>
             ) : (
-              clipped && <span className="pchart-cap">{CAP_LABEL}</span>
+              guessedRight(impression) && (
+                <span className="pchart-hit" aria-label="guessed right">
+                  ✓
+                </span>
+              )
             )}
             <span className="pchart-emoji" aria-hidden="true">
               {impression.video.emoji}

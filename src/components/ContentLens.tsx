@@ -22,6 +22,10 @@ function ContentLens({ feed }: ContentLensProps) {
 
   return (
     <div className="lens">
+      {/* The point first: the same video, a different face, a different
+          reach. Then what it reads in the video playing now. */}
+      <FaceSwap video={video} />
+
       <section className="pane con-scan">
         <div className="pane-head">
           <h2 className="eyebrow">Video scan</h2>
@@ -90,8 +94,6 @@ function ContentLens({ feed }: ContentLensProps) {
           </div>
         </div>
       </section>
-
-      <FaceSwap video={video} />
     </div>
   );
 }

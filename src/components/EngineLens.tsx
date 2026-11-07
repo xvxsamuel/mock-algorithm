@@ -66,7 +66,7 @@ function EngineLens({ feed }: EngineLensProps) {
                 of {hits === null ? HITS_WINDOW : hits.count}
               </span>
             </b>
-            <small>guessed right</small>
+            <small>✓ guessed right</small>
           </p>
         </div>
         <PredictionChart
