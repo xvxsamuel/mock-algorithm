@@ -1,0 +1,67 @@
+.gauge {
+  --tone: var(--engine);
+
+  display: block;
+  width: 100%;
+  max-width: 190px;
+  height: auto;
+  margin: 0 auto;
+}
+
+.gauge.is-high {
+  --tone: var(--take);
+}
+
+.gauge-track,
+.gauge-zone,
+.gauge-glow,
+.gauge-fill {
+  fill: none;
+  stroke-width: 9;
+  stroke-linecap: round;
+}
+
+/* Past the notch, the engine steps in. */
+.gauge-zone {
+  stroke: rgb(254 44 85 / 0.22);
+}
+
+.gauge-glow {
+  stroke: var(--tone);
+  stroke-width: 18;
+  opacity: 0.16;
+}
+
+.gauge-track {
+  stroke: var(--line);
+}
+
+.gauge-glow,
+.gauge-fill {
+  transition:
+    stroke-dasharray 0.6s var(--ease),
+    stroke 0.6s var(--ease);
+}
+
+.gauge-fill {
+  stroke: var(--tone);
+}
+
+.gauge-notch {
+  stroke: var(--surface);
+  stroke-width: 2.5;
+}
+
+.gauge-value {
+  fill: var(--text);
+  font-size: 22px;
+  font-weight: 650;
+  font-variant-numeric: tabular-nums;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .gauge-glow,
+  .gauge-fill {
+    transition: none;
+  }
+}

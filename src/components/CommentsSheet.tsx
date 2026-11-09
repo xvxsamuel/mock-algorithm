@@ -71,7 +71,9 @@ function CommentsSheet({
             <div className="comment-body">
               <span className="comment-user">you</span>
               <p className="comment-text">{text}</p>
-              <span className="comment-meta">now · Reply</span>
+              <span className="comment-meta">
+                now<span className="comment-reply">Reply</span>
+              </span>
             </div>
           </li>
         ))}
@@ -90,7 +92,10 @@ function CommentsSheet({
               <div className="comment-body">
                 <span className="comment-user">{comment.user}</span>
                 <p className="comment-text">{comment.text}</p>
-                <span className="comment-meta">{comment.age} · Reply</span>
+                <span className="comment-meta">
+                  {comment.age}
+                  <span className="comment-reply">Reply</span>
+                </span>
               </div>
               <button
                 type="button"

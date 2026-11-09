@@ -1,0 +1,263 @@
+/* --- Prediction: the hero, it grows to fill the height --- */
+
+.lens > .eng-predict {
+  display: flex;
+  flex: 1 1 0;
+  flex-direction: column;
+  min-height: 170px;
+}
+
+.eng-title {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 4px 18px;
+}
+
+/* Wraps between its items, never inside one. */
+.eng-legend {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px 14px;
+  color: var(--muted);
+  font-size: 12px;
+}
+
+.eng-legend > span {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  white-space: nowrap;
+}
+
+.eng-key {
+  display: inline-block;
+  width: 10px;
+  height: 10px;
+  border-radius: 2px;
+}
+
+.eng-key.is-guess {
+  height: 2px;
+  border-radius: 1px;
+  background: #fff;
+}
+
+/* "7 of 10", "guessed right" under it. */
+.eng-hit {
+  display: inline-flex;
+  flex-direction: column;
+  align-items: flex-end;
+  white-space: nowrap;
+}
+
+.eng-hit b {
+  font-size: 22px;
+  font-weight: 600;
+  line-height: 1.1;
+  letter-spacing: -0.01em;
+  font-variant-numeric: tabular-nums;
+}
+
+.eng-hit small {
+  margin-top: 1px;
+  color: rgb(255 255 255 / 0.62);
+  font-size: 11px;
+  font-weight: 500;
+}
+
+.eng-of {
+  color: var(--muted);
+  font-size: 14px;
+  font-weight: 500;
+}
+
+.eng-key.is-actual {
+  background: var(--you);
+}
+
+.eng-key.is-over {
+  background: var(--take);
+}
+
+/* --- Why this video --- */
+
+/* Padded so the highlight where a line lands has room around the text. */
+.why {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin: -4px -8px 0;
+  padding: 6px 8px;
+}
+
+.why-part {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  align-items: center;
+  gap: 10px;
+}
+
+/* Wraps rather than cutting a word off. */
+.why-label {
+  color: var(--muted);
+  font-size: 12px;
+  line-height: 1.25;
+}
+
+/* Bars grow out of a centre line: right helps the video, left hurts it. */
+.why-track {
+  position: relative;
+  height: 8px;
+}
+
+/* The zero line: bars grow out of it, right for, left against. */
+.why-track::before {
+  content: "";
+  position: absolute;
+  top: -4px;
+  bottom: -4px;
+  left: 50%;
+  width: 1px;
+  background: rgb(255 255 255 / 0.3);
+}
+
+.why-bar {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  border-radius: 3px;
+  transition: width 0.5s var(--ease);
+}
+
+.why-bar.is-up {
+  left: 50%;
+  background: var(--you);
+}
+
+/* Pushed by the engine's own rules, not by anything you did. */
+.why-bar.is-engine {
+  background: var(--engine);
+}
+
+/* Bought by an advertiser. */
+.why-bar.is-paid {
+  background: var(--platform);
+}
+
+/* Faked by outsiders: fake accounts made it look popular. */
+.why-bar.is-pushed {
+  background: var(--influence);
+}
+
+/* "You were about to leave" outweighs everything: pink, from the zero line
+   of the bars below to the end. Its words get the other three quarters. */
+.why-part.is-rescue {
+  grid-template-columns: 3fr 1fr;
+}
+
+.why-part.is-rescue .why-label {
+  color: var(--take);
+  font-weight: 650;
+}
+
+.why-part.is-rescue .why-track::before {
+  display: none;
+}
+
+.why-bar.is-rescue {
+  left: 0;
+  right: 0;
+  background: var(--take);
+  box-shadow: 0 0 10px rgb(254 44 85 / 0.5);
+}
+
+.why-bar.is-down {
+  right: 50%;
+  background: var(--less);
+  opacity: 0.55;
+}
+
+.why-next {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 6px;
+  padding-top: 10px;
+  border-top: 1px solid var(--line);
+  font-size: 12px;
+}
+
+.why-next-emoji {
+  font-size: 16px;
+}
+
+.why-source {
+  font-size: 12px;
+  padding: 2px 8px;
+  border-radius: 999px;
+  background: rgb(37 244 238 / 0.12);
+  color: var(--you);
+  font-weight: 600;
+}
+
+.why-source.is-explore {
+  background: rgb(185 185 200 / 0.12);
+  color: var(--engine);
+}
+
+.why-source.is-rescue {
+  background: rgb(254 44 85 / 0.14);
+  color: var(--take);
+}
+
+.why-source.is-ad {
+  background: rgb(255 181 71 / 0.14);
+  color: var(--platform);
+}
+
+.why-source.is-pushed {
+  background: rgb(167 139 250 / 0.16);
+  color: var(--influence);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .why-bar {
+    transition: none;
+  }
+}
+
+@media (max-width: 900px) {
+  .lens > .eng-predict {
+    flex: none;
+  }
+}
+
+/* Phones: the figure goes under the title, smaller, on one line:
+   "6 of 10 guessed right". */
+@media (max-width: 560px) {
+  .eng-predict .pane-head {
+    flex-wrap: wrap;
+    row-gap: 6px;
+  }
+
+  .row > .eng-tests {
+    order: -1;
+  }
+
+  .eng-hit {
+    flex-direction: row;
+    align-items: baseline;
+    gap: 6px;
+  }
+
+  .eng-hit b {
+    font-size: 18px;
+  }
+
+  .eng-hit small {
+    margin-top: 0;
+    font-size: 12px;
+  }
+}

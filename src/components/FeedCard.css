@@ -1,0 +1,110 @@
+/* --- A card over the next video: the frame, the way on, the way out --- */
+
+.fcard {
+  position: absolute;
+  inset: 0;
+  z-index: 20;
+  display: grid;
+  place-items: center;
+  padding: 24px 22px;
+  overflow: hidden;
+  background: rgb(5 5 7 / 0.84);
+  backdrop-filter: blur(18px) saturate(1.2);
+  touch-action: none;
+  animation: fcard-in 0.45s var(--ease, ease-out);
+  transition: opacity 0.25s var(--ease, ease-out);
+}
+
+@keyframes fcard-in {
+  from {
+    opacity: 0;
+  }
+}
+
+.fcard:focus {
+  outline: none;
+}
+
+/* Swiped: it fades while the rest of the fling runs out. */
+.fcard.is-going {
+  opacity: 0;
+}
+
+.fcard-inner {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  width: 100%;
+  max-width: 320px;
+}
+
+.fcard-title {
+  margin: 0 0 4px;
+  font-size: 22px;
+  font-weight: 700;
+  line-height: 1.15;
+  letter-spacing: -0.02em;
+}
+
+/* The way on is the easy one, as in the app. */
+.fcard-actions {
+  display: flex;
+  gap: 10px;
+  margin-top: 12px;
+}
+
+.fcard-button {
+  flex: 1;
+  padding: 12px 10px;
+  border-radius: 12px;
+  font-size: 15px;
+  font-weight: 700;
+  cursor: pointer;
+  transition:
+    background 0.2s,
+    border-color 0.2s;
+}
+
+.fcard-button:focus-visible {
+  outline: 2px solid var(--you);
+  outline-offset: 2px;
+}
+
+.fcard-button.is-keep {
+  border: 0;
+  background: #fff;
+  color: #000;
+}
+
+.fcard-button.is-keep:hover {
+  background: #e6e6ea;
+}
+
+.fcard-button.is-leave {
+  border: 1px solid var(--take);
+  background: transparent;
+  color: var(--text);
+  box-shadow: 0 0 16px rgb(254 44 85 / 0.3);
+}
+
+.fcard-button.is-leave:hover {
+  background: rgb(254 44 85 / 0.12);
+}
+
+/* The closed sheet's handle sits over the bottom of the phone. */
+@media (max-width: 900px) {
+  .fcard {
+    padding-bottom: 64px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .fcard {
+    animation: none;
+  }
+
+  .fcard,
+  .fcard-button {
+    transition: none;
+  }
+}

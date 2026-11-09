@@ -1,0 +1,191 @@
+.pchart {
+  position: relative;
+  display: grid;
+  flex: 1;
+  grid-template-columns: repeat(11, minmax(0, 1fr));
+  grid-template-rows: minmax(0, 1fr);
+  gap: 6px;
+  min-height: 132px;
+  /* The left gutter holds the seconds label, clear of the bars. The top
+     holds the live tag, so a bar at the cap never lifts it out. */
+  padding: 22px 0 22px 26px;
+}
+
+.pchart-col {
+  position: relative;
+}
+
+/* A dashed line at a round number of seconds. */
+.pchart-grid {
+  position: absolute;
+  left: 0;
+  right: 0;
+  z-index: 2;
+  height: 0;
+  border-top: 1px dashed rgb(255 255 255 / 0.18);
+  pointer-events: none;
+  transition: bottom 0.4s var(--ease);
+}
+
+.pchart-grid span {
+  position: absolute;
+  left: 0;
+  bottom: -7px;
+  padding: 0 4px;
+  border-radius: 4px;
+  background: var(--surface);
+  color: rgb(255 255 255 / 0.62);
+  font-size: 11px;
+  font-variant-numeric: tabular-nums;
+}
+
+.pchart-col.is-empty {
+  border-bottom: 1px dashed var(--line);
+}
+
+/* What you watched, up to the guess. */
+.pchart-you,
+.pchart-extra,
+.pchart-short {
+  position: absolute;
+  left: 0;
+  right: 0;
+  transition:
+    height 0.25s linear,
+    bottom 0.25s linear;
+}
+
+.pchart-you {
+  bottom: 0;
+  border-radius: 3px 3px 0 0;
+  background: linear-gradient(rgb(37 244 238 / 0.9), rgb(37 244 238 / 0.3));
+}
+
+/* Time you gave beyond what it guessed: taken, so pink. */
+.pchart-extra {
+  border-radius: 3px 3px 0 0;
+  background: var(--take);
+  box-shadow: 0 0 10px rgb(254 44 85 / 0.35);
+}
+
+/* You gave less than it guessed: the cap floats over an empty gap. While
+   the video still plays, the gap is not decided yet: a faint fill. */
+.pchart-short.is-pending {
+  background: rgb(255 255 255 / 0.05);
+}
+
+/* Taller than the chart: it fades out at the top instead of stopping. */
+.pchart-extra.is-clipped {
+  border-radius: 0;
+  background: linear-gradient(to top, var(--take) 60%, rgb(254 44 85 / 0.1));
+}
+
+/* The guess: a white cap, set before the video started. */
+.pchart-guess {
+  position: absolute;
+  left: -2px;
+  right: -2px;
+  z-index: 1;
+  height: 2px;
+  border-radius: 1px;
+  background: #fff;
+  box-shadow: 0 0 6px rgb(255 255 255 / 0.5);
+  transform: translateY(1px);
+  transition: bottom 0.4s var(--ease);
+}
+
+.pchart-col.is-live .pchart-you {
+  box-shadow: 0 0 14px rgb(37 244 238 / 0.5);
+}
+
+/* The video playing now. */
+.pchart-col.is-live .pchart-emoji {
+  padding: 2px 3px;
+  border-radius: 5px;
+  background: rgb(255 255 255 / 0.16);
+}
+
+/* A sure hit, played to keep you: pink, like its tile in the strip. */
+.pchart-col.is-sure-hit .pchart-emoji {
+  padding: 2px 3px;
+  border-radius: 5px;
+  background: rgb(254 44 85 / 0.28);
+  box-shadow: 0 0 0 1px rgb(254 44 85 / 0.7);
+}
+
+/* Above the live column, centred on its own cap: "now", or "sure hit". */
+.pchart-tag {
+  position: absolute;
+  left: 50%;
+  margin-bottom: 4px;
+  padding: 1px 5px;
+  border-radius: 999px;
+  background: rgb(255 255 255 / 0.14);
+  color: var(--text);
+  font-size: 11px;
+  font-weight: 700;
+  line-height: 1.3;
+  white-space: nowrap;
+  transform: translateX(-50%);
+  transition: bottom 0.25s linear;
+}
+
+/* Over a bar that ran past the top: how long it really was. */
+.pchart-cap-hit {
+  color: rgb(255 255 255 / 0.8);
+}
+
+.pchart-cap {
+  position: absolute;
+  bottom: 100%;
+  left: 50%;
+  margin-bottom: 4px;
+  color: var(--take);
+  font-size: 11px;
+  font-weight: 700;
+  line-height: 1.3;
+  white-space: nowrap;
+  transform: translateX(-50%);
+}
+
+/* Over a video it guessed right: one tick each, the "N of 10". */
+.pchart-hit {
+  position: absolute;
+  left: 50%;
+  margin-bottom: 4px;
+  color: rgb(255 255 255 / 0.8);
+  font-size: 12px;
+  font-weight: 700;
+  line-height: 1.3;
+  transform: translateX(-50%);
+}
+
+.pchart-tag.is-sure-hit {
+  background: var(--take);
+  color: #fff;
+}
+
+.pchart-emoji {
+  position: absolute;
+  left: 50%;
+  bottom: -20px;
+  font-size: 13px;
+  line-height: 1;
+  transform: translateX(-50%);
+}
+
+@media (max-width: 900px) {
+  .pchart {
+    flex: none;
+    height: 150px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .pchart-you,
+  .pchart-extra,
+  .pchart-short,
+  .pchart-guess {
+    transition: none;
+  }
+}

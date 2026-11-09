@@ -45,6 +45,23 @@
   }
 }
 
+/* The creator, on camera, in the corner of their own video. */
+.card-face {
+  position: absolute;
+  top: 64%;
+  left: 16px;
+  display: grid;
+  place-items: center;
+  width: 68px;
+  height: 68px;
+  border: 3px solid #fff;
+  border-radius: 50%;
+  background: rgb(0 0 0 / 0.2);
+  box-shadow: 0 6px 18px rgb(0 0 0 / 0.3);
+  font-size: 44px;
+  line-height: 1;
+}
+
 /* TikTok-style text sticker: black text on a white highlight. */
 .card-overlay {
   position: absolute;
@@ -56,6 +73,8 @@
   font-weight: 800;
   line-height: 1.55;
   text-align: center;
+  /* Even lines, so a title never breaks at "self-" / "checkout". */
+  text-wrap: balance;
 }
 
 .card-overlay span {
@@ -138,6 +157,32 @@
   margin: 4px 0 0;
   font-size: 14px;
   line-height: 1.35;
+}
+
+/* An ad says it is one. (A paid post does not.) */
+.card-sponsored {
+  display: inline-block;
+  margin: 6px 0 0;
+  padding: 1px 6px;
+  border-radius: 4px;
+  background: rgb(0 0 0 / 0.35);
+  font-size: 12px;
+  font-weight: 600;
+  text-shadow: none;
+}
+
+.card-cta {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin: 12px 0 0;
+  padding: 9px 12px;
+  border-radius: 6px;
+  background: var(--platform);
+  color: #1a1206;
+  font-size: 14px;
+  font-weight: 700;
+  text-shadow: none;
 }
 
 .card-sound {

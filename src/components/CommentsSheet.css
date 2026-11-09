@@ -74,6 +74,10 @@
   font-size: 12px;
 }
 
+.comment-reply {
+  margin-left: 14px;
+}
+
 .comment-text {
   margin: 2px 0 4px;
   overflow-wrap: anywhere;

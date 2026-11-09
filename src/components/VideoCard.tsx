@@ -1,5 +1,7 @@
 import { useRef, useState, type MouseEvent } from "react";
+import type { Advertiser } from "../data/ads";
 import { CATEGORY_COLORS } from "../data/categories";
+import { scanOf } from "../data/scans";
 import type { Video } from "../data/videos";
 import type { ReactionKind } from "../hooks/useFeed";
 import ActionRail from "./ActionRail";
@@ -11,6 +13,8 @@ const DOUBLE_TAP_MS = 250;
 
 type VideoCardProps = {
   video: Video;
+  /** Set for an ad: who bought the slot. */
+  sponsor?: Advertiser;
   active: boolean;
   playing: boolean;
   /** Changes every time the video is viewed again, restarting the progress bar. */
@@ -30,6 +34,7 @@ type VideoCardProps = {
 /** One full-screen "video" in the feed. */
 function VideoCard({
   video,
+  sponsor,
   active,
   playing,
   impressionIndex,
@@ -47,6 +52,7 @@ function VideoCard({
   const tapTimer = useRef<number | undefined>(undefined);
   const [from, to] = CATEGORY_COLORS[video.category];
   const sound = video.sound ?? `original sound - ${video.creator}`;
+  const { face } = scanOf(video);
   const isPlaying = active && playing;
 
   // Single tap pauses, double tap likes (like on TikTok).
@@ -77,6 +83,12 @@ function VideoCard({
       <p className="card-overlay">
         <span>{video.overlay}</span>
       </p>
+      {/* The creator, on camera: the face the engine reads. */}
+      {face !== null && (
+        <div className="card-face" aria-hidden="true">
+          {face.emoji}
+        </div>
+      )}
 
       <button
         type="button"
@@ -106,6 +118,7 @@ function VideoCard({
       <div className="card-info">
         <p className="card-creator">@{video.creator}</p>
         <p className="card-caption">{video.caption}</p>
+        {sponsor !== undefined && <p className="card-sponsored">Sponsored</p>}
         <p className="card-sound">
           <span aria-hidden="true">♫</span>
           <span className="card-sound-window">
@@ -114,6 +127,12 @@ function VideoCard({
             </span>
           </span>
         </p>
+        {sponsor !== undefined && (
+          <p className="card-cta">
+            {sponsor.cta}
+            <span aria-hidden="true">›</span>
+          </p>
+        )}
       </div>
 
       <ActionRail

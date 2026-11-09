@@ -1,34 +1,50 @@
+/* One dark palette for the whole piece: the phone glows, the machine behind
+   it is quiet. Colour means who acts:
+   cyan = you and your data, pink = what is taken from you (time, money),
+   grey = the engine's own moves, amber = the platform, violet = outsiders. */
 :root {
+  color-scheme: dark;
   font-family:
+    "Inter",
+    "Segoe UI Variable Text",
+    "Segoe UI",
     system-ui,
     -apple-system,
-    "Segoe UI",
     Roboto,
     sans-serif;
-  line-height: 1.5;
-  color: #1a1a1a;
+  line-height: 1.45;
+  color: var(--text);
   background-color: var(--bg);
-  color-scheme: light dark;
+  font-synthesis: none;
+  -webkit-font-smoothing: antialiased;
 
-  --bg: #fafafa;
-  --stage: #e8e8ed;
-  --line: #d6d6d6;
-  --muted: #6b6b6b;
-  --accent: #c2185b;
-  --good: #1b7f3b;
-}
+  --bg: #0b0b0f;
+  --stage: #050507;
+  --surface: #121218;
+  --surface-2: #191921;
+  --line: rgb(255 255 255 / 0.08);
+  --line-strong: rgb(255 255 255 / 0.16);
+  --text: #f3f3f6;
+  --muted: #8e8e9c;
+  --faint: #55555f;
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    color: #f2f2f2;
+  --you: #25f4ee;
+  --take: #fe2c55;
+  --engine: #b9b9c8;
+  --platform: #ffb547;
+  --influence: #a78bfa;
+  /* The physical world: energy, materials, what is left over. */
+  --earth: #8fd694;
+  /* "Less": the engine turning away from something. Direction, not a colour of its own. */
+  --less: #d6d6e0;
 
-    --bg: #121212;
-    --stage: #050505;
-    --line: #2e2e2e;
-    --muted: #9a9a9a;
-    --accent: #ff6b9a;
-    --good: #5fd38d;
-  }
+  /* Older names, still used by a few components. */
+  --accent: var(--take);
+  --good: var(--you);
+
+  --radius: 14px;
+  --radius-sm: 8px;
+  --ease: cubic-bezier(0.22, 1, 0.36, 1);
 }
 
 *,
@@ -39,12 +55,17 @@
 
 body {
   margin: 0;
+  background: var(--bg);
+}
+
+button {
+  font: inherit;
 }
 
 /* Left: the phone. Right: what the algorithm sees. */
 .app {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1.08fr);
   height: 100dvh;
 }
 
@@ -52,26 +73,57 @@ body {
   display: grid;
   place-items: center;
   padding: 24px;
-  background: var(--stage);
+  background:
+    radial-gradient(60% 50% at 50% 50%, rgb(254 44 85 / 0.07), transparent 70%),
+    var(--stage);
 }
 
 /* The panel never scrolls, so attention stays on the phone. */
 .app-panel {
   overflow: hidden;
   border-left: 1px solid var(--line);
+  background: var(--bg);
 }
 
-/* Narrow screens: phone on top, panel underneath. */
+/* Narrow screens: the phone fills the screen and the panel is a sheet that
+   slides up over the video, leaving a sliver of it in view. */
 @media (max-width: 900px) {
   .app {
-    grid-template-columns: 1fr;
-    height: auto;
+    display: block;
   }
 
+  .app-feed {
+    height: 100dvh;
+    padding: 12px;
+  }
+
+  /* Handle, header, tabs and strip stay put; only the lens scrolls. */
   .app-panel {
-    overflow: visible;
-    border-top: 1px solid var(--line);
-    border-left: 0;
+    position: fixed;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    z-index: 40;
+    display: flex;
+    flex-direction: column;
+    height: calc(100dvh - 12px);
+    overflow: hidden;
+    border: 1px solid var(--line-strong);
+    border-bottom: 0;
+    border-radius: 20px 20px 0 0;
+    background: var(--bg);
+    box-shadow: 0 -20px 60px rgb(0 0 0 / 0.6);
+    transform: translateY(calc(100% - 50px));
+    transition: transform 0.45s var(--ease);
+  }
+
+  .app-panel.is-open {
+    transform: none;
+  }
+
+  /* Closed, only the handle shows: the panel's note waits for it to open. */
+  .app-panel:not(.is-open) .panel-note {
+    visibility: hidden;
   }
 }
 
@@ -79,4 +131,62 @@ body {
   .app-feed {
     padding: 0;
   }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .app-panel {
+    transition: none;
+  }
+}
+
+/* --- A choice of two or three, side by side (one is always on) --- */
+
+.levers {
+  display: flex;
+  gap: 4px;
+  padding: 3px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+}
+
+.lever {
+  padding: 5px 14px;
+  border: 0;
+  border-radius: 999px;
+  background: transparent;
+  color: color-mix(in srgb, var(--muted), var(--text) 30%);
+  font-size: 13px;
+  font-weight: 650;
+  cursor: pointer;
+  transition:
+    background 0.2s var(--ease),
+    color 0.2s var(--ease);
+}
+
+.lever:hover {
+  color: var(--text);
+}
+
+.lever.is-on {
+  background: var(--surface-2);
+  color: var(--text);
+  box-shadow: inset 0 0 0 1px var(--line-strong);
+}
+
+.lever:focus-visible {
+  outline: 2px solid var(--you);
+  outline-offset: 2px;
+}
+
+/* --- How a number is known: real, an estimate, simulated --- */
+
+.kind {
+  flex-shrink: 0;
+  padding: 1px 7px;
+  border: 1px solid var(--line-strong);
+  border-radius: 999px;
+  color: color-mix(in srgb, var(--muted), var(--text) 30%);
+  font-size: 11px;
+  font-weight: 650;
+  white-space: nowrap;
 }
