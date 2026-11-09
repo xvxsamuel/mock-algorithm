@@ -1,30 +1,61 @@
 .links {
   position: fixed;
   inset: 0;
-  z-index: 50;
   width: 100%;
   height: 100%;
   overflow: visible;
   pointer-events: none;
 }
 
-/* Holds, then fades out. Its duration is set per link and it ends last. */
+/* A card over the feed: lines already out fade, so none seems to come
+   from it. They still run out underneath and report back. */
+.app:has([data-feed-card]) .links {
+  opacity: 0;
+  transition: opacity 0.25s;
+}
+
+/* Behind the cards (they sit at z-index 1): the lines show in the gaps. */
+.links.is-under {
+  z-index: 0;
+}
+
+/* On top of everything: where a line lands, and what it changed. */
+.links.is-over {
+  z-index: 50;
+}
+
+/* Holds, then fades out. Its duration is set per link. */
 .link {
-  color: var(--good);
-  filter: drop-shadow(0 0 1.5px var(--bg));
+  color: var(--you);
   animation-name: link-fade;
   animation-timing-function: ease-in;
   animation-fill-mode: forwards;
 }
 
 .link.is-down {
-  color: var(--accent);
+  color: var(--less);
 }
 
-/* Faint line that draws itself behind the dots. */
+/* The engine acting to keep you: pink. */
+.link.is-keep {
+  color: var(--take);
+}
+
+/* Money changing hands: amber. */
+.link.is-sold {
+  color: var(--platform);
+}
+
+/* Outsiders pushing something in: violet. */
+.link.is-pushed {
+  color: var(--influence);
+}
+
+/* The line draws itself from the phone to the target. */
 .link-trail {
   fill: none;
   stroke: currentColor;
+  stroke-linecap: round;
   stroke-dasharray: 1;
   stroke-dashoffset: 1;
   animation-name: link-draw;
@@ -32,22 +63,45 @@
   animation-fill-mode: forwards;
 }
 
-/* A short dash with round ends that travels along the path. */
-.link-dot {
+/* A bright head runs ahead of the line: a coloured glow with a white core. */
+.link-head {
   fill: none;
   stroke: currentColor;
   stroke-linecap: round;
-  stroke-dasharray: 0.08 2;
-  stroke-dashoffset: 0.08;
+  stroke-opacity: 0.4;
+  stroke-dasharray: 0.06 2;
+  stroke-dashoffset: 0.06;
   animation-name: link-travel;
   animation-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
   animation-fill-mode: both;
 }
 
-/* Passive updates (watch time) send a single round dot, no trail. */
-.link.is-dot .link-dot {
-  stroke-dasharray: 0.001 2;
-  stroke-dashoffset: 0.001;
+.link-head.is-core {
+  stroke: #fff;
+  stroke-opacity: 1;
+}
+
+/* Where a line enters a card: a short bright notch on its edge. */
+.link-notch {
+  stroke: currentColor;
+  stroke-width: 3;
+  stroke-linecap: round;
+  opacity: 0;
+  filter: drop-shadow(0 0 4px currentColor);
+  animation: link-show 0.15s ease-out forwards;
+}
+
+/* Inside the card, a thin trace runs on to the target. */
+.link-trace {
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.5;
+  stroke-opacity: 0.7;
+  stroke-dasharray: 1;
+  stroke-dashoffset: 1;
+  animation-name: link-draw;
+  animation-timing-function: ease-out;
+  animation-fill-mode: both;
 }
 
 .link-box {
@@ -58,9 +112,35 @@
   animation: link-show 0.2s ease-out forwards;
 }
 
+.link-dot {
+  fill: currentColor;
+  filter: drop-shadow(0 0 5px currentColor);
+  animation: link-show 0.15s ease-out forwards;
+  opacity: 0;
+}
+
+/* A small label above the target, e.g. "+0.4 comedy". */
+.link-chip {
+  opacity: 0;
+  animation: link-show 0.2s ease-out forwards;
+}
+
+.link-chip rect {
+  fill: color-mix(in srgb, currentColor 22%, #0b0b0f);
+  stroke: currentColor;
+  stroke-opacity: 0.6;
+}
+
+.link-chip text {
+  fill: currentColor;
+  font-size: 11px;
+  font-weight: 650;
+  font-variant-numeric: tabular-nums;
+}
+
 @keyframes link-fade {
   0%,
-  65% {
+  70% {
     opacity: 1;
   }
   100% {
@@ -86,9 +166,9 @@
   }
 }
 
-/* Keep the lines and highlights, drop the moving parts. */
+/* Keep the lines, highlights and labels, drop the moving parts. */
 @media (prefers-reduced-motion: reduce) {
-  .link-dot {
+  .link-head {
     display: none;
   }
 
@@ -97,8 +177,16 @@
     animation: none;
   }
 
-  .link-box {
+  .link-box,
+  .link-dot,
+  .link-chip,
+  .link-notch {
     opacity: 1;
+    animation: none;
+  }
+
+  .link-trace {
+    stroke-dashoffset: 0;
     animation: none;
   }
 }

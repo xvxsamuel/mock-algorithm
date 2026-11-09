@@ -1,4 +1,5 @@
 import type { Video } from "../data/videos";
+import type { FeedSource } from "./sources";
 
 /** What the user did while a video was on screen. */
 export type Interactions = {
@@ -18,12 +19,19 @@ export type Impression = {
   index: number;
   video: Video;
   startedAt: number;
+  /** The session clock when it started: time given to the feed, not
+      counting time the clock stood still. */
+  clockAt: number;
   /** null while the video is still on screen. */
   endedAt: number | null;
   /** Time actually spent watching (pauses not included). */
   watchMs: number;
   /** The user scrolled back up to watch this again. */
   revisit: boolean;
+  /** How long the app predicted you would watch, before it played. */
+  predictedMs: number;
+  /** Who put this video in the feed. */
+  source: FeedSource;
   interactions: Interactions;
 };
 
@@ -31,15 +39,21 @@ export function startImpression(
   video: Video,
   index: number,
   now: number,
+  clockAt: number,
   revisit: boolean,
+  predictedMs: number,
+  source: FeedSource,
 ): Impression {
   return {
     index,
     video,
     startedAt: now,
+    clockAt,
     endedAt: null,
     watchMs: 0,
     revisit,
+    predictedMs,
+    source,
     interactions: {
       liked: false,
       saved: false,

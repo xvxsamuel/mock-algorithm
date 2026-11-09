@@ -1,0 +1,210 @@
+.strip {
+  flex-shrink: 0;
+  padding-top: 12px;
+  border-top: 1px solid var(--line);
+  container: strip / inline-size;
+}
+
+.strip-head {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 4px 16px;
+  margin-bottom: 8px;
+}
+
+.strip-legend {
+  display: flex;
+  gap: 14px;
+  color: var(--muted);
+  font-size: 11px;
+}
+
+.strip-legend li::before {
+  content: "";
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  margin-right: 6px;
+  border-radius: 2px;
+  background: var(--tone);
+}
+
+.strip-cells {
+  display: grid;
+  grid-template-columns: repeat(22, minmax(0, 1fr));
+  gap: 4px;
+  padding-bottom: 13px;
+}
+
+.strip-cell,
+.strip-legend li {
+  --tone: var(--you);
+}
+
+.strip-cell.is-explore,
+.strip-legend .is-explore {
+  --tone: var(--engine);
+}
+
+.strip-cell.is-rescue,
+.strip-legend .is-rescue {
+  --tone: var(--take);
+}
+
+.strip-cell.is-ad,
+.strip-legend .is-ad {
+  --tone: var(--platform);
+}
+
+/* Pushed by fake accounts, from outside the app. */
+.strip-cell.is-pushed,
+.strip-legend .is-pushed {
+  --tone: var(--influence);
+}
+
+/* Paid for, with no label on the phone: whoever chose it, plus an amber
+   coin in the corner. */
+.strip-cell.is-paid::before {
+  content: "";
+  position: absolute;
+  top: -4px;
+  right: -4px;
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--platform);
+  box-shadow: 0 0 0 1.5px var(--bg);
+}
+
+.strip-cell {
+  position: relative;
+  display: grid;
+  place-items: center;
+  aspect-ratio: 1;
+  border: 1.5px solid color-mix(in srgb, var(--tone) 80%, transparent);
+  border-radius: 7px;
+  background: color-mix(in srgb, var(--tone) 30%, var(--bg));
+  animation: strip-in 0.5s var(--ease);
+}
+
+@keyframes strip-in {
+  from {
+    opacity: 0;
+    transform: scale(0.6);
+  }
+}
+
+.strip-emoji {
+  font-size: clamp(11px, 1vw, 16px);
+  line-height: 1;
+}
+
+.strip-earlier.is-narrow {
+  display: none;
+}
+
+.strip-earlier {
+  display: grid;
+  place-items: center;
+  aspect-ratio: 1;
+  color: var(--muted);
+  font-size: 11px;
+  font-weight: 650;
+  font-variant-numeric: tabular-nums;
+}
+
+/* After "next": the feed never runs out. */
+.strip-end {
+  display: grid;
+  place-items: center;
+  aspect-ratio: 1;
+  border-radius: 7px;
+  background: linear-gradient(90deg, rgb(255 255 255 / 0.06), transparent);
+  color: var(--muted);
+  font-size: 16px;
+  line-height: 1;
+}
+
+/* "now" and "next" under the last two tiles. */
+.strip-cell[data-tag]::after {
+  content: attr(data-tag);
+  position: absolute;
+  top: calc(100% + 2px);
+  left: 50%;
+  color: var(--muted);
+  font-size: 10.5px;
+  font-weight: 600;
+  transform: translateX(-50%);
+}
+
+.strip-cell.is-now::after {
+  color: var(--text);
+}
+
+/* Small tiles: "now" ends at its tile's right edge and "next" starts at its
+   tile's left edge, so the two never run together. */
+@container strip (400px < width < 640px) {
+  .strip-cell.is-now::after {
+    left: auto;
+    right: 0;
+    transform: none;
+  }
+
+  .strip-cell.is-next::after {
+    left: 0;
+    transform: none;
+  }
+}
+
+.strip-cell.is-now {
+  border-color: var(--text);
+  box-shadow: 0 0 0 1px var(--text);
+}
+
+/* Already picked for you, before you even swiped. */
+.strip-cell.is-next {
+  border-style: dashed;
+  background: transparent;
+  opacity: 0.75;
+}
+
+/* A rescue stays loud, queued or playing. */
+.strip-cell.is-next.is-rescue,
+.strip-cell.is-now.is-rescue {
+  border-style: solid;
+  border-color: var(--take);
+  background: rgb(254 44 85 / 0.22);
+  box-shadow: 0 0 12px rgb(254 44 85 / 0.55);
+  opacity: 1;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .strip-cell {
+    animation: none;
+  }
+}
+
+@media (max-width: 560px) {
+  /* All five colours can be in the key at once. */
+  .strip-legend {
+    flex-wrap: wrap;
+    gap: 2px 12px;
+  }
+
+  .strip-cells {
+    grid-template-columns: repeat(11, minmax(0, 1fr));
+  }
+
+  /* Keep the last 11 tiles, or the last 10 after a "+N". */
+  .strip-cell:nth-last-child(n + 12),
+  .is-narrow-full > .strip-cell:nth-last-child(n + 11),
+  .strip-earlier.is-wide {
+    display: none;
+  }
+
+  .strip-earlier.is-narrow {
+    display: grid;
+  }
+}

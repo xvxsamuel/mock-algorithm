@@ -1,0 +1,467 @@
+/* --- Sold so far: a tile for each thing sold, and what you fetched --- */
+
+.mkt-sold-body {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-content: start;
+  align-items: center;
+  gap: 24px;
+}
+
+/* Like a receipt: what you were sold for, and for how long. */
+.mkt-total {
+  text-align: right;
+}
+
+.mkt-for {
+  margin: 6px 0 0;
+  color: var(--muted);
+  font-size: 12px;
+}
+
+.mkt-for b {
+  color: var(--text);
+  font-weight: 650;
+  font-variant-numeric: tabular-nums;
+}
+
+.mkt-earned {
+  margin: 0;
+  color: var(--platform);
+  font-size: 46px;
+  font-weight: 700;
+  line-height: 1;
+  letter-spacing: -0.02em;
+  font-variant-numeric: tabular-nums;
+}
+
+.mkt-earned.is-zero {
+  color: var(--muted);
+}
+
+.mkt-sales-wrap {
+  display: grid;
+  gap: 10px;
+  min-width: 0;
+}
+
+.mkt-sales {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  min-height: 32px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.mkt-sale {
+  display: grid;
+  place-items: center;
+  width: 32px;
+  height: 32px;
+  border-radius: 7px;
+  font-size: 16px;
+  line-height: 1;
+  animation: mkt-in 0.5s var(--ease);
+}
+
+@keyframes mkt-in {
+  from {
+    opacity: 0;
+    transform: scale(0.6);
+  }
+}
+
+/* An ad: labelled, and paid for per view. Solid, out in the open. */
+.mkt-sale.is-ad {
+  background: var(--platform);
+  text-shadow: 0 0 3px rgb(0 0 0 / 0.6);
+}
+
+/* Paid, and nothing on the phone said so: dashed, like something hidden. */
+.mkt-sale.is-paid {
+  border: 1.5px dashed var(--platform);
+}
+
+/* Outside the border, so a dashed tile still looks dashed. */
+.mkt-sale.is-now {
+  outline: 2px solid var(--text);
+  outline-offset: 3px;
+}
+
+.mkt-earlier {
+  align-self: center;
+  color: var(--muted);
+  font-size: 11px;
+  font-weight: 650;
+}
+
+.mkt-key {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 14px;
+  margin: 0;
+  color: var(--muted);
+  font-size: 11px;
+}
+
+/* The bar key and its unit right under the auction's title, before any
+   price, so no one reads €6.56 as one view. */
+.mkt-auction > .pane-head {
+  order: -2;
+}
+
+.mkt-key.is-bars {
+  order: -1;
+  margin-bottom: 12px;
+}
+
+/* Who paid for what is on the phone right now. */
+.mkt-now {
+  margin: 0;
+  color: var(--text);
+  font-size: 13px;
+  line-height: 1.35;
+  animation: mkt-in 0.4s var(--ease);
+}
+
+.mkt-now b {
+  color: var(--platform);
+  font-weight: 650;
+}
+
+.mkt-now .mkt-chip {
+  display: inline-block;
+  margin-left: 6px;
+}
+
+.mkt-key-item::before {
+  content: "";
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  margin-right: 6px;
+  border-radius: 2px;
+  background: var(--tone);
+}
+
+.mkt-key-item.is-ad {
+  --tone: var(--platform);
+}
+
+.mkt-key-item.is-paid::before {
+  box-sizing: border-box;
+  border: 1px dashed var(--platform);
+  background: transparent;
+}
+
+.mkt-key-item.is-anyone {
+  --tone: var(--engine);
+}
+
+.mkt-key-item.is-you {
+  --tone: var(--you);
+}
+
+.mkt-per {
+  margin-left: auto;
+}
+
+/* --- The auction: every advertiser's bid for you, grown by your data --- */
+
+/* Rows grow up to a cap. Never squeezed below its bids: on a short screen
+   the lens scrolls instead. */
+.lens > .mkt-auction {
+  display: flex;
+  flex: none;
+  flex-direction: column;
+}
+
+.mkt-stage {
+  margin: 0;
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.mkt-stage.is-sold {
+  color: var(--platform);
+}
+
+/* Equal rows, so the bars keep one rhythm whether or not they have reasons. */
+.mkt-bids {
+  display: grid;
+  flex: 1 1 auto;
+  grid-auto-rows: minmax(auto, 62px);
+  align-content: start;
+  gap: 8px;
+  min-height: 0;
+  margin: 0 0 12px;
+  padding: 0;
+  list-style: none;
+}
+
+.mkt-bid {
+  display: grid;
+  grid-template-areas:
+    "brand track price"
+    ". because sold";
+  grid-template-columns: 150px minmax(0, 1fr) 70px;
+  align-content: start;
+  align-items: center;
+  gap: 6px 14px;
+}
+
+/* Runners-up are dimmed, but what they would buy about you is not. */
+.mkt-bid > :not(.mkt-because) {
+  opacity: 0.7;
+  transition: opacity 0.4s var(--ease);
+}
+
+.mkt-brand {
+  display: flex;
+  grid-area: brand;
+  align-items: center;
+  gap: 10px;
+  overflow: hidden;
+  font-size: 15px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.mkt-logo {
+  font-size: 22px;
+  line-height: 1;
+}
+
+.mkt-track {
+  position: relative;
+  grid-area: track;
+  height: 16px;
+  overflow: hidden;
+  border-radius: 8px;
+  background: var(--line);
+}
+
+/* What it would pay for anyone, then what knowing you adds on top. */
+.mkt-anyone,
+.mkt-you {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  transition:
+    left 0.6s var(--ease),
+    width 0.6s var(--ease);
+  animation: mkt-grow 0.8s var(--ease) both;
+}
+
+.mkt-anyone {
+  left: 0;
+  background: var(--engine);
+}
+
+.mkt-you {
+  background: var(--you);
+  animation-delay: 0.25s;
+}
+
+@keyframes mkt-grow {
+  from {
+    width: 0;
+  }
+}
+
+.mkt-price {
+  grid-area: price;
+  font-size: 16px;
+  font-weight: 650;
+  font-variant-numeric: tabular-nums;
+  text-align: right;
+}
+
+/* Reasons hang under the cyan part they explain (indented in the markup). */
+.mkt-because {
+  display: flex;
+  flex-wrap: wrap;
+  grid-area: because;
+  gap: 4px;
+}
+
+/* What about you it is buying. Cyan: it is yours. */
+.mkt-chip {
+  padding: 2px 9px;
+  border-radius: 999px;
+  background: rgb(37 244 238 / 0.12);
+  color: var(--you);
+  font-size: 12px;
+  font-weight: 600;
+}
+
+/* The highest bid: its price in amber. Once the slot is gone, it is sold. */
+.mkt-bid.is-lead > *,
+.mkt-bid.is-won > * {
+  opacity: 1;
+}
+
+.mkt-bid.is-lead .mkt-price,
+.mkt-bid.is-won .mkt-price {
+  color: var(--platform);
+  font-size: 19px;
+}
+
+/* The bid that gets you is drawn heavier than the rest. */
+.mkt-bid.is-lead .mkt-track,
+.mkt-bid.is-won .mkt-track {
+  height: 24px;
+  border-radius: 12px;
+}
+
+.mkt-chip.is-sold {
+  grid-area: sold;
+  justify-self: end;
+  background: var(--platform);
+  color: #1a1206;
+  font-weight: 700;
+  animation: mkt-in 0.4s var(--ease) 0.6s both;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .mkt-sale,
+  .mkt-now,
+  .mkt-anyone,
+  .mkt-you,
+  .mkt-chip.is-sold {
+    animation: none;
+  }
+
+  .mkt-anyone,
+  .mkt-you {
+    transition: none;
+  }
+}
+
+@media (max-height: 860px) {
+  .mkt-earned {
+    font-size: 36px;
+  }
+
+  /* A bid without a reason is one line, so all of them and the key fit. */
+  .mkt-bids {
+    grid-auto-rows: auto;
+    gap: 4px;
+    margin-bottom: 8px;
+  }
+
+  .mkt-bid {
+    grid-template-columns: 132px minmax(0, 1fr) 58px;
+    gap: 4px 12px;
+  }
+
+  .mkt-brand {
+    gap: 8px;
+    font-size: 13px;
+  }
+
+  .mkt-logo {
+    font-size: 18px;
+  }
+
+  .mkt-track {
+    height: 10px;
+    border-radius: 5px;
+  }
+
+  .mkt-price {
+    font-size: 14px;
+  }
+
+  .mkt-chip {
+    padding: 1px 7px;
+    font-size: 11px;
+  }
+
+  .mkt-now {
+    font-size: 12px;
+  }
+
+  .mkt-bid.is-lead .mkt-track,
+  .mkt-bid.is-won .mkt-track {
+    height: 16px;
+    border-radius: 8px;
+  }
+
+  .mkt-bid.is-lead .mkt-price,
+  .mkt-bid.is-won .mkt-price {
+    font-size: 16px;
+  }
+
+  .mkt-sale {
+    width: 28px;
+    height: 28px;
+    font-size: 14px;
+  }
+
+  .mkt-sales {
+    min-height: 28px;
+  }
+}
+
+/* 720 px tall laptops: the lowest bids give way, so every bid shown keeps
+   its reason in view. */
+@media (max-height: 760px) and (min-width: 901px) {
+  .mkt-bid:nth-child(n + 5) {
+    display: none;
+  }
+}
+
+/* Stacked layout: the page scrolls, so nothing stretches or shrinks. */
+@media (max-width: 900px) {
+  .lens > .mkt-auction,
+  .mkt-bids {
+    flex: none;
+  }
+}
+
+/* Phones: the total first, then the tiles across the full width. */
+@media (max-width: 560px) {
+  .mkt-sold-body {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 12px;
+  }
+
+  .mkt-total {
+    order: -1;
+    text-align: left;
+  }
+
+  /* Two lines kept for the key or who paid, so nothing below jumps. */
+  .mkt-sold .mkt-key,
+  .mkt-now {
+    min-height: 34px;
+    align-content: flex-start;
+  }
+
+  .mkt-earned {
+    font-size: 34px;
+  }
+
+  /* A bid whose reasons wrap gets the height it needs. */
+  .mkt-bids {
+    grid-auto-rows: auto;
+  }
+
+  .mkt-bid {
+    grid-template-columns: 104px minmax(0, 1fr) 54px;
+    column-gap: 8px;
+  }
+
+  .mkt-brand {
+    gap: 6px;
+    font-size: 12px;
+  }
+
+  .mkt-per {
+    margin-left: 0;
+  }
+}

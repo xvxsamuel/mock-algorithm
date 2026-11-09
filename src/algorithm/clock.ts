@@ -1,0 +1,5 @@
+/** "1:05" for 65 seconds. */
+export function formatClock(ms: number): string {
+  const total = Math.floor(ms / 1000);
+  return `${Math.floor(total / 60)}:${String(total % 60).padStart(2, "0")}`;
+}

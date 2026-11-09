@@ -1,0 +1,563 @@
+/* --- A bot network: fake accounts, one video, the people it picks --- */
+
+/* The stage takes the room the lens has; the pushes below keep theirs. */
+.lens > .inf-network {
+  display: flex;
+  flex: 1 1 auto;
+  flex-direction: column;
+  min-height: 0;
+}
+
+/* Everything on it is placed in % of its size, so it scales as one. */
+.inf-stage {
+  position: relative;
+  flex: 1 1 auto;
+  min-height: 220px;
+}
+
+/* Each sits just above its group. */
+.inf-label {
+  position: absolute;
+  margin: 0;
+  color: color-mix(in srgb, var(--muted), var(--text) 35%);
+  font-size: 12px;
+  font-weight: 600;
+  white-space: nowrap;
+  transform: translateX(-50%);
+}
+
+.inf-label.is-bots {
+  top: calc(18% - 28px);
+  left: 17%;
+}
+
+.inf-label.is-people {
+  top: calc(28% - 32px);
+  left: 85%;
+}
+
+/* A fake account. The inner dot drifts; the outer one flies. */
+.inf-bot {
+  position: absolute;
+  z-index: 3;
+  width: 6px;
+  height: 6px;
+  pointer-events: none;
+}
+
+.inf-bot > span {
+  display: block;
+  width: 100%;
+  height: 100%;
+  border-radius: 50%;
+  background: var(--influence);
+  box-shadow: 0 0 6px rgb(167 139 250 / 0.7);
+  animation: inf-drift 4.2s ease-in-out infinite alternate;
+}
+
+@keyframes inf-drift {
+  from {
+    transform: translate(-2px, 1px);
+  }
+  to {
+    transform: translate(2px, -2px);
+  }
+}
+
+/* The video they boost, in the colours of the topic it is dressed as. */
+.inf-card {
+  position: absolute;
+  top: 14%;
+  bottom: 12%;
+  left: 50%;
+  z-index: 2;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  padding: 26px 9px 26px;
+  aspect-ratio: 3 / 5;
+  border-radius: 12px;
+  box-shadow: 0 8px 28px rgb(0 0 0 / 0.5);
+  transform: translateX(-50%);
+  transition: box-shadow 0.4s var(--ease);
+}
+
+.inf-card.is-trending {
+  box-shadow:
+    0 0 0 2px var(--influence),
+    0 0 28px rgb(167 139 250 / 0.55);
+}
+
+.inf-emoji {
+  margin-block: auto;
+  font-size: 40px;
+  line-height: 1;
+}
+
+/* Its message, in the same white sticker as every video on the phone. */
+.inf-overlay {
+  display: -webkit-box;
+  flex: none;
+  order: -1;
+  max-width: 92%;
+  margin: 0;
+  overflow: hidden;
+  font-size: 13px;
+  line-height: 1.75;
+  text-align: center;
+  text-wrap: balance;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 5;
+  line-clamp: 5;
+}
+
+.inf-sticker {
+  padding: 2px 5px;
+  border-radius: 4px;
+  background: #fff;
+  color: #000;
+  font-weight: 800;
+  -webkit-box-decoration-break: clone;
+  box-decoration-break: clone;
+}
+
+.inf-likes {
+  position: absolute;
+  bottom: 8px;
+  left: 0;
+  right: 0;
+  color: #fff;
+  font-size: 12px;
+  font-weight: 700;
+  text-align: center;
+  text-shadow: 0 1px 3px rgb(0 0 0 / 0.6);
+  font-variant-numeric: tabular-nums;
+}
+
+/* What the engine makes of the fake likes: grey is the engine, violet the
+   trend the outsiders bought. */
+.inf-trending {
+  position: absolute;
+  top: 0;
+  left: 50%;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 2px 10px;
+  border-radius: 999px;
+  background: var(--influence);
+  color: #160f2a;
+  font-size: 12px;
+  font-weight: 750;
+  white-space: nowrap;
+  transform: translate(-50%, -50%);
+  animation: inf-pop 0.4s var(--ease);
+}
+
+@keyframes inf-pop {
+  from {
+    opacity: 0;
+    transform: translate(-50%, -50%) scale(0.6);
+  }
+}
+
+/* From the video out to the people it picked: you get the boldest one. */
+.inf-fan {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+}
+
+/* From the fake accounts into the video they made popular. */
+.inf-feed {
+  stroke: var(--influence);
+  stroke-width: 1;
+  stroke-dasharray: 3 4;
+  stroke-opacity: 0.4;
+}
+
+.inf-ray {
+  stroke: var(--influence);
+  stroke-width: 1.5;
+  stroke-opacity: 0.45;
+  stroke-linecap: round;
+}
+
+.inf-ray.is-you {
+  stroke-width: 3;
+  stroke-opacity: 1;
+}
+
+/* A person: a head and shoulders. Brighter means rated easier to move. */
+.inf-person {
+  position: absolute;
+  z-index: 2;
+  width: 12px;
+  height: 14px;
+  border-radius: 50%;
+  color: rgb(255 255 255 / 0.2);
+  transform: translate(-50%, -50%);
+  transition:
+    color 0.3s var(--ease),
+    filter 0.3s var(--ease);
+}
+
+.inf-person::before,
+.inf-person::after {
+  content: "";
+  position: absolute;
+  left: 50%;
+  background: currentColor;
+  box-shadow: 0 0 0 2px var(--surface);
+  transform: translateX(-50%);
+}
+
+.inf-person::before {
+  top: 0;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+}
+
+.inf-person::after {
+  bottom: 0;
+  width: 12px;
+  height: 6px;
+  border-radius: 6px 6px 2px 2px;
+}
+
+.inf-person.is-lit {
+  color: var(--influence);
+  filter: drop-shadow(0 0 4px rgb(167 139 250 / 0.7));
+}
+
+/* You: ringed in your colour, picked like the rest. */
+.inf-person.is-you {
+  outline: 2px solid var(--you);
+  outline-offset: 4px;
+}
+
+.inf-person.is-you.is-lit {
+  animation: inf-hit 0.9s var(--ease);
+}
+
+/* The moment it lands on you: one hard ring. */
+@keyframes inf-hit {
+  0% {
+    box-shadow: 0 0 0 4px rgb(37 244 238 / 0.9);
+  }
+  100% {
+    box-shadow: 0 0 0 22px rgb(37 244 238 / 0);
+  }
+}
+
+.inf-you-label {
+  position: absolute;
+  color: var(--you);
+  font-size: 11px;
+  font-weight: 650;
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+  transform: translateX(-50%);
+}
+
+.inf-release {
+  position: absolute;
+  bottom: 0;
+  left: 17%;
+  z-index: 4;
+  padding: 6px 16px;
+  border: 1.5px solid var(--influence);
+  border-radius: 999px;
+  background: var(--influence);
+  color: #160f2a;
+  font-size: 13px;
+  font-weight: 700;
+  white-space: nowrap;
+  cursor: pointer;
+  transform: translateX(-50%);
+  transition:
+    background 0.25s var(--ease),
+    color 0.25s var(--ease),
+    box-shadow 0.25s var(--ease);
+}
+
+.inf-release:hover:not(:disabled) {
+  box-shadow: 0 0 18px rgb(167 139 250 / 0.55);
+}
+
+.inf-release:focus-visible {
+  outline: 2px solid var(--text);
+  outline-offset: 3px;
+}
+
+/* Released: it runs by itself now. */
+.inf-release:disabled {
+  border-color: transparent;
+  background: transparent;
+  color: var(--influence);
+  cursor: default;
+}
+
+/* --- Pushed to you: each push as a tile, and how movable it rates you --- */
+
+.inf-pushed-body {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 24px;
+}
+
+.inf-tiles-wrap {
+  display: grid;
+  gap: 10px;
+  min-width: 0;
+}
+
+/* The tiles, and beside them what the one on your phone is dressed as. */
+.inf-tiles-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 14px;
+}
+
+.inf-tiles {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  min-height: 32px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.inf-tile {
+  display: grid;
+  place-items: center;
+  width: 32px;
+  height: 32px;
+  border: 1.5px solid color-mix(in srgb, var(--influence) 80%, transparent);
+  border-radius: 7px;
+  background: color-mix(in srgb, var(--influence) 30%, var(--bg));
+  font-size: 16px;
+  line-height: 1;
+  animation: inf-in 0.5s var(--ease);
+}
+
+@keyframes inf-in {
+  from {
+    opacity: 0;
+    transform: scale(0.6);
+  }
+}
+
+/* Still to come. */
+.inf-tile.is-empty {
+  border-style: dashed;
+  border-color: color-mix(in srgb, var(--influence) 45%, transparent);
+  background: transparent;
+  animation: none;
+}
+
+.inf-tile.is-now {
+  outline: 2px solid var(--text);
+  outline-offset: 3px;
+}
+
+.inf-why {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  min-height: 22px;
+  margin: 0;
+}
+
+/* What about you it reads as easy to move. Cyan: it is yours. */
+.inf-none {
+  color: var(--muted);
+  font-size: 12px;
+}
+
+.inf-chip {
+  padding: 2px 9px;
+  border-radius: 999px;
+  background: rgb(37 244 238 / 0.12);
+  color: var(--you);
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.inf-now {
+  margin: 0;
+  color: var(--text);
+  font-size: 13px;
+  line-height: 1.35;
+  animation: inf-in 0.4s var(--ease);
+}
+
+.inf-now b {
+  color: var(--influence);
+  font-weight: 650;
+}
+
+.inf-score {
+  text-align: right;
+}
+
+.inf-kicker {
+  margin: 0 0 4px;
+  color: var(--muted);
+  font-size: 12px;
+}
+
+.inf-figure {
+  margin: 0;
+  color: var(--you);
+  font-size: 46px;
+  font-weight: 700;
+  line-height: 1;
+  letter-spacing: -0.02em;
+  font-variant-numeric: tabular-nums;
+  transition: color 0.4s var(--ease);
+}
+
+/* Before any reason: only the baseline it assumes of everyone. */
+.inf-figure.is-guess {
+  color: var(--muted);
+}
+
+.inf-pct {
+  margin-left: 2px;
+  font-size: 0.5em;
+  letter-spacing: 0;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .inf-bot > span,
+  .inf-person.is-you.is-lit,
+  .inf-trending,
+  .inf-tile,
+  .inf-now {
+    animation: none;
+  }
+
+  .inf-card,
+  .inf-person {
+    transition: none;
+  }
+}
+
+@media (max-height: 860px) {
+  .inf-stage {
+    min-height: 190px;
+  }
+
+  .inf-figure {
+    font-size: 36px;
+  }
+
+  .inf-tile {
+    width: 28px;
+    height: 28px;
+    font-size: 14px;
+  }
+
+  .inf-tiles {
+    min-height: 28px;
+  }
+
+  .inf-overlay {
+    font-size: 12px;
+  }
+
+  .inf-emoji {
+    font-size: 32px;
+  }
+}
+
+/* Stacked layout: the stage takes whatever height the sheet has spare. */
+@media (max-width: 900px) {
+  .lens > .inf-network {
+    flex: 1 0 auto;
+  }
+
+  .inf-stage {
+    flex: 1 0 250px;
+  }
+}
+
+/* Phones: the score first, then the tiles across the full width. */
+@media (max-width: 560px) {
+  .inf-stage {
+    flex-basis: 220px;
+  }
+
+  /* Both labels go up to the top edge, out of the trending chip's way. */
+  .inf-label {
+    top: 0;
+    font-size: 11px;
+    transform: none;
+  }
+
+  .inf-label.is-bots {
+    top: 0;
+    left: 0;
+  }
+
+  .inf-label.is-people {
+    top: 0;
+    left: auto;
+    right: 0;
+  }
+
+  .inf-card {
+    padding: 20px 8px 26px;
+  }
+
+  .inf-overlay {
+    max-width: 100%;
+    font-size: 10.5px;
+    -webkit-line-clamp: 4;
+    line-clamp: 4;
+  }
+
+  .inf-emoji {
+    font-size: 26px;
+  }
+
+  .inf-person {
+    transform: translate(-50%, -50%) scale(0.8);
+  }
+
+  .inf-release {
+    left: 0;
+    padding: 5px 12px;
+    font-size: 12px;
+    transform: none;
+  }
+
+  .inf-pushed-body {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 12px;
+  }
+
+  .inf-score {
+    order: -1;
+    text-align: left;
+  }
+
+  .inf-figure {
+    font-size: 34px;
+  }
+}
+
+/* The two halves of a label, set apart by space rather than a dot. */
+.inf-cost {
+  margin-left: 8px;
+  opacity: 0.75;
+}

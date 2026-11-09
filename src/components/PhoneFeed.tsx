@@ -1,8 +1,10 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, type ReactNode } from "react";
+import { advertiserOf } from "../data/ads";
 import type { FeedController } from "../hooks/useFeed";
 import CommentsSheet from "./CommentsSheet";
 import Icon from "./Icon";
 import ShareSheet from "./ShareSheet";
+import StartGate from "./StartGate";
 import VideoCard from "./VideoCard";
 import "./PhoneFeed.css";
 
@@ -13,10 +15,14 @@ const TOAST_MS = 1800;
 
 type Sheet = "comments" | "share" | null;
 
-type PhoneFeedProps = { feed: FeedController };
+type PhoneFeedProps = {
+  feed: FeedController;
+  /** Laid over the screen, like the start gate. */
+  children?: ReactNode;
+};
 
 /** The TikTok-like side: a phone with an endless vertical feed. */
-function PhoneFeed({ feed }: PhoneFeedProps) {
+function PhoneFeed({ feed, children }: PhoneFeedProps) {
   const scroller = useRef<HTMLDivElement>(null);
   const [sheet, setSheet] = useState<Sheet>(null);
   const [toast, setToast] = useState<string | null>(null);
@@ -24,6 +30,34 @@ function PhoneFeed({ feed }: PhoneFeedProps) {
   const [myComments, setMyComments] = useState<Record<string, string[]>>({});
   const { items, activeIndex, view } = feed;
   const activeVideo = items[activeIndex].video;
+  // The card height when the feed last settled, and the video on screen.
+  // A resize changes the height: the same video should stay on screen.
+  const cardHeight = useRef(0);
+  const shownIndex = useRef(activeIndex);
+
+  useEffect(() => {
+    shownIndex.current = activeIndex;
+  }, [activeIndex]);
+
+  useEffect(() => {
+    const element = scroller.current;
+    if (!element) return;
+    cardHeight.current = element.clientHeight;
+    const observer = new ResizeObserver(() => keepCard(element));
+    observer.observe(element);
+    return () => observer.disconnect();
+  }, []);
+
+  /** After a resize, puts the video that was on screen back on screen. */
+  function keepCard(element: HTMLElement): boolean {
+    if (element.clientHeight === cardHeight.current) return false;
+    cardHeight.current = element.clientHeight;
+    element.scrollTo({
+      top: shownIndex.current * element.clientHeight,
+      behavior: "instant",
+    });
+    return true;
+  }
 
   // Arrow keys move between videos, like TikTok on desktop.
   useEffect(() => {
@@ -33,13 +67,14 @@ function PhoneFeed({ feed }: PhoneFeedProps) {
         return;
       }
       if (event.key !== "ArrowDown" && event.key !== "ArrowUp") return;
+      if (!feed.started || feed.ended || feed.held) return;
       event.preventDefault();
       const step = event.key === "ArrowDown" ? 1 : -1;
       scrollToCard(scroller.current, activeIndex + step);
     }
     window.addEventListener("keydown", handleKey);
     return () => window.removeEventListener("keydown", handleKey);
-  }, [activeIndex, sheet]);
+  }, [activeIndex, sheet, feed.started, feed.ended, feed.held]);
 
   useEffect(() => {
     if (toast === null) return;
@@ -50,6 +85,8 @@ function PhoneFeed({ feed }: PhoneFeedProps) {
   function handleScroll() {
     const element = scroller.current;
     if (!element) return;
+    // A resize moved the cards, not a swipe.
+    if (keepCard(element)) return;
     const index = Math.round(element.scrollTop / element.clientHeight);
     if (index !== activeIndex) view(index);
   }
@@ -92,12 +129,17 @@ function PhoneFeed({ feed }: PhoneFeedProps) {
         </span>
       </div>
 
-      <div className="phone-feed" ref={scroller} onScroll={handleScroll}>
+      <div
+        className={feed.started ? "phone-feed" : "phone-feed is-locked"}
+        ref={scroller}
+        onScroll={handleScroll}
+      >
         {items.map((item, index) => (
           <div className="phone-slot" key={item.key}>
             {Math.abs(index - activeIndex) <= RENDER_DISTANCE && (
               <VideoCard
                 video={item.video}
+                sponsor={advertiserOf(item.video)}
                 active={index === activeIndex}
                 playing={feed.playing}
                 impressionIndex={feed.current.index}
@@ -171,6 +213,10 @@ function PhoneFeed({ feed }: PhoneFeedProps) {
           </div>
         </>
       )}
+
+      {children}
+
+      {!feed.started && <StartGate onStart={feed.begin} />}
 
       {toast !== null && (
         <div className="phone-toast" role="status">

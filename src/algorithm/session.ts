@@ -23,10 +23,9 @@ const EXPLORATION_RATE = { coldStart: 0.5, bored: 0.35, normal: 0.1 };
 /** Looks at the whole session and guesses the user's state and intent. */
 export function summarizeSession(
   impressions: readonly Impression[],
-  sessionStart: number,
+  sessionMs: number,
   now: number,
 ): SessionSummary {
-  const sessionMs = now - sessionStart;
   const count = impressions.length;
   const totalWatchMs = impressions.reduce((sum, i) => sum + i.watchMs, 0);
   const interactionRate =

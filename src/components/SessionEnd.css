@@ -1,0 +1,583 @@
+/* --- When you put the phone down: the whole session, in four parts --- */
+
+.end {
+  position: fixed;
+  inset: 0;
+  z-index: 60;
+  display: flex;
+  overflow-y: auto;
+  padding: 24px;
+  background: rgb(5 5 7 / 0.88);
+  backdrop-filter: blur(14px);
+  animation: end-in 0.5s var(--ease) both;
+}
+
+@keyframes end-in {
+  from {
+    opacity: 0;
+  }
+}
+
+.end:focus {
+  outline: none;
+}
+
+.end-inner {
+  display: grid;
+  gap: 14px;
+  width: min(1040px, 100%);
+  margin: auto;
+}
+
+.end-head {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 4px 16px;
+}
+
+.end-note {
+  margin: 0;
+  color: color-mix(in srgb, var(--muted), var(--text) 30%);
+  font-size: 12px;
+}
+
+.end-title {
+  margin: 0 0 2px;
+  font-size: 30px;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+}
+
+/* One beat at a time: your time, then the tiles (and, once they are in,
+   their counts), then what it keeps and the year, then the way out. */
+.end-pane {
+  animation: end-rise 0.6s var(--ease) both;
+}
+
+.end-feed {
+  animation-delay: 0.2s;
+}
+
+.end-keeps,
+.end-year {
+  animation-delay: 2.3s;
+}
+
+@keyframes end-rise {
+  from {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+}
+
+/* --- Your time --- */
+
+.end-times {
+  display: flex;
+  align-items: flex-end;
+  gap: 40px;
+  margin-bottom: 14px;
+}
+
+.end-stat {
+  display: grid;
+  gap: 6px;
+  margin: 0;
+}
+
+.end-stat.is-right {
+  margin-left: auto;
+  text-align: right;
+}
+
+.end-kicker {
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.end-clock {
+  font-size: 44px;
+  font-weight: 600;
+  line-height: 1;
+  letter-spacing: -0.03em;
+  font-variant-numeric: tabular-nums;
+}
+
+.end-clock.is-meant {
+  color: var(--you);
+}
+
+.end-stat.is-over .end-clock {
+  color: var(--take);
+  text-shadow: 0 0 24px rgb(254 44 85 / 0.45);
+}
+
+.end-stat.is-early .end-clock {
+  color: var(--you);
+}
+
+/* No limit: said beside the time, no bar under it. */
+.end-times:only-child {
+  margin-bottom: 0;
+}
+
+.end-open {
+  margin: 0 0 4px;
+  color: var(--muted);
+  font-size: 18px;
+  font-weight: 600;
+}
+
+/* Cyan up to your plan, pink for what it took past it. */
+.end-bar {
+  position: relative;
+  height: 8px;
+  border-radius: 4px;
+  background: var(--line);
+}
+
+.end-bar-part {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 0;
+  border-radius: 4px;
+  transform-origin: left;
+  animation: end-grow 0.6s var(--ease) 0.15s both;
+}
+
+.end-bar-part.is-meant {
+  background: var(--you);
+}
+
+.end-bar-part.is-over {
+  background: var(--take);
+  box-shadow: 0 0 14px rgb(254 44 85 / 0.6);
+  animation-duration: 0.45s;
+  animation-delay: 0.75s;
+}
+
+@keyframes end-grow {
+  from {
+    transform: scaleX(0);
+  }
+}
+
+.end-bar-mark {
+  position: absolute;
+  top: -5px;
+  width: 2px;
+  height: 18px;
+  border-radius: 1px;
+  background: var(--text);
+  transform: translateX(-1px);
+}
+
+/* --- Who chose what you saw --- */
+
+/* The line the whole app has been building to. */
+.end-verdict {
+  margin: 6px 0 12px;
+  font-size: 26px;
+  font-weight: 700;
+  line-height: 1.1;
+  letter-spacing: -0.02em;
+}
+
+.end-tiles {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+  margin: 0 0 14px;
+  padding: 0;
+  list-style: none;
+}
+
+.end-tiles.is-few .end-tile {
+  width: 40px;
+  height: 40px;
+  font-size: 20px;
+}
+
+/* The same tile as the strip, coloured by who chose it. */
+.end-tile {
+  --tone: var(--you);
+  position: relative;
+  display: grid;
+  place-items: center;
+  width: 34px;
+  height: 34px;
+  border: 1.5px solid color-mix(in srgb, var(--tone) 80%, transparent);
+  border-radius: 7px;
+  background: color-mix(in srgb, var(--tone) 30%, var(--bg));
+  font-size: 17px;
+  line-height: 1;
+  animation: end-pop 0.3s var(--ease) both;
+}
+
+@keyframes end-pop {
+  from {
+    opacity: 0;
+    transform: scale(0.5);
+  }
+}
+
+.end-tile.is-explore,
+.end-counts .is-explore {
+  --tone: var(--engine);
+}
+
+.end-tile.is-rescue,
+.end-counts .is-rescue {
+  --tone: var(--take);
+}
+
+.end-tile.is-ad,
+.end-counts .is-ad {
+  --tone: var(--platform);
+}
+
+.end-tile.is-pushed,
+.end-counts .is-pushed {
+  --tone: var(--influence);
+}
+
+/* Paid for with no label: an amber coin in the corner, as in the strip. */
+.end-tile.is-paid::before {
+  content: "";
+  position: absolute;
+  top: -4px;
+  right: -4px;
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--platform);
+  box-shadow: 0 0 0 1.5px var(--surface);
+}
+
+/* The video that steered what comes next the most (see "Your next"). */
+.end-tile.is-pivot {
+  outline: 2px solid #fff;
+  outline-offset: 2px;
+}
+
+/* Watched after your plan ran out: time it took, underlined in pink. */
+.end-tile.is-late::after {
+  content: "";
+  position: absolute;
+  left: 2px;
+  right: 2px;
+  bottom: -6px;
+  height: 2px;
+  border-radius: 1px;
+  background: var(--take);
+}
+
+.end-counts {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px 18px;
+  margin: 0;
+  padding: 0;
+  color: color-mix(in srgb, var(--muted), var(--text) 30%);
+  font-size: 13.5px;
+  list-style: none;
+  animation: end-in 0.3s var(--ease) 1.75s both;
+}
+
+.end-counts li {
+  --tone: var(--you);
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.end-counts li::before {
+  content: "";
+  width: 8px;
+  height: 8px;
+  border-radius: 2px;
+  background: var(--tone);
+}
+
+.end-counts b {
+  color: var(--text);
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+
+.end-counts .is-late::before {
+  height: 2px;
+  border-radius: 1px;
+  background: var(--take);
+}
+
+/* The amber coin on a tile: paid for, with no label on the phone. */
+.end-counts .is-paid::before {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--platform);
+}
+
+.end-price {
+  color: var(--platform);
+  font-weight: 650;
+  font-variant-numeric: tabular-nums;
+}
+
+/* --- What it keeps, and a year of it --- */
+
+.end-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1.25fr);
+  gap: 14px;
+}
+
+.end-keeps,
+.end-year {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.end-keeps .eyebrow,
+.end-year .eyebrow {
+  margin: 0;
+}
+
+.end-year-head {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 4px 16px;
+}
+
+/* One square of the calendar, and what it is. */
+.end-year-key {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--muted);
+  font-size: 12px;
+}
+
+.end-year-square {
+  width: 8px;
+  height: 8px;
+  border-radius: 2px;
+  background: var(--take);
+}
+
+.end-points {
+  display: grid;
+  gap: 4px;
+  margin: 0;
+  color: var(--text);
+  font-size: 40px;
+  font-weight: 700;
+  line-height: 1;
+  letter-spacing: -0.02em;
+  font-variant-numeric: tabular-nums;
+}
+
+.end-points span {
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0;
+}
+
+.end-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+/* Cyan: it is yours, and it keeps it. */
+.end-chip {
+  padding: 3px 10px;
+  border-radius: 999px;
+  background: rgb(37 244 238 / 0.12);
+  color: var(--you);
+  font-size: 12.5px;
+  font-weight: 600;
+}
+
+/* What outsiders read off it. */
+.end-chip.is-pushed {
+  background: rgb(167 139 250 / 0.14);
+  color: var(--influence);
+}
+
+.end-days {
+  display: flex;
+  align-items: baseline;
+  flex-wrap: wrap;
+  gap: 4px 12px;
+  margin: 0;
+}
+
+.end-days b {
+  color: var(--take);
+  font-size: 28px;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+}
+
+.end-days.is-earth b {
+  color: var(--earth);
+}
+
+.end-days.is-less {
+  margin-top: -6px;
+}
+
+.end-days.is-less b {
+  color: color-mix(in srgb, var(--earth) 65%, var(--surface));
+  font-size: 20px;
+}
+
+.end-days span {
+  color: color-mix(in srgb, var(--muted), var(--text) 30%);
+  font-size: 13.5px;
+}
+
+/* --- The way out, or back in --- */
+
+.end-actions {
+  display: flex;
+  justify-content: center;
+  gap: 12px;
+  padding-top: 6px;
+  animation: end-rise 0.6s var(--ease) 2.8s both;
+}
+
+.end-button {
+  padding: 9px 22px;
+  border: 1px solid var(--line-strong);
+  border-radius: 999px;
+  background: transparent;
+  color: var(--text);
+  font-size: 14px;
+  font-weight: 650;
+  cursor: pointer;
+  transition:
+    border-color 0.2s var(--ease),
+    background 0.2s var(--ease);
+}
+
+.end-button:hover {
+  border-color: var(--text);
+}
+
+.end-button.is-primary {
+  border-color: var(--text);
+  background: var(--text);
+  color: var(--bg);
+}
+
+.end-button.is-primary:hover {
+  background: #fff;
+}
+
+.end-button:focus-visible {
+  outline: 2px solid var(--you);
+  outline-offset: 3px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .end,
+  .end-pane,
+  .end-bar-part,
+  .end-tile,
+  .end-counts,
+  .end-actions {
+    animation: none;
+  }
+}
+
+@media (max-height: 820px) {
+  .end-inner {
+    gap: 10px;
+  }
+
+  .end-title {
+    font-size: 24px;
+  }
+
+  .end-clock {
+    font-size: 36px;
+  }
+
+  .end-points {
+    font-size: 32px;
+  }
+
+  .end-tile {
+    width: 26px;
+    height: 26px;
+    font-size: 13px;
+  }
+}
+
+@media (max-width: 760px) {
+  .end-row {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+@media (max-width: 560px) {
+  .end {
+    padding: 14px;
+  }
+
+  .end-title {
+    font-size: 22px;
+  }
+
+  .end-times {
+    flex-wrap: wrap;
+    gap: 18px;
+  }
+
+  .end-open {
+    font-size: 15px;
+  }
+
+  .end-verdict {
+    font-size: 22px;
+  }
+
+  .end-tiles.is-few .end-tile {
+    width: 30px;
+    height: 30px;
+    font-size: 15px;
+  }
+
+  .end-clock {
+    font-size: 30px;
+  }
+
+  .end-tile {
+    width: 24px;
+    height: 24px;
+    font-size: 12px;
+    border-radius: 6px;
+  }
+
+  .end-points {
+    font-size: 30px;
+  }
+
+  .end-actions {
+    flex-direction: column;
+  }
+}
