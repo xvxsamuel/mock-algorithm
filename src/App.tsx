@@ -4,9 +4,11 @@ import ChainCard from "./components/ChainCard";
 import LinkLayer from "./components/LinkLayer";
 import PhoneFeed from "./components/PhoneFeed";
 import PlanBreak from "./components/PlanBreak";
+import RoomScene from "./components/RoomScene";
 import SessionEnd from "./components/SessionEnd";
 import SheetHandle from "./components/SheetHandle";
 import { useFeed } from "./hooks/useFeed";
+import { useHash } from "./hooks/useHash";
 import { useLinks } from "./hooks/useLinks";
 
 /** With no limit set, the break card comes this far in. */
@@ -15,6 +17,12 @@ const OPEN_BREAK_MS = 3 * 60_000;
 const WHY_AFTER = 3;
 
 function App() {
+  // A prototype lives at #room: the feed from your own eyes, in a 3D room.
+  return useHash() === "#room" ? <RoomScene /> : <SplitView />;
+}
+
+/** The phone on the left, what the algorithm sees on the right. */
+function SplitView() {
   const feed = useFeed();
   // Lines from the phone to whatever part of the panel just changed.
   const { links, feedArea, trackPress, removeLink } = useLinks(feed);
