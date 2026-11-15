@@ -44,20 +44,20 @@ const DOTS = `url("data:image/svg+xml,${encodeURIComponent(
   ).join("")}</svg>`,
 )}")`;
 
-const VIEWS = ["phone", "up", "left"] as const;
+const CORNERS = ["tl", "tr", "br", "bl"] as const;
+
+const VIEWS = ["phone", "room"] as const;
 type View = (typeof VIEWS)[number];
 
 const VIEW_NAMES: Record<View, string> = {
   phone: "Phone",
-  up: "Look up",
-  left: "Look left",
+  room: "Room",
 };
 
 const VIEW_LOOKS: Record<View, Look> = {
   // A little above the phone, so the wall behind it shows over its top.
   phone: { yaw: 0, pitch: -20 },
-  up: { yaw: -5, pitch: 6 },
-  left: { yaw: -52, pitch: 2 },
+  room: { yaw: -5, pitch: 6 },
 };
 
 function clampLook(look: Look): Look {
@@ -78,7 +78,7 @@ function clampLook(look: Look): Look {
 function RoomScene() {
   const feed = useFeed();
   // Lines from the phone to whatever part of the panel just changed.
-  const { links, feedArea, trackPress, removeLink } = useLinks(feed);
+  const { links, feedArea, trackPress, pathOf, removeLink } = useLinks(feed);
   const session = useSession(feed);
   // Wide screens: the panel floats beside the phone, until you put it away.
   const wide = useMedia("(min-width: 901px)");
@@ -95,7 +95,10 @@ function RoomScene() {
   const canvas = useRef<HTMLCanvasElement>(null);
   const phone = useRef<HTMLDivElement>(null);
   const panel = useRef<HTMLElement>(null);
-  useHutScene(stage, canvas, phone, panel, {
+  // How far the feed is scrolled, in videos. The hut reads it every frame,
+  // so it is kept out of the page's state.
+  const scrolled = useRef(0);
+  useHutScene(stage, canvas, phone, panel, scrolled, {
     look,
     dragging,
     // Like the session clock, the hut waits while a card or the sheet is
@@ -174,7 +177,12 @@ function RoomScene() {
             onPointerDownCapture={trackPress}
             onPointerDown={(event) => event.stopPropagation()}
           >
-            <PhoneFeed feed={feed}>
+            <PhoneFeed
+              feed={feed}
+              onScrolled={(videos) => {
+                scrolled.current = videos;
+              }}
+            >
               {session.planBreak && (
                 <PlanBreak
                   feed={feed}
@@ -197,6 +205,16 @@ function RoomScene() {
               className="room-phone-dots"
               style={{ backgroundImage: DOTS, opacity: 1 / SHADES }}
             />
+            {/* Empty markers at the corners: the page puts them where the
+                hut has turned the phone's corners to, so the lines from the
+                phone know where it is. */}
+            {CORNERS.map((corner) => (
+              <span
+                key={corner}
+                className="room-phone-corner"
+                data-phone-corner={corner}
+              />
+            ))}
           </section>
         </div>
         {/* The hut and your hand, drawn over the phone with a hole in the
@@ -256,7 +274,7 @@ function RoomScene() {
           </>
         )}
       </button>
-      <LinkLayer links={links} onDone={removeLink} />
+      <LinkLayer links={links} onDone={removeLink} pathOf={pathOf} />
 
       <div className="room-looks" inert={feed.ended}>
         <div className="levers" role="group" aria-label="Where you look">

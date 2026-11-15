@@ -55,8 +55,16 @@ const HELD_AT = -20;
 const DROPPED_AT = 0;
 /** How fast the view catches up with where you look. */
 const EASE = 6;
-/** How long the thumb takes over one swipe. */
-const SWIPE_MS = 520;
+/** How long the thumb takes to come down on the glass, and to go back. */
+const PRESS_MS = 110;
+const LIFT_MS = 240;
+/** The thumb pushes the feed this far of the way to the next video. Then it
+    lets go, and the feed runs on by itself. */
+const STROKE = 0.6;
+/** Closer than this to a whole video, the feed counts as standing still. */
+const STILL = 0.005;
+/** How fast the thumb catches up with where the feed puts it. */
+const SLIDE_EASE = 40;
 /** Turns a point upside down: the page counts down, the hut counts up. */
 const FLIP = scaling(1, -1, 1);
 
@@ -66,6 +74,9 @@ const FLIP = scaling(1, -1, 1);
  * to where your hand holds it. With the panel open beside the phone, the
  * middle of the view is half way between the page's left edge and the panel.
  *
+ * `scrolled` is how far the feed is scrolled, in videos: 1.5 is half way
+ * from the second video to the third. The thumb moves with it.
+ *
  * Time in the hut only moves while you look at the phone. Look up and it
  * stands still, so you never see it pass: it is just later than it was.
  */
@@ -74,6 +85,7 @@ export function useHutScene(
   canvas: RefObject<HTMLCanvasElement | null>,
   phone: RefObject<HTMLElement | null>,
   panel: RefObject<HTMLElement | null>,
+  scrolled: RefObject<number>,
   input: HutInput,
 ): void {
   const latest = useRef(input);
@@ -134,8 +146,10 @@ export function useHutScene(
     /** Seconds you have looked at the phone while the feed ran. */
     let seconds = 0;
     let glow = colorOf(latest.current.glow);
-    let videos = latest.current.videos;
-    let swipedAt = -SWIPE_MS;
+    /** The video the feed last stood still on. */
+    let rested = Math.round(scrolled.current);
+    let press = 0;
+    let slide = 0;
     let before = performance.now();
     let request = 0;
 
@@ -192,11 +206,27 @@ export function useHutScene(
         ),
       );
 
-      if (want.videos !== videos) {
-        videos = want.videos;
-        if (!calm) swipedAt = now;
+      // The thumb swipes with the feed: down on the glass as the feed starts
+      // to move, along it for the first part of the way, then off again.
+      const at = scrolled.current;
+      const whole = Math.round(at);
+      if (Math.abs(at - whole) < STILL || Math.abs(at - rested) >= 1) {
+        rested = whole;
       }
-      const swipe = clamp((now - swipedAt) / SWIPE_MS, 0, 1);
+      const moved = at - rested;
+      const moving = Math.abs(moved) >= STILL;
+      const stroke = Math.min(Math.abs(moved) / STROKE, 1);
+      if (moving) {
+        // Forwards it pushes the feed up; backwards it pulls it down.
+        const wantSlide = moved > 0 ? stroke : 1 - stroke;
+        slide += (wantSlide - slide) * (1 - Math.exp(-elapsed * SLIDE_EASE));
+      }
+      const pressing = moving && stroke < 1 && !calm;
+      press = clamp(
+        press + (elapsed * 1000) / (pressing ? PRESS_MS : -LIFT_MS),
+        0,
+        1,
+      );
 
       glow = mix(glow, colorOf(want.glow), 1 - Math.exp(-elapsed * 3));
 
@@ -228,8 +258,8 @@ export function useHutScene(
         view,
         shift,
         phone: held,
-        props: { decay, hour: hourAfter(seconds), videos },
-        hand: { turned: smoothstep(0.3, 1, decay), swipe },
+        props: { decay, hour: hourAfter(seconds), videos: want.videos },
+        hand: { turned: smoothstep(0.3, 1, decay), press, slide },
         glow,
         time: beat,
       });
@@ -243,5 +273,5 @@ export function useHutScene(
       canvasElement.removeEventListener("webglcontextrestored", onRestored);
       renderer?.dispose();
     };
-  }, [stage, canvas, phone, panel]);
+  }, [stage, canvas, phone, panel, scrolled]);
 }

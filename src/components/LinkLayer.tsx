@@ -1,3 +1,4 @@
+import { useEffect, useRef } from "react";
 import type { Link } from "../hooks/useLinks";
 import "./LinkLayer.css";
 
@@ -8,7 +9,7 @@ const PING_MS = 900;
 /** How long the trace inside a card takes to reach its target. */
 const TRACE_MS = 260;
 /** Rough width of one character of a label, for its background. */
-const CHAR_PX = 6.6;
+const CHAR_PX = 8;
 /** Targets bigger than this (px²) are whole cards: outline only, no fill. */
 const CARD_AREA = 30_000;
 /** Targets taller than this (px), like a chart column, get a quieter box. */
@@ -18,6 +19,10 @@ type LinkLayerProps = {
   links: Link[];
   /** Called when a link has faded out and can be removed. */
   onDone: (id: number) => void;
+  /** A link's line as it is now, or null to hide it. The phone can move
+      (in the hut, with your hand and your head), and the lines keep to
+      it. */
+  pathOf: (link: Link) => string | null;
 };
 
 /**
@@ -25,16 +30,40 @@ type LinkLayerProps = {
  * Two layers: the lines run behind the cards, the highlights and labels sit
  * on top of them. Bigger changes are thicker, brighter and stay longer.
  */
-function LinkLayer({ links, onDone }: LinkLayerProps) {
+function LinkLayer({ links, onDone, pathOf }: LinkLayerProps) {
+  const under = useRef<SVGSVGElement>(null);
+
+  // Every frame while there are lines, move their phone end with the phone.
+  useEffect(() => {
+    const layer = under.current;
+    if (layer === null || links.length === 0) return;
+    const byId = new Map(links.map((link) => [String(link.id), link]));
+    let request = 0;
+    const frame = () => {
+      request = requestAnimationFrame(frame);
+      for (const group of layer.querySelectorAll<SVGGElement>("[data-id]")) {
+        const link = byId.get(group.dataset.id ?? "");
+        if (link === undefined) continue;
+        const d = pathOf(link) ?? "";
+        for (const path of group.querySelectorAll("path")) {
+          if (path.getAttribute("d") !== d) path.setAttribute("d", d);
+        }
+      }
+    };
+    request = requestAnimationFrame(frame);
+    return () => cancelAnimationFrame(request);
+  }, [links, pathOf]);
+
   return (
     <>
-      <svg className="links is-under" aria-hidden="true">
+      <svg className="links is-under" aria-hidden="true" ref={under}>
         {links.map((link) => {
           if (link.style === "ping") return null;
-          const width = 2 + link.strength * 2;
+          const width = Math.round(2 + link.strength * 2);
           return (
             <g
               key={link.id}
+              data-id={link.id}
               className={`link is-${link.tone}`}
               style={{ animationDuration: `${lifetime(link)}ms` }}
             >
@@ -42,7 +71,7 @@ function LinkLayer({ links, onDone }: LinkLayerProps) {
                 className="link-trail"
                 d={link.d}
                 pathLength={1}
-                strokeWidth={Math.max(width * 0.6, 1.5)}
+                strokeWidth={Math.max(Math.round(width * 0.6), 2)}
                 strokeOpacity={0.35 + link.strength * 0.45}
                 style={{ animationDuration: `${TRAVEL_MS}ms` }}
               />
@@ -57,7 +86,7 @@ function LinkLayer({ links, onDone }: LinkLayerProps) {
                 className="link-head is-core"
                 d={link.d}
                 pathLength={1}
-                strokeWidth={width * 0.6}
+                strokeWidth={Math.max(Math.round(width * 0.5), 1)}
                 style={{ animationDuration: `${TRAVEL_MS}ms` }}
               />
             </g>
@@ -108,11 +137,12 @@ function LinkLayer({ links, onDone }: LinkLayerProps) {
               )}
               {isPing ? (
                 // A dot after the tab's label: "something changed in here".
-                <circle
+                <rect
                   className="link-dot"
-                  cx={box.x + box.width + 6}
-                  cy={box.y + box.height / 2}
-                  r={4}
+                  x={Math.round(box.x + box.width + 2)}
+                  y={Math.round(box.y + box.height / 2 - 4)}
+                  width={8}
+                  height={8}
                 />
               ) : (
                 <rect
@@ -121,7 +151,6 @@ function LinkLayer({ links, onDone }: LinkLayerProps) {
                   y={box.y}
                   width={box.width}
                   height={box.height}
-                  rx={10}
                   strokeOpacity={isCard || isTall ? 0.4 : 0.5 + strength * 0.5}
                   fillOpacity={
                     isCard ? 0 : isTall ? 0.05 : 0.08 + strength * 0.14
@@ -140,7 +169,6 @@ function LinkLayer({ links, onDone }: LinkLayerProps) {
                     y={-20}
                     width={label.length * CHAR_PX + 16}
                     height={20}
-                    rx={10}
                   />
                   <text
                     x={0}

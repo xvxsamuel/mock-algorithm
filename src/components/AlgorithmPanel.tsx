@@ -105,19 +105,19 @@ function AlgorithmPanel({ feed, onLeave }: AlgorithmPanelProps) {
             </button>
           )}
         </div>
-        <LeaveMeter feed={feed} />
         {started && (
-          // Your time runs toward the one thing the app never offers.
-          <div className="panel-time-row">
-            {intentBar(sessionMs, intentMs)}
-            <button
-              type="button"
-              className="leave-button"
-              onClick={(event) => onLeave(event.currentTarget)}
-            >
-              Leave
-            </button>
-          </div>
+          // Beside your time: the one thing the app never offers.
+          <button
+            type="button"
+            className="leave-button"
+            onClick={(event) => onLeave(event.currentTarget)}
+          >
+            Leave
+          </button>
+        )}
+        <LeaveMeter feed={feed} />
+        {started && intentMs !== null && (
+          <div className="panel-time-row">{intentBar(sessionMs, intentMs)}</div>
         )}
       </header>
 
@@ -167,9 +167,7 @@ function AlgorithmPanel({ feed, onLeave }: AlgorithmPanelProps) {
 
 /** Planned time against real time. Past the plan, the bar turns pink. */
 function intentBar(sessionMs: number, intentMs: number | null) {
-  if (intentMs === null) {
-    return <p className="intent-note">No limit</p>;
-  }
+  if (intentMs === null) return null;
   const under = (Math.min(sessionMs, intentMs) / intentMs) * PLAN_AT * 100;
   const extra = Math.max(sessionMs - intentMs, 0) / (intentMs * OVER_SOFTNESS);
   const over = (1 - Math.exp(-extra)) * (1 - PLAN_AT) * 100;

@@ -24,7 +24,7 @@
 .world-total {
   margin: 0;
   color: color-mix(in srgb, var(--muted), var(--text) 30%);
-  font-size: 13px;
+  font-size: 11px;
 }
 
 /* Each gram split by where it comes from, widths to scale. The data
@@ -43,7 +43,7 @@
 
 .world-split-bar {
   height: 8px;
-  border-radius: 4px;
+  border-radius: 0;
   background: var(--earth);
 }
 
@@ -58,7 +58,7 @@
 
 .world-split-label {
   color: color-mix(in srgb, var(--muted), var(--text) 30%);
-  font-size: 12px;
+  font-size: 11px;
   white-space: nowrap;
 }
 
@@ -69,9 +69,9 @@
 
 .world-total b {
   color: var(--earth);
-  font-size: 26px;
+  font-size: 22px;
   font-weight: 700;
-  letter-spacing: -0.02em;
+  letter-spacing: 0;
   font-variant-numeric: tabular-nums;
 }
 
@@ -175,9 +175,9 @@
   width: 44px;
   height: 44px;
   border: 1px solid var(--line-strong);
-  border-radius: 50%;
+  border-radius: 0;
   background: var(--surface-2);
-  font-size: 21px;
+  font-size: 22px;
   line-height: 1;
   transition:
     border-color 0.2s var(--ease),
@@ -192,7 +192,7 @@
   width: 60px;
   height: 60px;
   border-color: var(--earth);
-  font-size: 30px;
+  font-size: 33px;
 }
 
 .world-node:hover .world-icon {
@@ -218,7 +218,7 @@
 .world-name,
 .world-value {
   padding: 0 4px;
-  border-radius: 4px;
+  border-radius: 0;
   background: var(--surface);
 }
 
@@ -231,7 +231,7 @@
 }
 
 .world-name {
-  font-size: 12.5px;
+  font-size: 11px;
   font-weight: 650;
   line-height: 1.15;
   white-space: nowrap;
@@ -239,7 +239,7 @@
 
 .world-value {
   color: color-mix(in srgb, var(--muted), var(--text) 30%);
-  font-size: 12px;
+  font-size: 11px;
   font-weight: 650;
   line-height: 1.1;
   font-variant-numeric: tabular-nums;
@@ -254,7 +254,7 @@
 .world-value.is-sites {
   color: var(--you);
   font-family: ui-monospace, "Cascadia Mono", Consolas, monospace;
-  font-size: 11.5px;
+  font-size: 11px;
 }
 
 /* Only the numbers that grow as you scroll are coloured; fixed facts stay
@@ -276,9 +276,9 @@
   width: 8px;
   height: 8px;
   margin: -4px 0 0 -4px;
-  border-radius: 50%;
+  border-radius: 0;
   background: var(--tone);
-  box-shadow: 0 0 10px var(--tone);
+  box-shadow: 0 0 0 2px var(--tone);
   offset-rotate: 0deg;
   pointer-events: none;
   animation: world-run 1.4s var(--ease) both;
@@ -310,7 +310,7 @@
   margin: 0;
   padding: 0;
   color: color-mix(in srgb, var(--muted), var(--text) 30%);
-  font-size: 12px;
+  font-size: 11px;
   list-style: none;
 }
 
@@ -324,7 +324,7 @@
   content: "";
   width: 14px;
   height: 2px;
-  border-radius: 1px;
+  border-radius: 0;
   background: var(--tone);
 }
 
@@ -351,12 +351,12 @@
   align-items: center;
   gap: 4px 8px;
   margin: 0;
-  font-size: 14px;
+  font-size: 11px;
 }
 
 .world-fact-head .world-value {
   padding: 0;
-  font-size: 13px;
+  font-size: 11px;
 }
 
 /* How long you keep your phone: the one lever in the material world. */
@@ -366,17 +366,17 @@
   gap: 8px;
   margin-left: auto;
   color: color-mix(in srgb, var(--muted), var(--text) 30%);
-  font-size: 13px;
+  font-size: 11px;
 }
 
 .world-keep .lever {
   padding: 3px 11px;
-  font-size: 12.5px;
+  font-size: 11px;
 }
 
 .world-fact-text {
   margin: 0;
-  font-size: 14px;
+  font-size: 11px;
   font-weight: 550;
   line-height: 1.4;
 }
@@ -386,19 +386,19 @@
   margin-bottom: 4px;
   color: var(--you);
   font-family: ui-monospace, "Cascadia Mono", Consolas, monospace;
-  font-size: 12.5px;
+  font-size: 11px;
   overflow-wrap: anywhere;
 }
 
 .world-sources {
   color: color-mix(in srgb, var(--muted), var(--text) 30%);
-  font-size: 12px;
+  font-size: 11px;
   font-weight: 400;
 }
 
 .world-source {
   color: color-mix(in srgb, var(--muted), var(--text) 30%);
-  font-size: 12px;
+  font-size: 11px;
   font-weight: 400;
 }
 
@@ -453,17 +453,17 @@
 .world-map.is-compact .world-icon {
   width: 38px;
   height: 38px;
-  font-size: 18px;
+  font-size: 22px;
 }
 
 .world-map.is-compact .world-node.is-big .world-icon {
   width: 52px;
   height: 52px;
-  font-size: 26px;
+  font-size: 22px;
 }
 
 .world-map.is-compact .world-name {
-  font-size: 11.5px;
+  font-size: 11px;
 }
 
 .world-map.is-compact .world-value {
