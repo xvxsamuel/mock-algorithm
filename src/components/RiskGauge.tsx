@@ -1,71 +1,52 @@
 import "./RiskGauge.css";
 
+/** How many blocks the meter has. */
+const BLOCKS = 20;
+
 type RiskGaugeProps = {
   /** 0-1. */
   value: number;
   /** Where the engine steps in, 0-1. */
   threshold: number;
-  /** False before the session starts: the dial shows a dash, not a number. */
+  /** False before the session starts: the meter shows a dash, not a number. */
   live?: boolean;
-  /** False when the number is shown beside the dial instead. */
+  /** False when the number is shown beside the meter instead. */
   showValue?: boolean;
 };
 
-/** A half dial: how close you are to closing the app. */
+/** A row of blocks, like a game's stamina bar: how close you are to
+    closing the app. The blocks past the threshold are where the engine
+    steps in. */
 function RiskGauge({
   value,
   threshold,
   live = true,
   showValue = true,
 }: RiskGaugeProps) {
-  // A notch splits off the "sure hit" zone at the end of the track.
-  const angle = Math.PI - threshold * Math.PI;
-  const notch = {
-    x1: 60 + Math.cos(angle) * 41,
-    y1: 60 - Math.sin(angle) * 41,
-    x2: 60 + Math.cos(angle) * 55,
-    y2: 60 - Math.sin(angle) * 55,
-  };
+  const filled = Math.round(value * BLOCKS);
+  const zone = Math.round(threshold * BLOCKS);
   // Grey until the engine steps in; pink from then on.
   const tone = value >= threshold ? "is-high" : "";
-
   return (
-    <svg
+    <div
       className={`gauge ${tone}`}
-      viewBox="0 0 120 68"
       role="img"
       aria-label={live ? `${Math.round(value * 100)}%` : "not started"}
     >
-      <path
-        className="gauge-track"
-        d="M 12 60 A 48 48 0 0 1 108 60"
-        pathLength={100}
-      />
-      <path
-        className="gauge-zone"
-        d="M 12 60 A 48 48 0 0 1 108 60"
-        pathLength={100}
-        strokeDasharray={`0 ${threshold * 100} 100`}
-      />
-      <path
-        className="gauge-glow"
-        d="M 12 60 A 48 48 0 0 1 108 60"
-        pathLength={100}
-        strokeDasharray={`${value * 100} 100`}
-      />
-      <path
-        className="gauge-fill"
-        d="M 12 60 A 48 48 0 0 1 108 60"
-        pathLength={100}
-        strokeDasharray={`${value * 100} 100`}
-      />
-      <line className="gauge-notch" {...notch} />
+      <span className="gauge-blocks">
+        {Array.from({ length: BLOCKS }, (_, i) => {
+          const classes = ["gauge-block"];
+          if (i < filled) classes.push("is-on");
+          if (i >= zone) classes.push("is-zone");
+          return <span key={i} className={classes.join(" ")} />;
+        })}
+      </span>
       {showValue && (
-        <text className="gauge-value" x={60} y={56} textAnchor="middle">
+        <span className="gauge-value">
           {live ? `${Math.round(value * 100)}%` : "–"}
-        </text>
+        </span>
       )}
-    </svg>
+    </div>
   );
 }
 

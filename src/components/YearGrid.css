@@ -12,13 +12,13 @@
 
 .year-day {
   aspect-ratio: 1;
-  border-radius: 1.5px;
+  border-radius: 0;
   background: rgb(255 255 255 / 0.07);
 }
 
 .year-day.is-gone {
   background: var(--take);
-  box-shadow: 0 0 4px rgb(254 44 85 / 0.6);
+  box-shadow: 0 0 0 2px rgb(254 44 85 / 0.6);
   animation: year-fill 0.5s var(--ease) both;
 }
 

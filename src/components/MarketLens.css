@@ -16,7 +16,7 @@
 .mkt-for {
   margin: 6px 0 0;
   color: var(--muted);
-  font-size: 12px;
+  font-size: 11px;
 }
 
 .mkt-for b {
@@ -28,10 +28,10 @@
 .mkt-earned {
   margin: 0;
   color: var(--platform);
-  font-size: 46px;
+  font-size: 44px;
   font-weight: 700;
   line-height: 1;
-  letter-spacing: -0.02em;
+  letter-spacing: 0;
   font-variant-numeric: tabular-nums;
 }
 
@@ -60,8 +60,8 @@
   place-items: center;
   width: 32px;
   height: 32px;
-  border-radius: 7px;
-  font-size: 16px;
+  border-radius: 0;
+  font-size: 11px;
   line-height: 1;
   animation: mkt-in 0.5s var(--ease);
 }
@@ -76,7 +76,7 @@
 /* An ad: labelled, and paid for per view. Solid, out in the open. */
 .mkt-sale.is-ad {
   background: var(--platform);
-  text-shadow: 0 0 3px rgb(0 0 0 / 0.6);
+  text-shadow: 2px 2px 0 rgb(0 0 0 / 0.6);
 }
 
 /* Paid, and nothing on the phone said so: dashed, like something hidden. */
@@ -121,7 +121,7 @@
 .mkt-now {
   margin: 0;
   color: var(--text);
-  font-size: 13px;
+  font-size: 11px;
   line-height: 1.35;
   animation: mkt-in 0.4s var(--ease);
 }
@@ -142,7 +142,7 @@
   width: 8px;
   height: 8px;
   margin-right: 6px;
-  border-radius: 2px;
+  border-radius: 0;
   background: var(--tone);
 }
 
@@ -181,7 +181,7 @@
 .mkt-stage {
   margin: 0;
   color: var(--muted);
-  font-size: 12px;
+  font-size: 11px;
   font-weight: 600;
 }
 
@@ -225,7 +225,7 @@
   align-items: center;
   gap: 10px;
   overflow: hidden;
-  font-size: 15px;
+  font-size: 11px;
   font-weight: 600;
   white-space: nowrap;
 }
@@ -240,7 +240,7 @@
   grid-area: track;
   height: 16px;
   overflow: hidden;
-  border-radius: 8px;
+  border-radius: 0;
   background: var(--line);
 }
 
@@ -274,7 +274,7 @@
 
 .mkt-price {
   grid-area: price;
-  font-size: 16px;
+  font-size: 11px;
   font-weight: 650;
   font-variant-numeric: tabular-nums;
   text-align: right;
@@ -291,10 +291,10 @@
 /* What about you it is buying. Cyan: it is yours. */
 .mkt-chip {
   padding: 2px 9px;
-  border-radius: 999px;
+  border-radius: 0;
   background: rgb(37 244 238 / 0.12);
   color: var(--you);
-  font-size: 12px;
+  font-size: 11px;
   font-weight: 600;
 }
 
@@ -307,14 +307,14 @@
 .mkt-bid.is-lead .mkt-price,
 .mkt-bid.is-won .mkt-price {
   color: var(--platform);
-  font-size: 19px;
+  font-size: 22px;
 }
 
 /* The bid that gets you is drawn heavier than the rest. */
 .mkt-bid.is-lead .mkt-track,
 .mkt-bid.is-won .mkt-track {
   height: 24px;
-  border-radius: 12px;
+  border-radius: 0;
 }
 
 .mkt-chip.is-sold {
@@ -343,7 +343,7 @@
 
 @media (max-height: 860px) {
   .mkt-earned {
-    font-size: 36px;
+    font-size: 33px;
   }
 
   /* A bid without a reason is one line, so all of them and the key fit. */
@@ -360,20 +360,20 @@
 
   .mkt-brand {
     gap: 8px;
-    font-size: 13px;
+    font-size: 11px;
   }
 
   .mkt-logo {
-    font-size: 18px;
+    font-size: 22px;
   }
 
   .mkt-track {
     height: 10px;
-    border-radius: 5px;
+    border-radius: 0;
   }
 
   .mkt-price {
-    font-size: 14px;
+    font-size: 11px;
   }
 
   .mkt-chip {
@@ -382,24 +382,24 @@
   }
 
   .mkt-now {
-    font-size: 12px;
+    font-size: 11px;
   }
 
   .mkt-bid.is-lead .mkt-track,
   .mkt-bid.is-won .mkt-track {
     height: 16px;
-    border-radius: 8px;
+    border-radius: 0;
   }
 
   .mkt-bid.is-lead .mkt-price,
   .mkt-bid.is-won .mkt-price {
-    font-size: 16px;
+    font-size: 11px;
   }
 
   .mkt-sale {
     width: 28px;
     height: 28px;
-    font-size: 14px;
+    font-size: 11px;
   }
 
   .mkt-sales {
@@ -443,7 +443,7 @@
   }
 
   .mkt-earned {
-    font-size: 34px;
+    font-size: 33px;
   }
 
   /* A bid whose reasons wrap gets the height it needs. */
@@ -458,7 +458,7 @@
 
   .mkt-brand {
     gap: 6px;
-    font-size: 12px;
+    font-size: 11px;
   }
 
   .mkt-per {

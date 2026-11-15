@@ -1,10 +1,16 @@
-import { useEffect, useRef, useState, type PointerEvent } from "react";
+import {
+  useCallback,
+  useEffect,
+  useRef,
+  useState,
+  type PointerEvent,
+} from "react";
 import type { Signal } from "../algorithm/signals";
 import type { FeedSource } from "../algorithm/sources";
 import type { Category } from "../data/categories";
 import type { FeedController } from "./useFeed";
 
-/** A press this recent counts as the cause of a change, so lines start at its height. */
+/** A press this recent counts as the cause of a change, so lines start where it was. */
 const PRESS_MEMORY_MS = 1000;
 /** Pressed buttons up to this wide snap to their centre (not the whole video). */
 const SNAP_MAX_WIDTH = 120;
@@ -27,6 +33,14 @@ const TRACE_FROM = 24;
 /** Through a hub, the way in stays at least this far (px) from its centre's
     height, so it passes between the labels on the near side. */
 const HUB_CLEAR = 40;
+/** Lines leave the phone this far (px, at the phone's own size) out from
+    its right edge, clear of the rim. */
+const EDGE_OUT = 4;
+/** And no nearer its top or bottom than this share of its height, where
+    the corners round off. */
+const EDGE_CLEAR = 0.07;
+/** With no press to start from, lines leave from half way down. */
+const SIDE: Point = { x: 1, y: 0.5 };
 
 export type Point = { x: number; y: number };
 export type Box = { x: number; y: number; width: number; height: number };
@@ -49,8 +63,13 @@ export type Link = {
   style: "line" | "ping";
   /** A short note shown where the line lands, e.g. "more". */
   label: string | null;
-  from: Point;
-  /** The line, from the phone to where it enters the card. */
+  /** Where on the phone the line starts: 0-1 across it and 0-1 down it,
+      so it stays on the same spot however the phone moves. */
+  spot: Point;
+  /** It starts on a button you pressed, not on the phone's edge. */
+  fromButton: boolean;
+  /** The line, from the phone to where it enters the card, as it was
+      when the link was made. `pathOf` gives it as it is now. */
   d: string;
   /** Inside the card: from the entry point to the target, or null. */
   trace: string | null;
@@ -84,21 +103,42 @@ export function useLinks(feed: FeedController) {
   const [links, setLinks] = useState<Link[]>([]);
   const nextId = useRef(0);
   const feedArea = useRef<HTMLElement>(null);
-  const lastPress = useRef<{ y: number; time: number } | null>(null);
+  const lastPress = useRef<{
+    spot: Point;
+    onButton: boolean;
+    time: number;
+  } | null>(null);
   const previous = useRef<Snapshot | null>(null);
   const timers = useRef(new Set<number>());
 
-  /** Remembers how high up the phone the user pressed. */
+  /** Remembers where on the phone the user pressed. */
   function trackPress(event: PointerEvent) {
-    let y = event.clientY;
+    let point: Point = { x: event.clientX, y: event.clientY };
+    let onButton = false;
     const button =
       event.target instanceof Element ? event.target.closest("button") : null;
     if (button !== null) {
       const rect = button.getBoundingClientRect();
-      if (rect.width <= SNAP_MAX_WIDTH) y = rect.top + rect.height / 2;
+      if (rect.width <= SNAP_MAX_WIDTH) {
+        point = middleOf(button);
+        onButton = true;
+      }
     }
-    lastPress.current = { y, time: performance.now() };
+    const phone = phoneOf(feedArea.current);
+    if (phone === null) return;
+    lastPress.current = {
+      spot: phone.toSpot(point),
+      onButton,
+      time: performance.now(),
+    };
   }
+
+  /** A link's line as it is now, from wherever the phone has moved to. */
+  const pathOf = useCallback((link: Link): string | null => {
+    const phone = phoneOf(feedArea.current);
+    if (phone === null) return null;
+    return route(phone, link.spot, link.fromButton, link.entry);
+  }, []);
 
   function send({ target, change, delay, label, tone }: Pulse) {
     const timer = window.setTimeout(() => {
@@ -117,14 +157,12 @@ export function useLinks(feed: FeedController) {
         shown ?? document.querySelector(`[data-link="lens:${lensOf(target)}"]`);
       if (!phone || element === null) return;
 
+      const shape = phoneOf(feedArea.current);
+      if (shape === null) return;
       const press = lastPress.current;
       const recent =
         press !== null &&
         performance.now() - press.time < PRESS_MEMORY_MS + delay;
-      const from = sideOf(
-        phone.getBoundingClientRect(),
-        recent ? press.y : null,
-      );
       // A ping marks the tab's label (a dot goes after it), not the tab.
       const box = outset(
         shown === null ? textRect(element) : element.getBoundingClientRect(),
@@ -170,8 +208,11 @@ export function useLinks(feed: FeedController) {
           }
         }
       }
+      const spot = recent ? press.spot : SIDE;
+      const fromButton = recent && press.onButton;
       // Only draw when the panel is beside the phone, not stacked below it.
-      if (entry.x <= from.x) return;
+      const d = route(shape, spot, fromButton, entry);
+      if (d === null) return;
 
       const link: Link = {
         id: nextId.current++,
@@ -179,8 +220,9 @@ export function useLinks(feed: FeedController) {
         strength: Math.min(Math.sqrt(Math.abs(change) / FULL_CHANGE), 1),
         style: shown === null ? "ping" : "line",
         label: shown === null ? null : (label ?? null),
-        from,
-        d: curve(from, entry),
+        spot,
+        fromButton,
+        d,
         trace,
         entry,
         box,
@@ -237,6 +279,7 @@ export function useLinks(feed: FeedController) {
     /** Attach to the element around the phone. */
     feedArea,
     trackPress,
+    pathOf,
     removeLink: (id: number) =>
       setLinks((all) => all.filter((link) => link.id !== id)),
   };
@@ -392,15 +435,126 @@ function topicDelta(signals: Signal[]): number {
   return signals.reduce((sum, signal) => sum + signal.topic, 0);
 }
 
-/** A point just outside the phone's right edge, at `y` or half way down. */
-function sideOf(phone: DOMRect, y: number | null): Point {
-  const margin = 24;
-  const middle = phone.top + phone.height / 2;
-  const clamped = Math.min(
-    Math.max(y ?? middle, phone.top + margin),
-    phone.bottom - margin,
-  );
-  return { x: phone.right + 4, y: clamped };
+/** How the phone lies on the page. A spot on it is 0-1 across and 0-1
+    down; `toPage` finds where that is on the page, and `toSpot` goes back.
+    It holds however the phone is turned, tilted or far away. */
+type PhoneShape = {
+  toPage: (spot: Point) => Point;
+  toSpot: (point: Point) => Point;
+  /** The phone's width at its own size, in px. */
+  width: number;
+};
+
+/**
+ * Measures the phone. Turned in 3D (in the hut), it carries four empty
+ * markers at its corners (`data-phone-corner`), which the page puts where
+ * the corners are drawn. Flat, its own box is enough.
+ */
+function phoneOf(area: HTMLElement | null): PhoneShape | null {
+  const phone = area?.firstElementChild;
+  if (!(area && phone instanceof HTMLElement)) return null;
+  const corners: Point[] = [];
+  for (const corner of ["tl", "tr", "br", "bl"]) {
+    const marker = area.querySelector(`[data-phone-corner="${corner}"]`);
+    if (marker === null) break;
+    const rect = marker.getBoundingClientRect();
+    corners.push({ x: rect.left, y: rect.top });
+  }
+  if (corners.length < 4) {
+    const rect = phone.getBoundingClientRect();
+    corners.splice(
+      0,
+      corners.length,
+      { x: rect.left, y: rect.top },
+      { x: rect.right, y: rect.top },
+      { x: rect.right, y: rect.bottom },
+      { x: rect.left, y: rect.bottom },
+    );
+  }
+  const forward = squareTo(corners);
+  const back = forward === null ? null : invert(forward);
+  if (forward === null || back === null) return null;
+  return {
+    toPage: (spot) => apply(forward, spot),
+    toSpot: (point) => apply(back, point),
+    width: Math.max(phone.offsetWidth, 1),
+  };
+}
+
+/** The line from a spot on the phone: out of the button you pressed (or
+    straight from the phone's edge), then over to the panel. Null when the
+    panel is not to the right of the phone. */
+function route(
+  phone: PhoneShape,
+  spot: Point,
+  fromButton: boolean,
+  entry: Point,
+): string | null {
+  const edge = phone.toPage({
+    x: 1 + EDGE_OUT / phone.width,
+    y: clamp(spot.y, EDGE_CLEAR, 1 - EDGE_CLEAR),
+  });
+  if (entry.x <= edge.x) return null;
+  const start = fromButton ? phone.toPage(spot) : edge;
+  const lead = fromButton ? ` L ${px(edge.x)} ${px(edge.y)}` : "";
+  return `M ${px(start.x)} ${px(start.y)}${lead} ${trace(edge, entry)}`;
+}
+
+/** A 3x3 matrix, row by row, that takes x, y, 1 to a point on the page. */
+type Projection = readonly number[];
+
+/** The projection that takes the corners of a 1x1 square to `corners`
+    (top left, top right, bottom right, bottom left). */
+function squareTo([p0, p1, p2, p3]: Point[]): Projection | null {
+  const sx = p0.x - p1.x + p2.x - p3.x;
+  const sy = p0.y - p1.y + p2.y - p3.y;
+  const dx1 = p1.x - p2.x;
+  const dx2 = p3.x - p2.x;
+  const dy1 = p1.y - p2.y;
+  const dy2 = p3.y - p2.y;
+  const den = dx1 * dy2 - dx2 * dy1;
+  if (Math.abs(den) < 1e-9) return null;
+  const g = (sx * dy2 - dx2 * sy) / den;
+  const h = (dx1 * sy - sx * dy1) / den;
+  return [
+    p1.x - p0.x + g * p1.x,
+    p3.x - p0.x + h * p3.x,
+    p0.x,
+    p1.y - p0.y + g * p1.y,
+    p3.y - p0.y + h * p3.y,
+    p0.y,
+    g,
+    h,
+    1,
+  ];
+}
+
+function invert(m: Projection): Projection | null {
+  const [a, b, c, d, e, f, g, h, i] = m;
+  const A = e * i - f * h;
+  const B = f * g - d * i;
+  const C = d * h - e * g;
+  const det = a * A + b * B + c * C;
+  if (Math.abs(det) < 1e-12) return null;
+  return [
+    A / det,
+    (c * h - b * i) / det,
+    (b * f - c * e) / det,
+    B / det,
+    (a * i - c * g) / det,
+    (c * d - a * f) / det,
+    C / det,
+    (b * g - a * h) / det,
+    (a * e - b * d) / det,
+  ];
+}
+
+function apply(m: Projection, { x, y }: Point): Point {
+  const w = m[6] * x + m[7] * y + m[8];
+  return {
+    x: (m[0] * x + m[1] * y + m[2]) / w,
+    y: (m[3] * x + m[4] * y + m[5]) / w,
+  };
 }
 
 /** Whether an element's middle is inside the window of the scrolling
@@ -422,10 +576,16 @@ function outset(rect: DOMRect, by: number): Box {
   };
 }
 
-/** An S-curve that leaves and arrives horizontally. */
-function curve(from: Point, to: Point): string {
-  const bend = (to.x - from.x) / 2;
-  return `M ${from.x} ${from.y} C ${from.x + bend} ${from.y}, ${to.x - bend} ${to.y}, ${to.x} ${to.y}`;
+/** On from `from`, where the path already is: across, up or down, and
+    across again, in square steps like the pixels around it. */
+function trace(from: Point, to: Point): string {
+  const turn = px((from.x + to.x) / 2);
+  return `H ${turn} V ${px(to.y)} H ${px(to.x)}`;
+}
+
+/** Whole pixels, so the lines stay crisp. */
+function px(value: number): number {
+  return Math.round(value);
 }
 
 /** Where the text inside an element is, e.g. a tab's label. */

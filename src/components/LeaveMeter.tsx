@@ -42,13 +42,6 @@ function LeaveMeter({ feed }: LeaveMeterProps) {
       className={queued || playing ? "leave is-rescue" : "leave"}
       data-link="risk"
     >
-      <RiskGauge
-        value={started ? exitRisk.value : 0}
-        threshold={RESCUE_AT}
-        live={started}
-        // "97% → 24%" beside it is the number; the dial keeps only its arc.
-        showValue={!comparing}
-      />
       <div className="leave-text">
         <h2 className="eyebrow">Chance you leave</h2>
         {note !== null && (
@@ -57,6 +50,13 @@ function LeaveMeter({ feed }: LeaveMeterProps) {
           </p>
         )}
       </div>
+      <RiskGauge
+        value={started ? exitRisk.value : 0}
+        threshold={RESCUE_AT}
+        live={started}
+        // "97% → 24%" beside it is the number; the meter keeps only its blocks.
+        showValue={!comparing}
+      />
     </section>
   );
 }

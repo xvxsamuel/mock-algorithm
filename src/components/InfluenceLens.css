@@ -20,7 +20,7 @@
   position: absolute;
   margin: 0;
   color: color-mix(in srgb, var(--muted), var(--text) 35%);
-  font-size: 12px;
+  font-size: 11px;
   font-weight: 600;
   white-space: nowrap;
   transform: translateX(-50%);
@@ -49,9 +49,9 @@
   display: block;
   width: 100%;
   height: 100%;
-  border-radius: 50%;
+  border-radius: 0;
   background: var(--influence);
-  box-shadow: 0 0 6px rgb(167 139 250 / 0.7);
+  box-shadow: 0 0 0 2px rgb(167 139 250 / 0.7);
   animation: inf-drift 4.2s ease-in-out infinite alternate;
 }
 
@@ -77,8 +77,8 @@
   gap: 6px;
   padding: 26px 9px 26px;
   aspect-ratio: 3 / 5;
-  border-radius: 12px;
-  box-shadow: 0 8px 28px rgb(0 0 0 / 0.5);
+  border-radius: 0;
+  box-shadow: 4px 4px 0 rgb(0 0 0 / 0.5);
   transform: translateX(-50%);
   transition: box-shadow 0.4s var(--ease);
 }
@@ -91,7 +91,7 @@
 
 .inf-emoji {
   margin-block: auto;
-  font-size: 40px;
+  font-size: 44px;
   line-height: 1;
 }
 
@@ -103,7 +103,7 @@
   max-width: 92%;
   margin: 0;
   overflow: hidden;
-  font-size: 13px;
+  font-size: 11px;
   line-height: 1.75;
   text-align: center;
   text-wrap: balance;
@@ -114,7 +114,7 @@
 
 .inf-sticker {
   padding: 2px 5px;
-  border-radius: 4px;
+  border-radius: 0;
   background: #fff;
   color: #000;
   font-weight: 800;
@@ -128,10 +128,10 @@
   left: 0;
   right: 0;
   color: #fff;
-  font-size: 12px;
+  font-size: 11px;
   font-weight: 700;
   text-align: center;
-  text-shadow: 0 1px 3px rgb(0 0 0 / 0.6);
+  text-shadow: 1px 1px 0 rgb(0 0 0 / 0.6);
   font-variant-numeric: tabular-nums;
 }
 
@@ -145,10 +145,10 @@
   align-items: center;
   gap: 6px;
   padding: 2px 10px;
-  border-radius: 999px;
+  border-radius: 0;
   background: var(--influence);
   color: #160f2a;
-  font-size: 12px;
+  font-size: 11px;
   font-weight: 750;
   white-space: nowrap;
   transform: translate(-50%, -50%);
@@ -198,7 +198,7 @@
   z-index: 2;
   width: 12px;
   height: 14px;
-  border-radius: 50%;
+  border-radius: 0;
   color: rgb(255 255 255 / 0.2);
   transform: translate(-50%, -50%);
   transition:
@@ -220,19 +220,19 @@
   top: 0;
   width: 6px;
   height: 6px;
-  border-radius: 50%;
+  border-radius: 0;
 }
 
 .inf-person::after {
   bottom: 0;
   width: 12px;
   height: 6px;
-  border-radius: 6px 6px 2px 2px;
+  border-radius: 0;
 }
 
 .inf-person.is-lit {
   color: var(--influence);
-  filter: drop-shadow(0 0 4px rgb(167 139 250 / 0.7));
+  filter: drop-shadow(2px 2px 0 rgb(167 139 250 / 0.7));
 }
 
 /* You: ringed in your colour, picked like the rest. */
@@ -272,10 +272,10 @@
   z-index: 4;
   padding: 6px 16px;
   border: 1.5px solid var(--influence);
-  border-radius: 999px;
+  border-radius: 0;
   background: var(--influence);
   color: #160f2a;
-  font-size: 13px;
+  font-size: 11px;
   font-weight: 700;
   white-space: nowrap;
   cursor: pointer;
@@ -287,7 +287,7 @@
 }
 
 .inf-release:hover:not(:disabled) {
-  box-shadow: 0 0 18px rgb(167 139 250 / 0.55);
+  box-shadow: 0 0 0 2px rgb(167 139 250 / 0.55);
 }
 
 .inf-release:focus-visible {
@@ -342,9 +342,9 @@
   width: 32px;
   height: 32px;
   border: 1.5px solid color-mix(in srgb, var(--influence) 80%, transparent);
-  border-radius: 7px;
+  border-radius: 0;
   background: color-mix(in srgb, var(--influence) 30%, var(--bg));
-  font-size: 16px;
+  font-size: 11px;
   line-height: 1;
   animation: inf-in 0.5s var(--ease);
 }
@@ -380,22 +380,22 @@
 /* What about you it reads as easy to move. Cyan: it is yours. */
 .inf-none {
   color: var(--muted);
-  font-size: 12px;
+  font-size: 11px;
 }
 
 .inf-chip {
   padding: 2px 9px;
-  border-radius: 999px;
+  border-radius: 0;
   background: rgb(37 244 238 / 0.12);
   color: var(--you);
-  font-size: 12px;
+  font-size: 11px;
   font-weight: 600;
 }
 
 .inf-now {
   margin: 0;
   color: var(--text);
-  font-size: 13px;
+  font-size: 11px;
   line-height: 1.35;
   animation: inf-in 0.4s var(--ease);
 }
@@ -412,16 +412,16 @@
 .inf-kicker {
   margin: 0 0 4px;
   color: var(--muted);
-  font-size: 12px;
+  font-size: 11px;
 }
 
 .inf-figure {
   margin: 0;
   color: var(--you);
-  font-size: 46px;
+  font-size: 44px;
   font-weight: 700;
   line-height: 1;
-  letter-spacing: -0.02em;
+  letter-spacing: 0;
   font-variant-numeric: tabular-nums;
   transition: color 0.4s var(--ease);
 }
@@ -458,13 +458,13 @@
   }
 
   .inf-figure {
-    font-size: 36px;
+    font-size: 33px;
   }
 
   .inf-tile {
     width: 28px;
     height: 28px;
-    font-size: 14px;
+    font-size: 11px;
   }
 
   .inf-tiles {
@@ -472,11 +472,11 @@
   }
 
   .inf-overlay {
-    font-size: 12px;
+    font-size: 11px;
   }
 
   .inf-emoji {
-    font-size: 32px;
+    font-size: 33px;
   }
 }
 
@@ -521,13 +521,13 @@
 
   .inf-overlay {
     max-width: 100%;
-    font-size: 10.5px;
+    font-size: 11px;
     -webkit-line-clamp: 4;
     line-clamp: 4;
   }
 
   .inf-emoji {
-    font-size: 26px;
+    font-size: 22px;
   }
 
   .inf-person {
@@ -537,7 +537,7 @@
   .inf-release {
     left: 0;
     padding: 5px 12px;
-    font-size: 12px;
+    font-size: 11px;
     transform: none;
   }
 
@@ -552,7 +552,7 @@
   }
 
   .inf-figure {
-    font-size: 34px;
+    font-size: 33px;
   }
 }
 
