@@ -56,15 +56,23 @@ const DROPPED_AT = 0;
 /** How fast the view catches up with where you look. */
 const EASE = 6;
 /** How long the thumb takes to come down on the glass, and to go back. */
-const PRESS_MS = 110;
-const LIFT_MS = 240;
-/** The thumb pushes the feed this far of the way to the next video. Then it
+const PRESS_MS = 60;
+const LIFT_MS = 180;
+/** The thumb drags the feed this far of the way to the next video. Then it
     lets go, and the feed runs on by itself. */
-const STROKE = 0.6;
+const STROKE = 0.85;
+/** Where the tip goes along the glass in a swipe up, in the phone's space:
+    from low on the screen to above its middle. */
+const SWIPE_FROM: [number, number] = [8, -20];
+const SWIPE_TO: [number, number] = [4, 8];
+/** A tap: down on the glass, a moment on it, and off again. */
+const TAP_DOWN_MS = 80;
+const TAP_HOLD_MS = 60;
+const TAP_UP_MS = 150;
 /** Closer than this to a whole video, the feed counts as standing still. */
 const STILL = 0.005;
-/** How fast the thumb catches up with where the feed puts it. */
-const SLIDE_EASE = 40;
+/** How fast the tip follows where it should be on the glass. */
+const TIP_EASE = 45;
 /** Turns a point upside down: the page counts down, the hut counts up. */
 const FLIP = scaling(1, -1, 1);
 
@@ -149,8 +157,36 @@ export function useHutScene(
     /** The video the feed last stood still on. */
     let rested = Math.round(scrolled.current);
     let press = 0;
-    let slide = 0;
+    let tip: [number, number] = [...SWIPE_FROM];
+    /** Where the last tap on the screen landed, and when. */
+    let tapAt: [number, number] = [0, 0];
+    let tappedAt = -Infinity;
     let before = performance.now();
+
+    // A press on the screen (a button, a video) is a tap of the thumb, where
+    // it was pressed. The phone is held almost face on, so its box on the
+    // page tells where on the glass that is.
+    const screen = phoneElement.querySelector(".room-phone-body");
+    const onTap = (event: MouseEvent) => {
+      if (screen === null || still.matches) return;
+      const box = screen.getBoundingClientRect();
+      if (box.width < 1 || box.height < 1) return;
+      let x = event.clientX;
+      let y = event.clientY;
+      // From the keyboard, there is no pointer: tap the middle of what it
+      // pressed.
+      if (event.detail === 0 && event.target instanceof Element) {
+        const pressed = event.target.getBoundingClientRect();
+        x = pressed.left + pressed.width / 2;
+        y = pressed.top + pressed.height / 2;
+      }
+      tapAt = [
+        ((x - box.left) / box.width - 0.5) * PHONE.width,
+        (0.5 - (y - box.top) / box.height) * PHONE.height,
+      ];
+      tappedAt = performance.now();
+    };
+    phoneElement.addEventListener("click", onTap, true);
     let request = 0;
 
     const frame = (now: number) => {
@@ -206,8 +242,9 @@ export function useHutScene(
         ),
       );
 
-      // The thumb swipes with the feed: down on the glass as the feed starts
-      // to move, along it for the first part of the way, then off again.
+      // The thumb swipes with the feed: down on the glass as soon as the
+      // feed starts to move, and its tip goes up the glass exactly as far as
+      // the feed has gone, for most of the way. Then it lets go.
       const at = scrolled.current;
       const whole = Math.round(at);
       if (Math.abs(at - whole) < STILL || Math.abs(at - rested) >= 1) {
@@ -216,17 +253,34 @@ export function useHutScene(
       const moved = at - rested;
       const moving = Math.abs(moved) >= STILL;
       const stroke = Math.min(Math.abs(moved) / STROKE, 1);
-      if (moving) {
-        // Forwards it pushes the feed up; backwards it pulls it down.
-        const wantSlide = moved > 0 ? stroke : 1 - stroke;
-        slide += (wantSlide - slide) * (1 - Math.exp(-elapsed * SLIDE_EASE));
-      }
-      const pressing = moving && stroke < 1 && !calm;
+      const swiping = moving && stroke < 1 && !calm;
+      if (moving) tappedAt = -Infinity;
       press = clamp(
-        press + (elapsed * 1000) / (pressing ? PRESS_MS : -LIFT_MS),
+        press + (elapsed * 1000) / (swiping ? PRESS_MS : -LIFT_MS),
         0,
         1,
       );
+      let wantTip = tip;
+      if (moving) {
+        // Forwards it pushes the feed up; backwards it pulls it down.
+        wantTip = mix2(SWIPE_FROM, SWIPE_TO, moved > 0 ? stroke : 1 - stroke);
+      }
+      // A tap, unless a swipe has taken over.
+      const sinceTap = now - tappedAt;
+      const tapLength = TAP_DOWN_MS + TAP_HOLD_MS + TAP_UP_MS;
+      if (sinceTap >= 0 && sinceTap < tapLength) {
+        wantTip = tapAt;
+        const tapPress =
+          sinceTap < TAP_DOWN_MS
+            ? sinceTap / TAP_DOWN_MS
+            : sinceTap < TAP_DOWN_MS + TAP_HOLD_MS
+              ? 1
+              : 1 - (sinceTap - TAP_DOWN_MS - TAP_HOLD_MS) / TAP_UP_MS;
+        press = Math.max(press, tapPress);
+      }
+      // Off the glass, the tip is already where it will land.
+      const follow = press === 0 ? 1 : 1 - Math.exp(-elapsed * TIP_EASE);
+      tip = mix2(tip, wantTip, follow);
 
       glow = mix(glow, colorOf(want.glow), 1 - Math.exp(-elapsed * 3));
 
@@ -259,7 +313,7 @@ export function useHutScene(
         shift,
         phone: held,
         props: { decay, hour: hourAfter(seconds), videos: want.videos },
-        hand: { turned: smoothstep(0.3, 1, decay), press, slide },
+        hand: { turned: smoothstep(0.3, 1, decay), press, tip },
         glow,
         time: beat,
       });
@@ -269,9 +323,19 @@ export function useHutScene(
     return () => {
       cancelAnimationFrame(request);
       observer.disconnect();
+      phoneElement.removeEventListener("click", onTap, true);
       canvasElement.removeEventListener("webglcontextlost", onLost);
       canvasElement.removeEventListener("webglcontextrestored", onRestored);
       renderer?.dispose();
     };
   }, [stage, canvas, phone, panel, scrolled]);
+}
+
+/** `by` of the way from one point on the glass to another. */
+function mix2(
+  from: readonly [number, number],
+  to: readonly [number, number],
+  by: number,
+): [number, number] {
+  return [lerp(from[0], to[0], by), lerp(from[1], to[1], by)];
 }
