@@ -9,6 +9,7 @@ import {
   PHONE,
   PHONE_CORNER,
   PHONE_RIM,
+  STOVE,
   WINDOW,
 } from "./layout";
 import {
@@ -18,38 +19,44 @@ import {
   normalize,
   perspective,
   scale,
+  scaling,
   smoothstep,
   transformDirection,
   transformPoint,
+  translation,
   type Mat4,
   type Vec3,
 } from "./math";
 import { clearMesh, createMesh, VERTEX_SIZE, type Mesh } from "./mesh";
 import {
-  DITHER_FRAGMENT,
   HUT_FRAGMENT,
   HUT_VERTEX,
+  SCREEN_FRAGMENT,
   SCREEN_VERTEX,
 } from "./shaders";
 import { daylightAt } from "./time";
 
-/* Draws the hut with WebGL, in two steps: first the hut itself into a
-   picture off screen, then that picture onto the page through the dither
-   shader. Where the phone's screen is, the page is left see-through, so the
+/* Draws the hut with WebGL, in two steps: first the hut itself into a small
+   picture off screen, then that picture onto the page in big pixels and few
+   colours. Where the phone's screen is, the page is left see-through, so the
    real phone underneath shows. */
 
-/** The most pixels drawn, however big or sharp the screen is. */
+/** The most pixels of the page drawn on, however big or sharp it is. */
 const MAX_PIXELS = 2_200_000;
-/** How wide one dither dot is, in CSS pixels. */
-const DOT = 3;
+/** About how many rows the small picture has, like an old console's. */
+const ROWS = 250;
 /** Nothing nearer or further than this is drawn. */
 const NEAR = 6;
 const FAR = 6000;
-/** The way to the sun: up, to the left, and out through the window. */
-const BEAM_FROM = normalize([-0.3, 0.72, -1]);
+/** The way to the sun: up and far to the left, out through the window. Its
+    light crosses the hut in front of you and lands on the rug. */
+const BEAM_FROM = normalize([-1, 0.75, -0.45]);
 /** How strong the screen's light is. By day you do not notice it. */
 const GLOW = 0.55;
-/** The two colours everything ends up between: shadow and bone. */
+/** The fire in the stove: where its light comes from, and its colour. */
+const FIRE_AT: Vec3 = [STOVE[0], STOVE[1] + 145, STOVE[2] + 112];
+const FIRE: Vec3 = [1.05, 0.56, 0.2];
+/** The two colours a ruined hut ends up between: shadow and bone. */
 const INK: Vec3 = [0.015, 0.02, 0.03];
 const PAPER: Vec3 = [0.86, 0.8, 0.64];
 
@@ -65,7 +72,8 @@ export type HutFrame = {
   hand: HandState;
   /** The colour of the light from the phone's screen. */
   glow: Vec3;
-  /** Seconds since the page opened. At 0 the grain in the dark holds still. */
+  /** Seconds since the page opened. At 0 the fire, the dust and the grain
+      in the dark hold still. */
   time: number;
 };
 
@@ -83,16 +91,13 @@ type Layer = {
   indices: WebGLBuffer;
 };
 
-/** The pictures off screen: one drawn into (with smoothed edges), and a
-    plain copy of it that the dither shader can read. */
+/** The small picture off screen that the hut is drawn into. */
 type Target = {
   width: number;
   height: number;
   drawn: WebGLFramebuffer;
-  color: WebGLRenderbuffer;
-  depth: WebGLRenderbuffer;
-  copied: WebGLFramebuffer;
   texture: WebGLTexture;
+  depth: WebGLRenderbuffer;
 };
 
 function compile(
@@ -244,58 +249,19 @@ function createTarget(
   height: number,
 ): Target | null {
   const drawn = gl.createFramebuffer();
-  const color = gl.createRenderbuffer();
-  const depth = gl.createRenderbuffer();
-  const copied = gl.createFramebuffer();
   const texture = gl.createTexture();
-  if (
-    drawn === null ||
-    color === null ||
-    depth === null ||
-    copied === null ||
-    texture === null
-  ) {
-    return null;
-  }
-  // Four samples a pixel smooth the edges, where the card can do that.
-  const samples = Math.min(4, Number(gl.getParameter(gl.MAX_SAMPLES)));
-  gl.bindRenderbuffer(gl.RENDERBUFFER, color);
-  gl.renderbufferStorageMultisample(
-    gl.RENDERBUFFER,
-    samples,
-    gl.RGBA8,
-    width,
-    height,
-  );
-  gl.bindRenderbuffer(gl.RENDERBUFFER, depth);
-  gl.renderbufferStorageMultisample(
-    gl.RENDERBUFFER,
-    samples,
-    gl.DEPTH_COMPONENT24,
-    width,
-    height,
-  );
-  gl.bindFramebuffer(gl.FRAMEBUFFER, drawn);
-  gl.framebufferRenderbuffer(
-    gl.FRAMEBUFFER,
-    gl.COLOR_ATTACHMENT0,
-    gl.RENDERBUFFER,
-    color,
-  );
-  gl.framebufferRenderbuffer(
-    gl.FRAMEBUFFER,
-    gl.DEPTH_ATTACHMENT,
-    gl.RENDERBUFFER,
-    depth,
-  );
-
+  const depth = gl.createRenderbuffer();
+  if (drawn === null || texture === null || depth === null) return null;
+  // Its pixels are shown as they are: hard squares, nothing smoothed.
   gl.bindTexture(gl.TEXTURE_2D, texture);
   gl.texStorage2D(gl.TEXTURE_2D, 1, gl.RGBA8, width, height);
-  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
-  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
+  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST);
+  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
   gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
   gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
-  gl.bindFramebuffer(gl.FRAMEBUFFER, copied);
+  gl.bindRenderbuffer(gl.RENDERBUFFER, depth);
+  gl.renderbufferStorage(gl.RENDERBUFFER, gl.DEPTH_COMPONENT24, width, height);
+  gl.bindFramebuffer(gl.FRAMEBUFFER, drawn);
   gl.framebufferTexture2D(
     gl.FRAMEBUFFER,
     gl.COLOR_ATTACHMENT0,
@@ -303,16 +269,20 @@ function createTarget(
     texture,
     0,
   );
+  gl.framebufferRenderbuffer(
+    gl.FRAMEBUFFER,
+    gl.DEPTH_ATTACHMENT,
+    gl.RENDERBUFFER,
+    depth,
+  );
   gl.bindFramebuffer(gl.FRAMEBUFFER, null);
-  return { width, height, drawn, color, depth, copied, texture };
+  return { width, height, drawn, texture, depth };
 }
 
 function deleteTarget(gl: WebGL2RenderingContext, target: Target): void {
   gl.deleteFramebuffer(target.drawn);
-  gl.deleteRenderbuffer(target.color);
-  gl.deleteRenderbuffer(target.depth);
-  gl.deleteFramebuffer(target.copied);
   gl.deleteTexture(target.texture);
+  gl.deleteRenderbuffer(target.depth);
 }
 
 /**
@@ -331,10 +301,10 @@ export function createHutRenderer(
   if (gl === null) return null;
 
   const hutProgram = link(gl, HUT_VERTEX, HUT_FRAGMENT);
-  const ditherProgram = link(gl, SCREEN_VERTEX, DITHER_FRAGMENT);
-  if (hutProgram === null || ditherProgram === null) return null;
+  const screenProgram = link(gl, SCREEN_VERTEX, SCREEN_FRAGMENT);
+  if (hutProgram === null || screenProgram === null) return null;
   const hutInputs = inputsOf(gl, hutProgram);
-  const ditherInputs = inputsOf(gl, ditherProgram);
+  const screenInputs = inputsOf(gl, screenProgram);
 
   const hutMesh = createMesh(6000);
   buildHut(hutMesh);
@@ -344,7 +314,7 @@ export function createHutRenderer(
   const glass = createLayer(gl, glassMesh, false);
   const props = createLayer(gl, createMesh(2500), true);
   const hand = createLayer(gl, createMesh(6000), true);
-  // The dither shader draws one triangle it makes up itself.
+  // The second program draws one triangle it makes up itself.
   const nothing = gl.createVertexArray();
   if (
     hut === null ||
@@ -365,18 +335,28 @@ export function createHutRenderer(
     if (gl.isContextLost()) return;
     if (frame.width < 1 || frame.height < 1) return;
 
-    // As sharp as the screen, up to a limit.
+    // The page is drawn on as sharp as the screen, up to a limit. The hut
+    // is a much smaller picture: each of its pixels covers a square of
+    // `cell` pixels of the page.
     const sharp = Math.min(
       window.devicePixelRatio,
       2,
       Math.sqrt(MAX_PIXELS / (frame.width * frame.height)),
     );
-    const width = Math.max(1, Math.round(frame.width * sharp));
-    const height = Math.max(1, Math.round(frame.height * sharp));
+    const pageWidth = Math.max(1, Math.round(frame.width * sharp));
+    const pageHeight = Math.max(1, Math.round(frame.height * sharp));
+    const cell = Math.max(
+      2,
+      Math.round((Math.min(frame.width, frame.height) / ROWS) * sharp),
+    );
+    const width = Math.ceil(pageWidth / cell);
+    const height = Math.ceil(pageHeight / cell);
+    if (canvas.width !== pageWidth || canvas.height !== pageHeight) {
+      canvas.width = pageWidth;
+      canvas.height = pageHeight;
+    }
     if (target === null || target.width !== width || target.height !== height) {
       if (target !== null) deleteTarget(gl, target);
-      canvas.width = width;
-      canvas.height = height;
       target = createTarget(gl, width, height);
       if (target === null) return;
     }
@@ -408,9 +388,19 @@ export function createHutRenderer(
 
     const light = daylightAt(hour);
     gl.useProgram(hutProgram);
+    // The small picture's squares stick out past the right and top of the
+    // page by part of a square. The view is fitted to the page, not to
+    // them, so that the hole stays over the real phone.
+    const fitX = pageWidth / (width * cell);
+    const fitY = pageHeight / (height * cell);
     hutInputs.matrix(
       "uCamera",
-      multiply(perspective(FOCAL, width / height, NEAR, FAR), frame.view),
+      [
+        translation([fitX - 1, fitY - 1, 0]),
+        scaling(fitX, fitY, 1),
+        perspective(FOCAL, pageWidth / pageHeight, NEAR, FAR),
+        frame.view,
+      ].reduce(multiply),
     );
     hutInputs.vector("uEye", EYE);
     hutInputs.number("uDecay", decay);
@@ -446,11 +436,30 @@ export function createHutRenderer(
       "uGloom",
       smoothstep(0.2, 1, decay) * (0.35 + 0.65 * light.night),
     );
+    // The fire burns down as the hut goes, and flickers while it lasts.
+    const flame = 1 - smoothstep(0.1, 0.5, decay);
+    const flicker =
+      1 +
+      0.07 * Math.sin(frame.time * 11) +
+      0.05 * Math.sin(frame.time * 17.3 + 1);
+    hutInputs.vector("uFireAt", FIRE_AT);
+    hutInputs.vector("uFire", scale(FIRE, flame * flicker));
+    hutInputs.number("uFlame", flame);
+    // More dust hangs in the air as the hut goes. Moonlight shows less of it.
+    hutInputs.number(
+      "uHaze",
+      lerp(0.0016, 0.002, decay) * lerp(1, 0.4, light.night),
+    );
+    hutInputs.number("uTime", frame.time);
 
+    // The hut's corners jump to whole pixels. The hand's do not: the real
+    // phone moves smoothly, and the hole has to stay on it.
     hutInputs.matrix("uModel", IDENTITY);
+    hutInputs.pair("uSnap", width / 2, height / 2);
     drawLayer(gl, hut);
     drawLayer(gl, props);
     hutInputs.matrix("uModel", frame.phone);
+    hutInputs.pair("uSnap", 0, 0);
     drawLayer(gl, hand);
 
     // The panes go on top of what is behind them, and hide nothing.
@@ -458,40 +467,29 @@ export function createHutRenderer(
     gl.blendFuncSeparate(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA, gl.ZERO, gl.ONE);
     gl.depthMask(false);
     hutInputs.matrix("uModel", IDENTITY);
+    hutInputs.pair("uSnap", width / 2, height / 2);
     drawLayer(gl, glass);
     gl.depthMask(true);
     gl.disable(gl.BLEND);
 
-    // --- That picture, through the dither shader, onto the page ---
-    gl.bindFramebuffer(gl.READ_FRAMEBUFFER, target.drawn);
-    gl.bindFramebuffer(gl.DRAW_FRAMEBUFFER, target.copied);
-    gl.blitFramebuffer(
-      0,
-      0,
-      width,
-      height,
-      0,
-      0,
-      width,
-      height,
-      gl.COLOR_BUFFER_BIT,
-      gl.NEAREST,
-    );
+    // --- That picture, in big pixels and few colours, onto the page ---
     gl.bindFramebuffer(gl.FRAMEBUFFER, null);
+    gl.viewport(0, 0, pageWidth, pageHeight);
     gl.disable(gl.DEPTH_TEST);
-    gl.useProgram(ditherProgram);
+    gl.useProgram(screenProgram);
     gl.activeTexture(gl.TEXTURE0);
     gl.bindTexture(gl.TEXTURE_2D, target.texture);
-    ditherInputs.pair("uSize", width, height);
-    ditherInputs.number("uCell", Math.max(2, Math.round(DOT * sharp)));
-    ditherInputs.number("uDither", smoothstep(0.15, 0.8, decay) * 0.95);
-    ditherInputs.number("uLevels", lerp(16, 4, smoothstep(0.15, 1, decay)));
-    ditherInputs.number("uMono", smoothstep(0.35, 1, decay) * 0.7);
-    ditherInputs.vector("uInk", INK);
-    ditherInputs.vector("uPaper", PAPER);
-    ditherInputs.number("uVignette", lerp(0.1, 0.6, smoothstep(0.2, 1, decay)));
-    ditherInputs.number("uGrain", smoothstep(0.35, 1, decay) * 0.32);
-    ditherInputs.number("uTick", Math.floor(frame.time * 10) % 1000);
+    const gone = smoothstep(0.15, 1, decay);
+    screenInputs.number("uCell", cell);
+    screenInputs.number("uLevels", lerp(14, 8, gone));
+    screenInputs.number("uMono", smoothstep(0.3, 1, decay) * 0.45);
+    screenInputs.vector("uInk", INK);
+    screenInputs.vector("uPaper", PAPER);
+    screenInputs.number("uVignette", lerp(0.22, 0.55, gone));
+    screenInputs.number("uGrime", gone);
+    screenInputs.number("uGrain", lerp(0.06, 0.34, gone));
+    screenInputs.number("uTick", Math.floor(frame.time * 10) % 1000);
+    screenInputs.number("uLift", lerp(2, 1.25, smoothstep(0.3, 0.9, decay)));
     gl.bindVertexArray(nothing);
     gl.drawArrays(gl.TRIANGLES, 0, 3);
     gl.bindVertexArray(null);
@@ -502,7 +500,7 @@ export function createHutRenderer(
     gl.deleteVertexArray(nothing);
     if (target !== null) deleteTarget(gl, target);
     gl.deleteProgram(hutProgram);
-    gl.deleteProgram(ditherProgram);
+    gl.deleteProgram(screenProgram);
   };
 
   return { draw, dispose };

@@ -42,7 +42,11 @@ export const REST_DEG = 50;
 export const FOCAL = 1.6;
 
 /** Where the tally starts on the wall in front of you: its top left. */
-export const TALLY = { x: -170, y: 770, perRow: 40, rows: 5 } as const;
+export const TALLY = { x: -130, y: 770, perRow: 40, rows: 5 } as const;
+
+/** The stove, in the corner to the right of the window: the middle of its
+    foot on the floor. */
+export const STOVE: Vec3 = [660, 0, -745];
 
 /** The middle of the clock, on the wall in front of you. */
 export const CLOCK: Vec3 = [330, 1010, -HALF_DEPTH];

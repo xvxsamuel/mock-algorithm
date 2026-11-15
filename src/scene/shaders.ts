@@ -1,6 +1,12 @@
 /* The programs the graphics card runs: one colours the hut, one turns that
-   picture into the dithered one you see. They are written in GLSL, the
-   language WebGL takes them in. */
+   picture into the one you see. They are written in GLSL, the language WebGL
+   takes them in.
+
+   The hut looks like a game on an old console from start to finish: a small
+   picture shown in big pixels, patterns made of coarse squares, corners that
+   jump from pixel to pixel, and too few colours, with dots to make up the
+   ones between. Decay does not change that look. It only makes the picture
+   darker, greyer and dirtier. */
 
 /** What a surface is made of. A corner of a mesh carries one of these, and
     the hut shader paints it accordingly. */
@@ -30,6 +36,8 @@ export const MATERIAL = {
   dark: 12,
   /** Its own colour, which dust settles on. */
   dusty: 13,
+  /** The fire in the stove. The extra numbers run 0 to 1 across it. */
+  fire: 14,
 } as const;
 
 const MATERIAL_NAMES = Object.entries(MATERIAL)
@@ -45,6 +53,9 @@ layout(location = 4) in vec2 aExtra;
 
 uniform mat4 uCamera;
 uniform mat4 uModel;
+// Half the picture's size in pixels. Corners jump to whole pixels, so the
+// hut wobbles a little as you look around. 0: they stay where they are.
+uniform vec2 uSnap;
 
 out vec3 vWorld;
 out vec3 vLocal;
@@ -61,7 +72,11 @@ void main() {
   vColor = aColor;
   vExtra = aExtra;
   vMaterial = int(aMaterial + 0.5);
-  gl_Position = uCamera * world;
+  vec4 at = uCamera * world;
+  if (uSnap.x > 0.0 && abs(at.w) > 0.0001) {
+    at.xy = round(at.xy / at.w * uSnap) / uSnap * at.w;
+  }
+  gl_Position = at;
 }
 `;
 
@@ -104,6 +119,15 @@ uniform vec4 uPhoneSize;
 uniform vec3 uRoom;
 // How much the dark swallows what is far away.
 uniform float uGloom;
+// The fire in the stove: where it is, the light it gives, and how high it
+// burns (1 to 0).
+uniform vec3 uFireAt;
+uniform vec3 uFire;
+uniform float uFlame;
+// How much dust hangs in the air for the light to catch.
+uniform float uHaze;
+// Seconds, for the flames and the dust.
+uniform float uTime;
 
 out vec4 outColor;
 
@@ -124,6 +148,44 @@ float noise(vec2 p) {
     mix(hash12(cell + vec2(0.0, 1.0)), hash12(cell + vec2(1.0, 1.0)), u.x),
     u.y
   );
+}
+
+float hash13(vec3 p) {
+  p = fract(p * 0.1031);
+  p += dot(p, p.zyx + 31.32);
+  return fract((p.x + p.y) * p.z);
+}
+
+// The classic 4x4 pattern of dots, as a number from 0 to 1 for each pixel.
+float pattern(ivec2 cell) {
+  const float order[16] = float[16](
+    0.0, 8.0, 2.0, 10.0,
+    12.0, 4.0, 14.0, 6.0,
+    3.0, 11.0, 1.0, 9.0,
+    15.0, 7.0, 13.0, 5.0
+  );
+  return (order[(cell.x & 3) + (cell.y & 3) * 4] + 0.5) / 16.0;
+}
+
+// --- Coarse squares ---
+
+// Every pattern below is worked out for the middle of a square this wide,
+// not for the exact spot: that is what makes it look like a small picture
+// stretched over a big wall.
+const float TEXEL = 8.0;
+
+vec2 texels(vec2 uv) {
+  return (floor(uv / TEXEL) + 0.5) * TEXEL;
+}
+
+// Shifted a little, so that no face of a box lies on the edge of a square.
+vec3 texels(vec3 at) {
+  return (floor((at + 3.1) / TEXEL) + 0.5) * TEXEL - 3.1;
+}
+
+// The same for the two numbers that run 0 to 1 across a face.
+vec2 squares(vec2 uv, vec2 count) {
+  return (floor(uv * count) + 0.5) / count;
 }
 
 // Cloudy noise from 0 to 1: big shapes with smaller ones on top.
@@ -162,13 +224,14 @@ vec3 wallColor(vec2 uv, float id) {
   float board = uv.y / 96.0;
   float row = floor(board);
   float fy = fract(board);
-  float along = uv.x / 660.0 + hash12(vec2(row, id + 1.0)) * 9.0;
+  float along = uv.x / 656.0 + hash12(vec2(row, id + 1.0)) * 9.0;
   float fx = fract(along);
   float piece = hash12(vec2(floor(along) + id * 13.0, row));
-  float seam = min(min(fy, 1.0 - fy) * 96.0, min(fx, 1.0 - fx) * 660.0);
+  // How far into its board this square is: the first one is the gap.
+  float seam = min(fy * 96.0, fx * 656.0);
   float grain = fbm(vec2(uv.x * 0.005, uv.y * 0.12) + piece * 40.0);
 
-  vec3 paint = vec3(0.95, 0.91, 0.82) * (0.95 + 0.07 * piece) * (0.96 + 0.07 * grain);
+  vec3 paint = vec3(0.96, 0.9, 0.76) * (0.93 + 0.1 * piece) * (0.94 + 0.1 * grain);
   vec3 wood = mix(vec3(0.42, 0.3, 0.2), vec3(0.25, 0.2, 0.16), grain);
   wood = mix(wood, vec3(0.2, 0.19, 0.17), uDecay * 0.6);
 
@@ -192,35 +255,35 @@ vec3 wallColor(vec2 uv, float id) {
   float lip = smoothstep(peelAt - 0.035, peelAt, flake) * (1.0 - peel);
   color = mix(color * (1.0 - 0.3 * lip), wood, peel);
 
-  float gap = 1.0 - smoothstep(0.5 + 2.0 * uDecay, 1.8 + 4.0 * uDecay, seam);
-  color = mix(color, vec3(0.1, 0.08, 0.06), gap * (0.4 + 0.55 * uDecay));
+  float gap = step(seam, TEXEL * (1.0 + 0.6 * uDecay));
+  color = mix(color, vec3(0.1, 0.08, 0.06), gap * (0.28 + 0.5 * uDecay));
   return color * (1.0 - 0.2 * uDecay);
 }
 
 // Floorboards running away from you. Dust settles, and it stains from the
 // walls inwards.
 vec3 floorColor(vec2 uv) {
-  float board = uv.x / 132.0;
+  float board = uv.x / 128.0;
   float column = floor(board);
   float fx = fract(board);
-  float along = uv.y / 900.0 + hash12(vec2(column, 4.0)) * 5.0;
+  float along = uv.y / 896.0 + hash12(vec2(column, 4.0)) * 5.0;
   float fz = fract(along);
   float piece = hash12(vec2(column, floor(along)));
-  float seam = min(min(fx, 1.0 - fx) * 132.0, min(fz, 1.0 - fz) * 900.0);
+  float seam = min(fx * 128.0, fz * 896.0);
   float grain = fbm(vec2(uv.x * 0.09, uv.y * 0.0045) + piece * 50.0);
 
-  vec3 color = mix(vec3(0.8, 0.6, 0.38), vec3(0.64, 0.45, 0.27), grain) *
-    (0.9 + 0.16 * piece);
+  vec3 color = mix(vec3(0.84, 0.6, 0.34), vec3(0.62, 0.42, 0.24), grain) *
+    (0.86 + 0.22 * piece);
 
   float edge = min(uRoom.x - abs(uv.x), uRoom.z - abs(uv.y));
   float field = fbm(uv * 0.004 + 60.0) * 0.75 + (1.0 - smoothstep(0.0, 380.0, edge)) * 0.4;
   color = stained(color, field, mix(1.2, 0.36, uDecay), vec3(0.6, 0.53, 0.45));
   color = mix(color, vec3(0.42, 0.4, 0.37), uDecay * 0.45);
-  float grit = step(0.95 - 0.1 * uDecay, hash12(floor(uv / 3.0))) * uDecay;
+  float grit = step(0.95 - 0.1 * uDecay, hash12(floor(uv / TEXEL))) * uDecay;
   color = mix(color, vec3(0.12, 0.1, 0.08), grit * 0.6);
 
-  float gap = 1.0 - smoothstep(0.8, 2.4 + 3.0 * uDecay, seam);
-  return mix(color, vec3(0.12, 0.08, 0.05), gap * 0.7);
+  float gap = step(seam, TEXEL * (1.0 + uDecay));
+  return mix(color, vec3(0.12, 0.08, 0.05), gap * (0.45 + 0.3 * uDecay));
 }
 
 // The underside of the roof: bare boards, the first to get wet.
@@ -233,8 +296,8 @@ vec3 roofColor(vec2 uv) {
     (0.9 + 0.14 * piece);
   float field = fbm(uv * 0.004 + 20.0) * 0.8 + 0.25;
   color = stained(color, field, mix(1.15, 0.32, uDecay), vec3(0.55, 0.5, 0.42));
-  float gap = 1.0 - smoothstep(0.01, 0.03 + 0.03 * uDecay, min(fy, 1.0 - fy));
-  color = mix(color, vec3(0.1, 0.07, 0.05), gap * 0.7);
+  float gap = step(fy * 120.0, TEXEL * (1.0 + uDecay));
+  color = mix(color, vec3(0.1, 0.07, 0.05), gap * 0.6);
   return color * (1.0 - 0.25 * uDecay);
 }
 
@@ -287,7 +350,7 @@ float webAt(vec2 uv) {
   float spoke = off / 6.0 * 1.5708 * r;
   float sagged = r + 0.028 * (1.0 - 4.0 * off * off);
   float ring = abs(fract(sagged * 8.0 + 0.5) - 0.5) / 8.0;
-  float thread = 1.0 - smoothstep(0.0035, 0.007, min(spoke, ring));
+  float thread = 1.0 - step(0.013, min(spoke, ring));
   float grown = smoothstep(0.2, 0.85, uDecay) * 1.02;
   return thread * step(r, grown) * step(0.03, r);
 }
@@ -378,7 +441,39 @@ vec3 lightAt(vec3 at, vec3 normal, float shade) {
   float near = length(toEye);
   light += uGlow * 0.45 * max(dot(normal, toEye / near), 0.0) /
     (1.0 + near * near / (140.0 * 140.0));
+
+  // The stove, while it burns.
+  vec3 toFire = uFireAt - at;
+  float fireFar = length(toFire);
+  light += uFire * max(dot(normal, toFire / fireFar) * 0.7 + 0.3, 0.0) /
+    (1.0 + fireFar * fireFar / (280.0 * 280.0));
   return light;
+}
+
+// The light you see hanging in the air: walk from your eyes to the spot you
+// look at, and add up the dust that is in the beam on the way. Each pixel
+// starts its walk at a slightly different step, which turns the stripes
+// that few steps would give into dots.
+const int SHAFT_STEPS = 20;
+
+float shaftTo(vec3 at) {
+  vec3 stride = (at - uEye) / float(SHAFT_STEPS);
+  float first = pattern(ivec2(gl_FragCoord.xy));
+  float sum = 0.0;
+  for (int i = 0; i < SHAFT_STEPS; i++) {
+    vec3 p = uEye + stride * (float(i) + first);
+    float lit = beamAt(p);
+    if (lit <= 0.0) continue;
+    // The light comes through the pane in streaks, brighter and fainter by
+    // where it came in, so that you see rays and not a fog.
+    float travelled = (uWindowAt.z - p.z) / uBeamFrom.z;
+    vec2 cameIn = p.xy + uBeamFrom.xy * travelled;
+    float ray = 0.2 + 1.7 * smoothstep(0.25, 0.75, noise(cameIn * vec2(0.05, 0.032) + 7.0));
+    // And single specks of dust in it, sinking slowly.
+    float speck = step(0.9975, hash13(floor((p + vec3(0.0, uTime * 3.0, 0.0)) / 10.0)));
+    sum += lit * (ray + speck * 5.0);
+  }
+  return sum * length(stride);
 }
 
 float roundedBox(vec2 p, vec2 size, float radius) {
@@ -386,45 +481,48 @@ float roundedBox(vec2 p, vec2 size, float radius) {
   return length(max(q, 0.0)) + min(max(q.x, q.y), 0.0) - radius;
 }
 
-void main() {
-  if (vMaterial == M_SKY) {
-    outColor = vec4(skyColor(vExtra), 1.0);
-    return;
-  }
-  if (vMaterial == M_DARK) {
-    outColor = vec4(0.0, 0.0, 0.0, 1.0);
-    return;
+// The colour of this spot, lit, and how solid it is.
+vec4 surface() {
+  if (vMaterial == M_SKY) return vec4(skyColor(squares(vExtra, vec2(128.0))), 1.0);
+  if (vMaterial == M_DARK) return vec4(0.0, 0.0, 0.0, 1.0);
+  if (vMaterial == M_FIRE) {
+    vec2 uv = squares(vExtra, vec2(10.0));
+    float flame = noise(vec2(uv.x * 4.0, uv.y * 3.0 - uTime * 1.6)) * (1.25 - uv.y);
+    vec3 burning = mix(vec3(0.85, 0.2, 0.04), vec3(1.0, 0.86, 0.36), smoothstep(0.25, 0.7, flame));
+    return vec4(mix(vec3(0.035, 0.03, 0.03), burning, uFlame), 1.0);
   }
 
   vec3 normal = normalize(vNormal);
   if (dot(normal, uEye - vWorld) < 0.0) normal = -normal;
 
   vec3 color = vColor;
+  // Where the light is worked out for: on the big flat surfaces, for the
+  // middle of a square, like their patterns.
+  vec3 at = vWorld;
   float shade = 1.0;
   float alpha = 1.0;
 
   if (vMaterial == M_SCREEN) {
-    float edge = roundedBox(vLocal.xy, uPhoneSize.xy, uPhoneSize.z);
-    if (edge > 0.0) discard;
-    // Nothing is drawn here: the real phone on the page shows through.
-    if (edge < -uPhoneSize.w) {
-      outColor = vec4(0.0);
-      return;
-    }
     color = vec3(0.1, 0.1, 0.11);
   } else if (vMaterial == M_WALL) {
     float id = vExtra.x;
-    bool side = mod(id, 2.0) > 0.5;
-    color = wallColor(vec2(side ? vWorld.z : vWorld.x, vWorld.y), id);
-    shade = cornerShade(vWorld);
+    if (mod(id, 2.0) > 0.5) {
+      at.zy = texels(at.zy);
+      color = wallColor(at.zy, id);
+    } else {
+      at.xy = texels(at.xy);
+      color = wallColor(at.xy, id);
+    }
+    shade = cornerShade(at);
   } else if (vMaterial == M_FLOOR) {
-    color = floorColor(vWorld.xz);
-    shade = cornerShade(vWorld);
+    at.xz = texels(at.xz);
+    color = floorColor(at.xz);
+    shade = cornerShade(at);
   } else if (vMaterial == M_ROOF) {
-    color = roofColor(vec2(vWorld.z, abs(vWorld.x) * 1.147));
+    color = roofColor(texels(vec2(vWorld.z, abs(vWorld.x) * 1.147)));
     shade = mix(0.8, 0.5, uDecay);
   } else if (vMaterial == M_WOOD) {
-    color = woodColor(vColor, vLocal);
+    color = woodColor(vColor, texels(vLocal));
   } else if (vMaterial == M_DUSTY) {
     float value = dot(color, vec3(0.333));
     color = mix(color, vec3(value) * vec3(0.8, 0.76, 0.7), uDecay * 0.65);
@@ -439,29 +537,49 @@ void main() {
     float blotch = smoothstep(0.52, 0.75, fbm(vLocal.xy * 0.33 + 9.0));
     color = mix(color, color * vec3(0.62, 0.52, 0.5), blotch * turned * 0.7);
   } else if (vMaterial == M_RUG) {
-    color = rugColor(vExtra);
-    shade = cornerShade(vWorld);
+    at.xz = texels(at.xz);
+    color = rugColor(squares(vExtra, vec2(80.0, 72.0)));
+    shade = cornerShade(at);
   } else if (vMaterial == M_PICTURE) {
-    color = pictureColor(vExtra);
+    color = pictureColor(squares(vExtra, vec2(40.0, 30.0)));
   } else if (vMaterial == M_WEB) {
-    if (webAt(vExtra) < 0.5) discard;
+    if (webAt(squares(vExtra, vec2(48.0))) < 0.5) discard;
     color = vec3(0.86, 0.86, 0.84);
   } else if (vMaterial == M_GLASS) {
     // Dirt on the panes: most in the corners of each one.
-    vec2 pane = abs(fract(vExtra * 2.0) - 0.5) * 2.0;
+    vec2 uv = squares(vExtra, vec2(44.0));
+    vec2 pane = abs(fract(uv * 2.0) - 0.5) * 2.0;
     float corner = smoothstep(0.5, 1.0, max(pane.x, pane.y));
-    float grime = fbm(vExtra * 5.0 + 12.0);
+    float grime = fbm(uv * 5.0 + 12.0);
     alpha = clamp(0.03 + uDecay * (0.12 + 0.5 * grime + 0.3 * corner), 0.0, 0.85);
     color = vec3(0.5, 0.48, 0.42);
     normal = vec3(0.0, 0.0, 1.0);
   }
 
-  vec3 lit = color * lightAt(vWorld, normal, shade);
+  vec3 lit = color * lightAt(at, normal, shade);
   lit *= mix(1.0, exp(-length(uEye - vWorld) * 0.00045), uGloom);
+  return vec4(lit, alpha);
+}
+
+void main() {
+  if (vMaterial == M_SCREEN) {
+    float edge = roundedBox(vLocal.xy, uPhoneSize.xy, uPhoneSize.z);
+    if (edge > 0.0) discard;
+    // Nothing is drawn here: the real phone on the page shows through.
+    if (edge < -uPhoneSize.w) {
+      outColor = vec4(0.0);
+      return;
+    }
+  }
+
+  vec4 seen = surface();
+  vec3 lit = seen.rgb;
+  // The panes are see-through: the light in the air is on what is behind.
+  if (vMaterial != M_GLASS) lit += uBeam * shaftTo(vWorld) * uHaze;
   // Bright parts roll off instead of clipping to white.
   vec3 over = max(lit - 0.75, 0.0);
   lit = min(lit, 0.75) + over / (1.0 + over * 2.2);
-  outColor = vec4(lit, alpha);
+  outColor = vec4(lit, seen.a);
 }
 `;
 
@@ -473,29 +591,32 @@ void main() {
 }
 `;
 
-/** Takes the hut as drawn and makes the picture you see: darker in the
-    corners, drained of colour, and broken into a few shades of coarse
-    dots. How much of each is up to the numbers it is given. */
-export const DITHER_FRAGMENT = `#version 300 es
+/** Takes the small picture of the hut and makes the one you see: each of
+    its pixels a square of the page, in the few colours an old console had,
+    with dots where one of those is not enough. Decay makes it dimmer,
+    greyer, darker in the corners and noisier, through the numbers below. */
+export const SCREEN_FRAGMENT = `#version 300 es
 precision highp float;
 
 uniform sampler2D uScene;
-// The picture's size in pixels, and how many pixels wide one dot is.
-uniform vec2 uSize;
+// How many pixels of the page one pixel of the hut covers.
 uniform float uCell;
-// 0: the picture as drawn. 1: all dots.
-uniform float uDither;
-// How many shades each colour gets.
+// How many shades of brightness there are.
 uniform float uLevels;
 // How far the colours are pulled to the two below: shadow and light.
 uniform float uMono;
 uniform vec3 uInk;
 uniform vec3 uPaper;
+// How dark the corners are, and how blotchy that dark is.
 uniform float uVignette;
+uniform float uGrime;
 // How much the dots are shaken about, and a number that changes a few times
 // a second, so that the dark crawls like a bad signal.
 uniform float uGrain;
 uniform float uTick;
+// Below 2, dark shades come out a little lighter than they went in, so
+// that there is still something to see in a dark room.
+uniform float uLift;
 
 out vec4 outColor;
 
@@ -503,6 +624,17 @@ float hash12(vec2 p) {
   vec3 q = fract(vec3(p.xyx) * 0.1031);
   q += dot(q, q.yzx + 33.33);
   return fract((q.x + q.y) * q.z);
+}
+
+float noise(vec2 p) {
+  vec2 cell = floor(p);
+  vec2 f = fract(p);
+  vec2 u = f * f * (3.0 - 2.0 * f);
+  return mix(
+    mix(hash12(cell), hash12(cell + vec2(1.0, 0.0)), u.x),
+    mix(hash12(cell + vec2(0.0, 1.0)), hash12(cell + vec2(1.0, 1.0)), u.x),
+    u.y
+  );
 }
 
 // The classic 4x4 pattern: which dots turn on first as a shade gets lighter.
@@ -516,42 +648,35 @@ float pattern(ivec2 cell) {
   return (order[(cell.x & 3) + (cell.y & 3) * 4] + 0.5) / 16.0;
 }
 
-vec3 grade(vec3 color, vec2 uv) {
-  vec2 fromMiddle = uv - 0.5;
-  float corner = dot(fromMiddle, fromMiddle) * 2.0;
-  color *= 1.0 - uVignette * smoothstep(0.1, 1.0, corner);
-  float value = dot(color, vec3(0.299, 0.587, 0.114));
-  return mix(color, mix(uInk, uPaper, value), uMono);
-}
-
 void main() {
-  vec2 uv = gl_FragCoord.xy / uSize;
-  vec4 fine = texture(uScene, uv);
+  ivec2 cell = ivec2(gl_FragCoord.xy / uCell);
+  vec4 scene = texelFetch(uScene, cell, 0);
+  // The hole for the phone stays a hole.
+  if (scene.a < 0.5) {
+    outColor = vec4(0.0);
+    return;
+  }
+  vec3 color = scene.rgb;
+  vec2 uv = (vec2(cell) + 0.5) / vec2(textureSize(uScene, 0));
 
-  // The average of the dot this pixel is in.
-  vec2 cell = floor(gl_FragCoord.xy / uCell);
-  vec2 middle = (cell + 0.5) * uCell / uSize;
-  vec2 quarter = vec2(uCell * 0.25) / uSize;
-  vec4 coarse = 0.25 * (
-    texture(uScene, middle + quarter * vec2(1.0, 1.0)) +
-    texture(uScene, middle + quarter * vec2(-1.0, 1.0)) +
-    texture(uScene, middle + quarter * vec2(1.0, -1.0)) +
-    texture(uScene, middle + quarter * vec2(-1.0, -1.0))
-  );
+  // Dark creeps in from the corners, unevenly, like dirt on a lens.
+  vec2 fromMiddle = uv - 0.5;
+  float corner = smoothstep(0.1, 1.0, dot(fromMiddle, fromMiddle) * 2.0);
+  float blotch = noise(uv * 5.0 + 3.0) * 0.6 + noise(uv * 13.0) * 0.4;
+  color *= 1.0 - uVignette * corner * (1.0 + uGrime * (blotch * 2.0 - 1.0));
+  color *= 1.0 - uGrime * 0.25 * smoothstep(0.55, 0.8, blotch);
 
-  // The hole for the phone is see-through: its colour is not a colour.
-  vec3 smooth_ = grade(fine.rgb / max(fine.a, 0.001), uv) * fine.a;
-  vec3 dots = grade(coarse.rgb / max(coarse.a, 0.001), middle);
-  // Only the brightness is cut into shades, so the dots keep their colour.
-  // Its square root is, so that the dark gets most of the shades; and the
-  // darkest shades come out a little lighter than they went in, so that
-  // there is still something to see in a dark room.
-  float value = max(max(dots.r, dots.g), max(dots.b, 0.0001));
-  float shaken = pattern(ivec2(cell)) + (hash12(cell + uTick * 17.0) - 0.5) * uGrain;
-  float shade = floor(sqrt(value) * uLevels + shaken) / uLevels;
-  dots *= pow(shade, mix(2.0, 1.3, uDither)) / value;
-  float solid = step(0.5, coarse.a);
+  float value = dot(color, vec3(0.299, 0.587, 0.114));
+  color = mix(color, mix(uInk, uPaper, value), uMono);
 
-  outColor = mix(vec4(smooth_, fine.a), vec4(clamp(dots, 0.0, 1.0), 1.0) * solid, uDither);
+  // Few shades: the brightness is cut into steps, and the dots decide which
+  // of the two nearest a pixel gets. Its square root is cut, so that the
+  // dark gets most of the steps. The tint is left alone: cutting red, green
+  // and blue each on their own speckles the picture with stray colours.
+  float bright = max(max(color.r, color.g), max(color.b, 0.0001));
+  float shaken = pattern(cell) +
+    (hash12(vec2(cell) + uTick * 17.0) - 0.5) * uGrain;
+  float shade = clamp(floor(sqrt(bright) * uLevels + shaken) / uLevels, 0.0, 1.0);
+  outColor = vec4(color / bright * pow(shade, uLift), 1.0);
 }
 `;

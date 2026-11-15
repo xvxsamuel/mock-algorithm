@@ -4,6 +4,7 @@ import {
   HALF_DEPTH,
   HALF_WIDTH,
   RIDGE,
+  STOVE,
   TALLY,
   WALL_THICKNESS,
   WINDOW,
@@ -65,8 +66,15 @@ const NAIL: Vec3 = [-W, 790, -260];
 /** The door's hinges: the edge of the door nearest you. */
 const HINGE: Vec3 = [W - 2, 0, -210];
 
+/** A number from 0 to 1 that is always the same for the same `seed`. */
+function random(seed: number): number {
+  const x = Math.sin(seed * 127.1 + 311.7) * 43758.5453;
+  return x - Math.floor(x);
+}
+
 /** A piece of wall: 0 is the one in front of you, then right, back, left.
-    It runs from `u0` to `u1` along the wall and from `y0` up to `y1`. */
+    It runs from `u0` to `u1` along the wall and from `y0` up to `y1`.
+    `behind` sets a piece of the wall in front of you that far back. */
 function wallPanel(
   mesh: Mesh,
   id: number,
@@ -74,6 +82,7 @@ function wallPanel(
   y0: number,
   u1: number,
   y1: number,
+  behind = 0,
 ): void {
   const paint: Paint = {
     color: WHITE,
@@ -81,7 +90,7 @@ function wallPanel(
     extra: [id, 0],
   };
   const at = (u: number, y: number): Vec3 => {
-    if (id === 0) return [u, y, -D];
+    if (id === 0) return [u, y, -D - behind];
     if (id === 1) return [W, y, u];
     if (id === 2) return [u, y, D];
     return [-W, y, u];
@@ -122,11 +131,15 @@ export function buildHut(mesh: Mesh): void {
     material: MATERIAL.floor,
   });
 
-  // The wall in front of you, around the window.
+  // The wall in front of you, around the window. The pieces under and over
+  // the window, and a strip where the wall meets its pointed top, reach in
+  // behind their neighbours: the shader moves every corner to a whole pixel,
+  // and pieces that only touch would show cracks.
   wallPanel(mesh, 0, -W, 0, x0, EAVE);
   wallPanel(mesh, 0, x1, 0, W, EAVE);
-  wallPanel(mesh, 0, x0, 0, x1, y0);
-  wallPanel(mesh, 0, x0, y1, x1, EAVE);
+  wallPanel(mesh, 0, x0 - 8, 0, x1 + 8, y0, 0.6);
+  wallPanel(mesh, 0, x0 - 8, y1, x1 + 8, EAVE, 0.6);
+  wallPanel(mesh, 0, -W, EAVE - 8, W, EAVE + 8, 0.6);
   wallPanel(mesh, 1, -D, 0, D, EAVE);
   wallPanel(mesh, 2, -W, 0, W, EAVE);
   wallPanel(mesh, 3, -D, 0, D, EAVE);
@@ -268,13 +281,72 @@ export function buildHut(mesh: Mesh): void {
     dusty([0.2, 0.14, 0.1]),
   );
 
+  // An iron stove in the corner, with a fire in it, a kettle on it, and a
+  // pipe out through the roof.
+  const iron = plain([0.17, 0.16, 0.16]);
+  const [sx, , sz] = STOVE;
+  addBox(mesh, [sx - 90, 44, sz - 85], [sx + 90, 300, sz + 85], iron);
+  addBox(mesh, [sx - 100, 300, sz - 95], [sx + 100, 314, sz + 95], iron);
+  for (const x of [sx - 86, sx + 66]) {
+    for (const z of [sz - 81, sz + 61]) {
+      addBox(mesh, [x, 0, z], [x + 20, 44, z + 20], iron);
+    }
+  }
+  const mouth = sz + 85.6;
+  addQuad(
+    mesh,
+    [sx - 58, 84, mouth],
+    [sx + 58, 84, mouth],
+    [sx + 58, 206, mouth],
+    [sx - 58, 206, mouth],
+    { color: WHITE, material: MATERIAL.fire },
+    true,
+  );
+  for (const x of [sx - 29, sx, sx + 29]) {
+    addBox(mesh, [x - 4, 84, mouth], [x + 4, 206, mouth + 3], iron);
+  }
+  addDrum(mesh, [sx, 314, sz - 20], 700, 26, 26, iron);
+  const enamel = dusty([0.26, 0.5, 0.56]);
+  addDrum(mesh, [sx + 44, 314, sz + 36], 36, 32, 22, enamel);
+  addBox(mesh, [sx + 40, 350, sz + 32], [sx + 48, 360, sz + 40], enamel);
+
+  // A shelf of books on the wall to your left.
+  const shelf = wood([0.56, 0.38, 0.24]);
+  addBox(mesh, [-W, 620, -790], [-W + 96, 636, -460], shelf);
+  for (const z of [-770, -486]) {
+    addBox(mesh, [-W, 560, z], [-W + 70, 620, z + 12], shelf);
+  }
+  const covers: readonly Vec3[] = [
+    [0.72, 0.2, 0.16],
+    [0.2, 0.36, 0.5],
+    [0.88, 0.68, 0.22],
+    [0.26, 0.46, 0.3],
+    [0.9, 0.84, 0.7],
+    [0.56, 0.26, 0.4],
+  ];
+  let spine = -778;
+  for (let i = 0; i < 9; i++) {
+    const thick = 18 + random(i + 20) * 16;
+    const tall = 84 + random(i + 30) * 50;
+    const deep = 58 + random(i + 40) * 22;
+    addBox(
+      mesh,
+      [-W + 4, 636, spine],
+      [-W + 4 + deep, 636 + tall, spine + thick],
+      dusty(covers[i % covers.length]),
+    );
+    spine += thick + 1.5;
+  }
+  // And a jar at the end of the row.
+  addDrum(mesh, [-W + 46, 636, -500], 56, 24, 20, dusty([0.8, 0.62, 0.36]));
+
   // A rug where the sun falls.
   addQuad(
     mesh,
-    [-520, 1.2, 170],
-    [-60, 1.2, 170],
-    [-60, 1.2, -330],
-    [-520, 1.2, -330],
+    [-200, 1.2, -200],
+    [440, 1.2, -200],
+    [440, 1.2, -780],
+    [-200, 1.2, -780],
     { color: WHITE, material: MATERIAL.rug },
     true,
   );
@@ -373,12 +445,6 @@ export type PropsState = {
   videos: number;
 };
 
-/** A number from 0 to 1 that is always the same for the same `seed`. */
-function random(seed: number): number {
-  const x = Math.sin(seed * 127.1 + 311.7) * 43758.5453;
-  return x - Math.floor(x);
-}
-
 /** The things in the hut that change shape as the time goes. */
 export function buildProps(mesh: Mesh, state: PropsState): void {
   const { decay, hour, videos } = state;
@@ -471,6 +537,40 @@ export function buildProps(mesh: Mesh, state: PropsState): void {
       width = nextWidth;
       rise -= radians(lerp(20, 58, wilt));
     }
+  }
+
+  // The curtains, on a rod over the window. The right one comes off its
+  // rings, and hangs by a corner.
+  const { x0, y0, x1, y1 } = WINDOW;
+  const top = y1 + 52;
+  addBox(
+    mesh,
+    [x0 - 150, top - 3, -D + 15],
+    [x1 + 150, top + 5, -D + 23],
+    wood([0.34, 0.22, 0.14]),
+  );
+  const slipped = radians(15) * smoothstep(0.45, 0.9, decay);
+  for (const [hook, way, turn] of [
+    [x0 - 130, 1, 0],
+    [x1 + 130, -1, slipped],
+  ] as const) {
+    withTransform(
+      mesh,
+      multiply(translation([hook, top, -D + 12]), rotationZ(turn)),
+      () => {
+        // Four folds, every other one standing out and catching the light.
+        for (let fold = 0; fold < 4; fold++) {
+          const near = fold % 2 === 0;
+          const from = way * fold * 21;
+          addBox(
+            mesh,
+            [Math.min(from, from + way * 21), y0 - 80 - top, near ? 2 : 0],
+            [Math.max(from, from + way * 21), 0, near ? 12 : 8],
+            dusty(near ? [0.84, 0.36, 0.22] : [0.7, 0.28, 0.18]),
+          );
+        }
+      },
+    );
   }
 
   // The picture slips on its nail.
