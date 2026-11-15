@@ -82,6 +82,7 @@ src/
                No React, no DOM, no imports from components/ or hooks/.
   components/  React components. PascalCase file names, one component per file (VideoCard.tsx).
   hooks/       Custom React hooks (useFeed.ts).
+  scene/       The 3D hut behind #room, drawn with WebGL. Plain TypeScript, no React.
   data/        Static typed data: mock videos, categories, texts.
   App.tsx      Top-level layout.
   main.tsx     Entry point. Don't change.
@@ -90,7 +91,7 @@ public/        Files served as-is (favicon, etc.).
 .github/       CI/deploy workflows and PR template. Don't change.
 ```
 
-Imports flow one way: `components` -> `hooks` -> `algorithm` / `data`.
+Imports flow one way: `components` -> `hooks` -> `algorithm` / `scene` / `data`.
 
 ## TypeScript
 

@@ -1,7 +1,6 @@
-/* The room is plain CSS 3D: every surface is an element turned and moved in
-   space, so the phone in it is the real, working feed. Sizes are in units
-   from the middle of the floor (see RoomScene.tsx). The room is 1800 wide,
-   1800 deep and 1300 high, and you sit inside it. */
+/* The hut is drawn on a canvas with WebGL (see src/scene). The phone in it is
+   the real, working feed: it sits under the canvas, which has a hole in its
+   picture where the screen is. */
 .room {
   position: fixed;
   inset: 0;
@@ -22,256 +21,50 @@
   cursor: grabbing;
 }
 
-/* Your eyes are in the middle of the screen. Looking around turns the world
-   around them. */
-.room-world {
+/* A press goes through the picture: to the phone, or else to the stage,
+   which drags the view. */
+.room-canvas {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+}
+
+/* --- The phone in your hand --- */
+
+/* The middle of the phone, which the hut moves into your hand every frame.
+   Until the first one, it is not there. */
+.room-phone {
   position: absolute;
   top: 50%;
   left: 50%;
   width: 0;
   height: 0;
-  /* Nothing in the room takes presses but the phone: a press anywhere else
-     lands on the stage and drags the view. (It also keeps the walls behind
-     your head from catching presses meant for the phone.) */
-  pointer-events: none;
-  transform-style: preserve-3d;
-  transition: transform 0.9s var(--ease);
+  transform: scale(0);
 }
 
-.room.is-dragging .room-world,
-.room.is-dragging .room-label,
-.room.is-dragging .room-phone {
-  transition: none;
-}
-
-/* --- The room itself: every surface faces inwards --- */
-
-.room-floor,
-.room-ceiling {
-  position: absolute;
-  top: -900px;
-  left: -900px;
-  width: 1800px;
-  height: 1800px;
-  backface-visibility: hidden;
-}
-
-.room-floor {
-  background:
-    repeating-linear-gradient(
-      90deg,
-      rgb(255 255 255 / 0.06) 0 2px,
-      transparent 2px 100px
-    ),
-    repeating-linear-gradient(
-      0deg,
-      rgb(255 255 255 / 0.06) 0 2px,
-      transparent 2px 100px
-    ),
-    #0d0d13;
-  transform: rotateX(90deg);
-}
-
-.room-ceiling {
-  background: #0a0a0e;
-  transform: translateY(-1300px) rotateX(-90deg);
-}
-
-.room-wall {
-  position: absolute;
-  top: -1300px;
-  left: -900px;
-  width: 1800px;
-  height: 1300px;
-  border-bottom: 6px solid #22222c;
-  background: linear-gradient(to top, #1a1a24, #0f0f15);
-  backface-visibility: hidden;
-}
-
-.room-wall.is-front {
-  transform: translateZ(-900px);
-}
-
-.room-wall.is-back {
-  transform: translateZ(900px) rotateY(180deg);
-}
-
-/* The side walls are a shade darker, so the corners read. */
-.room-wall.is-left {
-  background: linear-gradient(to top, #15151d, #0c0c11);
-  transform: translateX(-900px) rotateY(90deg);
-}
-
-.room-wall.is-right {
-  background: linear-gradient(to top, #15151d, #0c0c11);
-  transform: translateX(900px) rotateY(-90deg);
-}
-
-/* --- Front wall: what was logged, a tile per video --- */
-
-/* The count sits just above the phone, in the corner of your eye while you
-   scroll. The tiles stack up the wall above it, for when you look up. */
-.room-log {
-  position: absolute;
-  right: 200px;
-  bottom: 565px;
-  left: 200px;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-}
-
-.room-tiles {
-  display: flex;
-  flex-wrap: wrap-reverse;
-  justify-content: center;
-  gap: 14px;
-  margin: 0 0 30px;
-  padding: 0;
-  list-style: none;
-}
-
-.room-tile {
-  display: grid;
-  place-items: center;
-  width: 100px;
-  height: 100px;
-  border-radius: 18px;
-  font-size: 54px;
-  line-height: 1;
-  animation: room-tile-in 0.7s var(--ease);
-}
-
-@keyframes room-tile-in {
-  from {
-    opacity: 0;
-    transform: scale(2.2);
-  }
-}
-
-.room-figure {
-  margin: 0;
-  color: var(--you);
-  font-size: 130px;
-  font-weight: 800;
-  line-height: 1;
-  letter-spacing: -0.03em;
-  font-variant-numeric: tabular-nums;
-}
-
-.room-caption {
-  margin: 6px 0 0;
-  color: var(--muted);
-  font-size: 38px;
-  font-weight: 600;
-  white-space: nowrap;
-}
-
-/* --- Left wall: the next video, already chosen --- */
-
-.room-next {
-  position: absolute;
-  bottom: 240px;
-  left: 750px;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  width: 400px;
-}
-
-.room-poster {
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
-  align-items: center;
-  gap: 24px;
-  width: 100%;
-  height: 560px;
-  margin-top: 26px;
-  border-radius: 28px;
-  box-shadow: 0 0 120px rgb(255 255 255 / 0.08);
-  animation: room-poster-in 0.8s var(--ease);
-}
-
-.room-poster-art {
-  font-size: 200px;
-  line-height: 1;
-}
-
-.room-poster-topic {
-  padding: 6px 22px;
-  border-radius: 999px;
-  background: rgb(0 0 0 / 0.35);
-  color: #fff;
-  font-size: 34px;
-  font-weight: 700;
-  text-transform: capitalize;
-}
-
-@keyframes room-poster-in {
-  from {
-    opacity: 0;
-  }
-}
-
-/* --- Interest pillars: their labels --- */
-
-.room-label {
-  position: absolute;
-  bottom: 40px;
-  left: 0;
-  margin: 0;
-  color: var(--text);
-  font-size: 34px;
-  font-weight: 700;
-  line-height: 1.15;
-  text-align: center;
-  text-transform: capitalize;
-  white-space: nowrap;
-  translate: -50% 0;
-  transform-origin: 50% 100%;
-  transition: transform 0.9s var(--ease);
-}
-
-.room-label small {
-  display: block;
-  color: var(--muted);
-  font-size: 24px;
-  font-weight: 600;
-  font-variant-numeric: tabular-nums;
-}
-
-/* --- The phone in your hand --- */
-
-/* The middle of the phone. */
-.room-phone {
-  position: absolute;
-  width: 0;
-  height: 0;
-  transform-style: preserve-3d;
-  transition: transform 0.9s var(--ease);
-}
-
-/* The transform makes the phone one flat sheet in the room. Without it the
-   browser sorts the layers inside the phone by depth one by one, and presses
-   land on the wrong one. */
 .room-phone-body {
   position: absolute;
   cursor: auto;
-  pointer-events: auto;
-  transform: translateZ(0);
+  /* Few shades of each colour, like the hut (the filter is in RoomScene). */
+  filter: url("#room-shades");
 }
 
-.room-phone-halo {
+/* The pattern of dots that goes with it. The hut sets how big one is. */
+.room-phone-dots {
   position: absolute;
-  top: -900px;
-  left: -900px;
-  width: 1800px;
-  height: 1800px;
-  background: radial-gradient(closest-side, currentColor, transparent);
-  opacity: 0.22;
-  transform: translateZ(-20px);
-  transition: color 1.2s var(--ease);
+  inset: 0;
+  border-radius: 48px;
+  background-size: calc(var(--room-dot, 4px) * 4) calc(var(--room-dot, 4px) * 4);
+  pointer-events: none;
+}
+
+/* Only holds the filter: it takes up no room. */
+.room-filters {
+  position: absolute;
+  width: 0;
+  height: 0;
 }
 
 /* The feed's own phone frame, at the size the room gives it (also on small
@@ -283,79 +76,154 @@
   border: 10px solid #1d1d1f;
   border-radius: 48px;
   box-shadow: none;
+  /* Whatever is stacked inside it stays under the dots. */
+  isolation: isolate;
 }
 
-/* --- Flat controls over the room --- */
+/* --- What the algorithm sees, over the hut --- */
 
-.room-hud {
+/* Narrow screens: the sheet from the flat view (index.css), as it is. */
+.room-glass,
+.room-tab {
+  display: none;
+}
+
+/* Wide screens: a pane of dark glass beside the phone. The hut moves the
+   phone over to make room for it (useHutScene). */
+@media (min-width: 901px) {
+  .room {
+    --panel-width: clamp(460px, 45vw, 660px);
+    --panel-gap: 10px;
+  }
+
+  .room-glass,
+  .room .app-panel {
+    position: absolute;
+    top: var(--panel-gap);
+    right: var(--panel-gap);
+    bottom: var(--panel-gap);
+    width: var(--panel-width);
+    border-radius: 20px;
+    transition:
+      transform 0.45s var(--ease),
+      visibility 0s;
+  }
+
+  .room-glass {
+    display: block;
+    border: 1px solid var(--line-strong);
+    background: color-mix(in srgb, var(--bg) 82%, transparent);
+    backdrop-filter: blur(16px);
+  }
+
+  /* Nothing here may start a new layer: the panel's cards have to stack
+     with the lines, which are drawn outside it. */
+  .room .app-panel {
+    border: 0;
+    background: none;
+  }
+
+  /* The glass stops short of the page's edges, so the panel gives up as
+     much of its own padding: its cards keep the height they have in the
+     flat view. */
+  .room .panel {
+    padding: 14px 20px 8px;
+  }
+
+  .room .panel-note {
+    top: 1px;
+    right: 20px;
+  }
+
+  /* Put away: off the right edge. */
+  .room.is-bare .room-glass,
+  .room.is-bare .app-panel {
+    visibility: hidden;
+    transform: translateX(calc(100% + var(--panel-gap) * 2));
+    transition:
+      transform 0.45s var(--ease),
+      visibility 0s 0.45s;
+  }
+
+  /* The grip on the panel's edge. With the panel put away it is the way
+     back in, so it says what is there. */
+  .room-tab {
+    position: absolute;
+    top: 50%;
+    right: calc(var(--panel-width) + var(--panel-gap));
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    min-height: 56px;
+    padding: 0 7px;
+    border: 1px solid var(--line-strong);
+    border-right: 0;
+    border-radius: 10px 0 0 10px;
+    background: color-mix(in srgb, var(--bg) 82%, transparent);
+    backdrop-filter: blur(16px);
+    color: var(--text);
+    font-size: 12.5px;
+    font-weight: 700;
+    line-height: 1;
+    cursor: pointer;
+    transform: translateY(-50%);
+    transition: right 0.45s var(--ease);
+  }
+
+  .room-tab span {
+    color: var(--you);
+    font-size: 16px;
+  }
+
+  .room.is-bare .room-tab {
+    right: 0;
+    padding: 0 12px 0 10px;
+  }
+
+  .room-tab:focus-visible {
+    outline: 2px solid var(--you);
+    outline-offset: 2px;
+  }
+}
+
+/* --- Where you look --- */
+
+/* Under the phone, wherever the hut has put it. */
+.room-looks {
   position: absolute;
   right: 0;
+  bottom: 16px;
   left: 0;
   display: flex;
-  align-items: center;
-  gap: 16px;
-  padding: 16px 20px;
+  justify-content: center;
   pointer-events: none;
+  transition: right 0.45s var(--ease);
 }
 
-.room-hud > * {
+.room-looks .levers {
+  background: color-mix(in srgb, var(--bg) 80%, transparent);
+  backdrop-filter: blur(10px);
   pointer-events: auto;
 }
 
-.room-hud.is-top {
-  top: 0;
-  justify-content: space-between;
+@media (min-width: 901px) {
+  .room:not(.is-bare) .room-looks {
+    right: calc(var(--panel-width) + var(--panel-gap));
+  }
 }
 
-.room-hud.is-bottom {
-  bottom: 0;
-  flex-direction: column;
-  gap: 8px;
-}
-
-.room-hud .levers {
-  background: color-mix(in srgb, var(--bg) 80%, transparent);
-  backdrop-filter: blur(10px);
-}
-
-.room-title {
-  margin: 0;
-  font-size: 15px;
-  font-weight: 700;
-}
-
-.room-back {
-  color: var(--muted);
-  font-size: 14px;
-  font-weight: 600;
-}
-
-.room-back:hover {
-  color: var(--text);
-}
-
-.room-back:focus-visible {
-  outline: 2px solid var(--you);
-  outline-offset: 2px;
-}
-
-.room-hint {
-  margin: 0;
-  color: var(--muted);
-  font-size: 13px;
-  text-shadow: 0 1px 6px #000;
+/* Clear of the sheet's handle. */
+@media (max-width: 900px) {
+  .room-looks {
+    bottom: 62px;
+  }
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .room-world,
-  .room-label,
-  .room-phone,
-  .room-phone-halo {
+  .room-glass,
+  .room .app-panel,
+  .room-tab,
+  .room-looks {
     transition: none;
-  }
-
-  .room-tile,
-  .room-poster {
-    animation: none;
   }
 }
