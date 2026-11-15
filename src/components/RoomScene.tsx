@@ -1,51 +1,48 @@
 import { useRef, useState, type PointerEvent } from "react";
-import { formatClock } from "../algorithm/clock";
-import { watchRatio } from "../algorithm/impression";
-import { CATEGORIES, CATEGORY_COLORS, type Category } from "../data/categories";
+import { CATEGORY_COLORS } from "../data/categories";
 import { useFeed } from "../hooks/useFeed";
+import { useHutScene, type Look } from "../hooks/useHutScene";
+import { useLinks } from "../hooks/useLinks";
+import { useMedia } from "../hooks/useMedia";
+import { useSession } from "../hooks/useSession";
+import { PHONE, PHONE_PIXELS } from "../scene/layout";
+import AlgorithmPanel from "./AlgorithmPanel";
+import ChainCard from "./ChainCard";
+import LinkLayer from "./LinkLayer";
 import PhoneFeed from "./PhoneFeed";
-import RoomBox from "./RoomBox";
+import PlanBreak from "./PlanBreak";
+import SessionEnd from "./SessionEnd";
+import SheetHandle from "./SheetHandle";
 import "./RoomScene.css";
 
-/* Everything in the room is measured from the middle of its floor: right is
-   +x, up is -y, and +z is behind you. One unit is about 2.3 mm (the phone is
-   64 tall), so the room in RoomScene.css is about 4.2 m square. */
-
-/** Your eyes: sitting down, towards the back of the room. */
-const EYE = { x: 0, y: -480, z: 500 };
-/** How far the screen plane is from your eyes. Top to bottom you see about
-    64 degrees, whatever the size of the window. */
-const EYE_DEPTH = "80dvh";
 /** Degrees the view turns for each px you drag. */
 const LOOK_SPEED = 0.12;
 
-/** The phone is laid out at this size, then shrunk to 64 units tall. */
-const PHONE_HEIGHT = 760;
-const PHONE_WIDTH = (PHONE_HEIGHT * 9) / 19.5;
-const PHONE_SCALE = 64 / PHONE_HEIGHT;
-/** How far from your eyes you hold it. */
-const ARM = 70;
-/** Degrees below eye level you hold it, and where your hand drops to once
-    you look up. */
-const HOLD_DEG = 22;
-const REST_DEG = 48;
+/** The phone is laid out at this size; the hut shrinks it into your hand. */
+const PHONE_WIDTH = (PHONE_PIXELS * PHONE.width) / PHONE.height;
 
-/** The interest pillars stand in an arc on the floor in front of you. */
-const PILLAR_REACH = 1050;
-const PILLAR_FIRST_DEG = 6;
-const PILLAR_STEP_DEG = 10;
-const PILLAR_SIZE = 90;
-const PILLAR_MIN = 24;
-const PILLAR_GROW = 400;
-/** Videos kept on the wall; older ones drop off. */
-const WALL_TILES = 48;
+/** The phone's screen gets the hut's look as well: this many shades of red,
+    of green and of blue, with a pattern of dots to make up the ones
+    between. Few enough to see, enough for a video to stay easy to watch. */
+const SHADES = 8;
+const STEPS = Array.from({ length: SHADES }, (_, i) =>
+  (i / (SHADES - 1)).toFixed(4),
+).join(" ");
 
-type Camera = {
-  /** Degrees your head is turned; positive is to the right. */
-  yaw: number;
-  /** Degrees you look up; negative is down. */
-  pitch: number;
-};
+/** The classic 4x4 pattern of dots, the same one the hut is drawn with, as
+    a small picture to tile over the screen. Each dot is a grey that says
+    how soon it tips a colour over into the next shade up. */
+const DOT_ORDER = [0, 8, 2, 10, 12, 4, 14, 6, 3, 11, 1, 9, 15, 7, 13, 5];
+const DOTS = `url("data:image/svg+xml,${encodeURIComponent(
+  `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 4 4" shape-rendering="crispEdges">${DOT_ORDER.map(
+    (order, i) => {
+      // Not quite from black to white, so that black stays black and white
+      // stays white however the browser rounds.
+      const grey = Math.round(255 * (0.06 + (0.88 * (order + 0.5)) / 16));
+      return `<rect x="${i % 4}" y="${Math.floor(i / 4)}" width="1" height="1" fill="rgb(${grey},${grey},${grey})"/>`;
+    },
+  ).join("")}</svg>`,
+)}")`;
 
 const VIEWS = ["phone", "up", "left"] as const;
 type View = (typeof VIEWS)[number];
@@ -56,54 +53,64 @@ const VIEW_NAMES: Record<View, string> = {
   left: "Look left",
 };
 
-const VIEW_CAMERAS: Record<View, Camera> = {
+const VIEW_LOOKS: Record<View, Look> = {
   // A little above the phone, so the wall behind it shows over its top.
   phone: { yaw: 0, pitch: -20 },
-  up: { yaw: 0, pitch: 0 },
-  left: { yaw: -58, pitch: 2 },
+  up: { yaw: -5, pitch: 6 },
+  left: { yaw: -52, pitch: 2 },
 };
 
-function clampCamera(camera: Camera): Camera {
+function clampLook(look: Look): Look {
   return {
-    yaw: clamp(camera.yaw, -100, 100),
-    pitch: clamp(camera.pitch, -55, 40),
+    yaw: Math.min(Math.max(look.yaw, -100), 100),
+    pitch: Math.min(Math.max(look.pitch, -55), 40),
   };
 }
 
-function clamp(value: number, min: number, max: number): number {
-  return Math.min(Math.max(value, min), max);
-}
-
-function radians(degrees: number): number {
-  return (degrees * Math.PI) / 180;
-}
-
-function gradientOf(category: Category): string {
-  const [from, to] = CATEGORY_COLORS[category];
-  return `linear-gradient(160deg, ${from}, ${to})`;
-}
-
 /**
- * Prototype: the feed from your own eyes. You sit in a room holding the
- * phone, which is the real feed, and you can look up from it. The room is
- * where the feed keeps what it learns: the videos it logged on the wall in
- * front of you, a pillar per interest on the floor, and to your left the
- * video it already picked for you next.
+ * The feed from your own eyes. You sit in a hut on a bright afternoon,
+ * holding the phone, which is the real feed. While you look at it, time in
+ * the hut runs away: the daylight goes, the walls stain and peel, and the
+ * hand that holds the phone stops being yours. You only notice when you
+ * look up. What the algorithm sees floats over the hut, beside the phone
+ * (on narrow screens, in a sheet under it).
  */
 function RoomScene() {
   const feed = useFeed();
+  // Lines from the phone to whatever part of the panel just changed.
+  const { links, feedArea, trackPress, removeLink } = useLinks(feed);
+  const session = useSession(feed);
+  // Wide screens: the panel floats beside the phone, until you put it away.
+  const wide = useMedia("(min-width: 901px)");
+  const [panelShown, setPanelShown] = useState(true);
+  const aside = wide && panelShown;
   const [view, setView] = useState<View>("phone");
   // Set once you drag; a view button takes over again.
-  const [free, setFree] = useState<Camera | null>(null);
+  const [free, setFree] = useState<Look | null>(null);
   const [dragging, setDragging] = useState(false);
   const drag = useRef<{ id: number; x: number; y: number } | null>(null);
-  const camera = free ?? VIEW_CAMERAS[view];
+  const look = free ?? VIEW_LOOKS[view];
+
+  const stage = useRef<HTMLDivElement>(null);
+  const canvas = useRef<HTMLCanvasElement>(null);
+  const phone = useRef<HTMLDivElement>(null);
+  const panel = useRef<HTMLElement>(null);
+  useHutScene(stage, canvas, phone, panel, {
+    look,
+    dragging,
+    // Like the session clock, the hut waits while a card or the sheet is
+    // over the video.
+    running: feed.started && !feed.ended && !feed.held,
+    videos: feed.history.length,
+    glow: CATEGORY_COLORS[feed.current.video.category][1],
+    aside,
+  });
 
   function startDrag(event: PointerEvent<HTMLDivElement>) {
     if (event.button !== 0) return;
     event.currentTarget.setPointerCapture(event.pointerId);
     drag.current = { id: event.pointerId, x: event.clientX, y: event.clientY };
-    setFree(camera);
+    setFree(look);
     setDragging(true);
   }
 
@@ -117,7 +124,7 @@ function RoomScene() {
     setFree((old) =>
       old === null
         ? old
-        : clampCamera({
+        : clampLook({
             yaw: old.yaw - dx * LOOK_SPEED,
             pitch: old.pitch + dy * LOOK_SPEED,
           }),
@@ -135,158 +142,123 @@ function RoomScene() {
     setView(next);
   }
 
-  // Look up and your hand drops, out of the way of the room.
-  const lowered = clamp(
-    (camera.pitch - VIEW_CAMERAS.phone.pitch) /
-      (VIEW_CAMERAS.up.pitch - VIEW_CAMERAS.phone.pitch),
-    0,
-    1,
-  );
-  const dip = HOLD_DEG + (REST_DEG - HOLD_DEG) * lowered;
-  const hand = {
-    x: EYE.x,
-    y: EYE.y + ARM * Math.sin(radians(dip)),
-    z: EYE.z - ARM * Math.cos(radians(dip)),
-  };
-
-  const scores = new Map(feed.topicScores.map((t) => [t.name, t.score]));
-  const topScore = Math.max(1, ...feed.topicScores.map((t) => t.score));
-  const onScreen = feed.current.video;
-  const next = feed.upNext.video;
-  // Labels in the room turn with your head, so they always face you.
-  const facing = {
-    transform: `rotateY(${-camera.yaw}deg) rotateX(${-camera.pitch}deg)`,
-  };
+  const classes = ["room"];
+  if (dragging) classes.push("is-dragging");
+  if (!panelShown) classes.push("is-bare");
 
   return (
-    <main className={dragging ? "room is-dragging" : "room"}>
+    <main className={classes.join(" ")}>
       <div
         className="room-stage"
-        style={{ perspective: EYE_DEPTH }}
+        ref={stage}
+        inert={feed.ended}
         onPointerDown={startDrag}
         onPointerMove={moveDrag}
         onPointerUp={endDrag}
         onPointerCancel={endDrag}
       >
-        {/* Turning your head turns the whole room around your eyes. */}
-        <div
-          className="room-world"
-          style={{
-            transform: `translateZ(${EYE_DEPTH}) rotateX(${camera.pitch}deg) rotateY(${camera.yaw}deg) translate3d(${-EYE.x}px, ${-EYE.y}px, ${-EYE.z}px)`,
-          }}
-        >
-          <div className="room-floor" />
-          <div className="room-ceiling" />
-
-          <div className="room-wall is-front">
-            <div className="room-log">
-              <ul className="room-tiles">
-                {feed.history.slice(-WALL_TILES).map(({ impression }) => (
-                  <li
-                    key={impression.index}
-                    className="room-tile"
-                    style={{
-                      background: gradientOf(impression.video.category),
-                      // Brighter the more of it you watched.
-                      opacity: 0.3 + 0.7 * Math.min(watchRatio(impression), 1),
-                    }}
-                  >
-                    {impression.video.emoji}
-                  </li>
-                ))}
-              </ul>
-              <p className="room-figure">
-                {feed.counters.dataPoints.toLocaleString("en")}
-              </p>
-              <p className="room-caption">
-                data points logged · {feed.history.length} videos ·{" "}
-                {formatClock(feed.sessionMs)}
-              </p>
-            </div>
-          </div>
-
-          <div className="room-wall is-left">
-            <div className="room-next">
-              <p className="room-caption">Already picked for you next</p>
-              <div
-                className="room-poster"
-                key={feed.upNext.key}
-                style={{ background: gradientOf(next.category) }}
-              >
-                <span className="room-poster-art">{next.emoji}</span>
-                <span className="room-poster-topic">{next.category}</span>
-              </div>
-            </div>
-          </div>
-
-          <div className="room-wall is-right" />
-          <div className="room-wall is-back" />
-
-          {CATEGORIES.map((name, i) => {
-            // Left and right of straight ahead in turn, moving outwards.
-            const side = i % 2 === 0 ? -1 : 1;
-            const angle = radians(
-              side * (PILLAR_FIRST_DEG + Math.floor(i / 2) * PILLAR_STEP_DEG),
-            );
-            const score = scores.get(name) ?? 0;
-            return (
-              <RoomBox
-                key={name}
-                x={EYE.x + Math.sin(angle) * PILLAR_REACH}
-                z={EYE.z - Math.cos(angle) * PILLAR_REACH}
-                width={PILLAR_SIZE}
-                depth={PILLAR_SIZE}
-                height={
-                  PILLAR_MIN + (PILLAR_GROW * Math.max(score, 0)) / topScore
-                }
-                color={CATEGORY_COLORS[name][1]}
-              >
-                <p className="room-label" style={facing}>
-                  {name}
-                  <small>{score.toFixed(1)}</small>
-                </p>
-              </RoomBox>
-            );
-          })}
-
-          {/* In your hand, always turned to your eyes. It keeps its own
-              presses and scrolling: you only look around by dragging the
-              room. */}
-          <div
-            className="room-phone"
+        {/* In your hand. The hut moves it there every frame. It keeps its
+            own presses and scrolling: you only look around by dragging the
+            room. */}
+        <div className="room-phone" ref={phone}>
+          <section
+            className="room-phone-body"
+            aria-label="Video feed"
+            ref={feedArea}
             style={{
-              transform: `translate3d(${hand.x}px, ${hand.y}px, ${hand.z}px) rotateX(${dip}deg) scale(${PHONE_SCALE})`,
+              top: -PHONE_PIXELS / 2,
+              left: -PHONE_WIDTH / 2,
+              width: PHONE_WIDTH,
+              height: PHONE_PIXELS,
             }}
+            onPointerDownCapture={trackPress}
+            onPointerDown={(event) => event.stopPropagation()}
           >
-            {/* The light of the screen in the dark room. */}
+            <PhoneFeed feed={feed}>
+              {session.planBreak && (
+                <PlanBreak
+                  feed={feed}
+                  onKeep={session.keepBreak}
+                  onLeave={() => session.leave(null)}
+                />
+              )}
+              {session.cause !== null && (
+                <ChainCard
+                  cause={session.cause}
+                  video={feed.current.video}
+                  onKeep={session.keepWhy}
+                />
+              )}
+            </PhoneFeed>
+            {/* The dots: laid over the screen this faintly, they push each
+                colour up by less than one shade, and the filter below then
+                rounds it down to a whole one. */}
             <div
-              className="room-phone-halo"
-              style={{ color: CATEGORY_COLORS[onScreen.category][1] }}
+              className="room-phone-dots"
+              style={{ backgroundImage: DOTS, opacity: 1 / SHADES }}
             />
-            <div
-              className="room-phone-body"
-              style={{
-                top: -PHONE_HEIGHT / 2,
-                left: -PHONE_WIDTH / 2,
-                width: PHONE_WIDTH,
-                height: PHONE_HEIGHT,
-              }}
-              onPointerDown={(event) => event.stopPropagation()}
-            >
-              <PhoneFeed feed={feed} />
-            </div>
-          </div>
+          </section>
         </div>
+        {/* The hut and your hand, drawn over the phone with a hole in the
+            picture where its screen is. */}
+        <canvas className="room-canvas" ref={canvas} aria-hidden="true" />
       </div>
 
-      <header className="room-hud is-top">
-        <p className="room-title">Room prototype</p>
-        <a className="room-back" href="#">
-          Back to the split view
-        </a>
-      </header>
+      {/* Rounds every colour on the phone down to one of a few shades. */}
+      <svg className="room-filters" aria-hidden="true">
+        <filter
+          id="room-shades"
+          x="0"
+          y="0"
+          width="100%"
+          height="100%"
+          colorInterpolationFilters="sRGB"
+        >
+          <feComponentTransfer>
+            <feFuncR type="discrete" tableValues={STEPS} />
+            <feFuncG type="discrete" tableValues={STEPS} />
+            <feFuncB type="discrete" tableValues={STEPS} />
+          </feComponentTransfer>
+        </filter>
+      </svg>
 
-      <div className="room-hud is-bottom">
+      {/* The panel's own dark glass, as a layer under it: the lines from
+          the phone run over the glass and behind the panel's cards. */}
+      <div className="room-glass" />
+      <section
+        id="room-panel"
+        className={session.sheetOpen ? "app-panel is-open" : "app-panel"}
+        aria-label="What the algorithm sees"
+        inert={feed.ended || (wide && !panelShown)}
+        ref={panel}
+      >
+        <SheetHandle
+          feed={feed}
+          open={session.sheetOpen}
+          onToggle={session.toggleSheet}
+        />
+        <AlgorithmPanel feed={feed} onLeave={session.leave} />
+      </section>
+      <button
+        type="button"
+        className="room-tab"
+        aria-expanded={panelShown}
+        aria-controls="room-panel"
+        aria-label={panelShown ? "Hide the algorithm" : undefined}
+        inert={feed.ended}
+        onClick={() => setPanelShown(!panelShown)}
+      >
+        {panelShown ? (
+          <span aria-hidden="true">›</span>
+        ) : (
+          <>
+            <span aria-hidden="true">‹</span> See the algorithm
+          </>
+        )}
+      </button>
+      <LinkLayer links={links} onDone={removeLink} />
+
+      <div className="room-looks" inert={feed.ended}>
         <div className="levers" role="group" aria-label="Where you look">
           {VIEWS.map((name) => (
             <button
@@ -302,8 +274,16 @@ function RoomScene() {
             </button>
           ))}
         </div>
-        <p className="room-hint">Drag the room to look around.</p>
       </div>
+
+      {feed.ended && (
+        <SessionEnd
+          feed={feed}
+          onBack={feed.resume}
+          returnTo={session.leftFrom}
+          onRestart={() => window.location.reload()}
+        />
+      )}
     </main>
   );
 }
