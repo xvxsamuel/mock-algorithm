@@ -92,8 +92,8 @@
    phone over to make room for it (useHutScene). */
 @media (min-width: 901px) {
   .room {
-    --panel-width: clamp(460px, 45vw, 660px);
-    --panel-gap: 10px;
+    --panel-width: clamp(460px, 48vw, 660px);
+    --panel-gap: 8px;
   }
 
   .room-glass,
@@ -127,12 +127,18 @@
      much of its own padding: its cards keep the height they have in the
      flat view. */
   .room .panel {
-    padding: 14px 20px 8px;
+    padding: 14px 20px 6px;
   }
 
   .room .panel-note {
     top: 1px;
     right: 20px;
+  }
+
+  @media (max-height: 860px) {
+    .room .panel {
+      gap: 8px;
+    }
   }
 
   /* Put away: off the right edge. */
