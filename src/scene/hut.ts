@@ -49,6 +49,11 @@ function plain(color: Vec3): Paint {
   return { color, material: MATERIAL.plain };
 }
 
+/** Its own colour, for something thin that lies flat on something else. */
+function mark(color: Vec3): Paint {
+  return { color, material: MATERIAL.mark };
+}
+
 /** Its own colour, with the dust that settles on it. */
 function dusty(color: Vec3): Paint {
   return { color, material: MATERIAL.dusty };
@@ -391,7 +396,7 @@ export function buildHut(mesh: Mesh): void {
           [wide, 68, 0],
           [wide, 84, 0],
           [-wide, 84, 0],
-          plain([0.12, 0.1, 0.09]),
+          mark([0.12, 0.1, 0.09]),
         ),
     );
   }
@@ -449,27 +454,29 @@ export type PropsState = {
 export function buildProps(mesh: Mesh, state: PropsState): void {
   const { decay, hour, videos } = state;
 
-  // The tally scratched in the wall: four strokes and one across.
-  const scratch = plain([0.2, 0.16, 0.13]);
+  // The tally scratched in the wall: four strokes and one across. A stroke
+  // is as wide as a pixel of the hut is at that wall, and so is the gap to
+  // the next: any thinner, and strokes come and go as you look around.
+  const scratch = mark([0.2, 0.16, 0.13]);
   const marks = Math.min(videos, TALLY.perRow * TALLY.rows);
   for (let i = 0; i < marks; i++) {
     const group = Math.floor(i / 5);
     const stroke = i % 5;
-    const left = TALLY.x + (group % (TALLY.perRow / 5)) * 92;
-    const top = TALLY.y - Math.floor(group / (TALLY.perRow / 5)) * 92;
+    const left = TALLY.x + (group % (TALLY.perRow / 5)) * 84;
+    const top = TALLY.y - Math.floor(group / (TALLY.perRow / 5)) * 84;
     const across = stroke === 4;
     const middle: Vec3 = across
-      ? [left + 21, top - 28, -D + 1.2]
-      : [left + stroke * 14, top - 28, -D + 0.8];
-    const lean = across ? radians(-58) : radians((random(i) - 0.5) * 9);
-    const half = across ? 36 : 26 + random(i + 0.5) * 4;
+      ? [left + 28, top - 30, -D + 1.2]
+      : [left + 4 + stroke * 16, top - 30, -D + 0.8];
+    const lean = across ? radians(-58) : radians((random(i) - 0.5) * 6);
+    const half = across ? 40 : 26 + random(i + 0.5) * 4;
     withTransform(mesh, multiply(translation(middle), rotationZ(lean)), () =>
       addQuad(
         mesh,
-        [-2.6, -half, 0],
-        [2.6, -half, 0],
-        [2.6, half, 0],
-        [-2.6, half, 0],
+        [-4, -half, 0],
+        [4, -half, 0],
+        [4, half, 0],
+        [-4, half, 0],
         scratch,
       ),
     );
@@ -477,7 +484,7 @@ export function buildProps(mesh: Mesh, state: PropsState): void {
 
   // The hands of the clock. They are only ever somewhere: you never see
   // them turn.
-  const hand = plain([0.1, 0.09, 0.08]);
+  const hand = mark([0.1, 0.09, 0.08]);
   const hands = [
     [(hour % 12) / 12, 46, 4.5],
     [hour % 1, 70, 2.8],

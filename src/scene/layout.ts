@@ -41,8 +41,10 @@ export const REST_DEG = 50;
     Top to bottom you see about 64 degrees, whatever the size of the page. */
 export const FOCAL = 1.6;
 
-/** Where the tally starts on the wall in front of you: its top left. */
-export const TALLY = { x: -130, y: 770, perRow: 40, rows: 5 } as const;
+/** Where the tally starts on the wall in front of you: its top left. It is
+    to the right of the phone, between it and the stove, so that you see it
+    without looking up. */
+export const TALLY = { x: 280, y: 700, perRow: 20, rows: 7 } as const;
 
 /** The stove, in the corner to the right of the window: the middle of its
     foot on the floor. */
