@@ -24,7 +24,7 @@ import {
   translation,
   type Mat4,
 } from "../scene/math";
-import { createHutRenderer } from "../scene/renderer";
+import { createHutRenderer, hutPixel } from "../scene/renderer";
 import { decayAfter, hourAfter } from "../scene/time";
 
 /** Where your head is turned, in degrees. */
@@ -54,7 +54,7 @@ const DROPPED_AT = 0;
 /** How fast the view catches up with where you look. */
 const EASE = 6;
 /** How long the thumb takes over one swipe. */
-const SWIPE_MS = 450;
+const SWIPE_MS = 520;
 /** Turns a point upside down: the page counts down, the hut counts up. */
 const FLIP = scaling(1, -1, 1);
 
@@ -101,9 +101,20 @@ export function useHutScene(
 
     let width = stageElement.clientWidth;
     let height = stageElement.clientHeight;
+    // The dots on the phone's screen are as big on the page as the hut's
+    // pixels. The phone is laid out bigger than it is shown, so in its own
+    // px they are bigger too.
+    const sizeDots = () => {
+      if (width < 1 || height < 1) return;
+      const shown = ((PHONE.height / PHONE_PIXELS) * FOCAL * height) / 2 / ARM;
+      const dot = hutPixel(width, height) / shown;
+      phoneElement.style.setProperty("--room-dot", `${dot.toFixed(2)}px`);
+    };
+    sizeDots();
     const observer = new ResizeObserver(() => {
       width = stageElement.clientWidth;
       height = stageElement.clientHeight;
+      sizeDots();
     });
     observer.observe(stageElement);
 
@@ -166,11 +177,7 @@ export function useHutScene(
         videos = want.videos;
         if (!calm) swipedAt = now;
       }
-      const stroke = clamp((now - swipedAt) / SWIPE_MS, 0, 1);
-      const swipe =
-        stroke < 0.35
-          ? smoothstep(0, 0.35, stroke)
-          : 1 - smoothstep(0.35, 1, stroke);
+      const swipe = clamp((now - swipedAt) / SWIPE_MS, 0, 1);
 
       glow = mix(glow, colorOf(want.glow), 1 - Math.exp(-elapsed * 3));
 

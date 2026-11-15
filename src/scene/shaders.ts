@@ -115,6 +115,10 @@ uniform vec3 uGlow;
 // Half the phone's width and height, the radius of its corners, and how
 // far in from its edge the hole for the real screen starts.
 uniform vec4 uPhoneSize;
+// 1 for the phone and the hand that holds it, which are drawn in the
+// phone's own space, and the way from there to the hut's.
+uniform float uHeld;
+uniform mat4 uModel;
 // Half the hut's width, the height of its walls, half its depth.
 uniform vec3 uRoom;
 // How much the dark swallows what is far away.
@@ -417,6 +421,21 @@ float cornerShade(vec3 at) {
   return mix(mix(0.74, 0.4, uDecay), 1.0, smoothstep(0.0, mix(220.0, 420.0, uDecay), edge));
 }
 
+// How much of the screen's light falls on the hand that holds the phone.
+// The hand is too near for the screen to be one point: the light comes from
+// the part of the screen nearest to the spot, a little way in from its
+// edge. So the sides of the fingers that face the screen catch it, and
+// what is behind the phone gets none.
+float screenOn(vec3 normal) {
+  vec2 lit = uPhoneSize.xy - 6.0;
+  vec3 to = vec3(clamp(vLocal.xy, -lit, lit), 0.0) - vLocal;
+  float far = length(to);
+  vec3 way = mat3(uModel) * (to / far);
+  float facing = max(dot(normal, way) * 0.75 + 0.25, 0.0);
+  float inFront = smoothstep(-3.0, 0.5, vLocal.z);
+  return 0.9 * facing * inFront / (1.0 + far * far / (15.0 * 15.0));
+}
+
 vec3 lightAt(vec3 at, vec3 normal, float shade) {
   vec3 light = uAmbient * (0.82 + 0.18 * normal.y) * shade;
 
@@ -429,12 +448,16 @@ vec3 lightAt(vec3 at, vec3 normal, float shade) {
   light += uBeam * max(dot(normal, uBeamFrom), 0.0) * beamAt(at);
 
   // The screen lights what is in front of it.
-  vec3 toPhone = uPhoneAt - at;
-  float reach = length(toPhone);
-  vec3 phone = toPhone / reach;
-  float inFront = smoothstep(-0.15, 0.5, dot(-phone, uPhoneFacing));
-  light += uGlow * max(dot(normal, phone) * 0.75 + 0.25, 0.0) * inFront /
-    (1.0 + reach * reach / (40.0 * 40.0));
+  if (uHeld > 0.5) {
+    light += uGlow * screenOn(normal);
+  } else {
+    vec3 toPhone = uPhoneAt - at;
+    float reach = length(toPhone);
+    vec3 phone = toPhone / reach;
+    float inFront = smoothstep(-0.15, 0.5, dot(-phone, uPhoneFacing));
+    light += uGlow * max(dot(normal, phone) * 0.75 + 0.25, 0.0) * inFront /
+      (1.0 + reach * reach / (40.0 * 40.0));
+  }
 
   // And your face, lit by the screen, lights a little of what you look at.
   vec3 toEye = uEye - at;

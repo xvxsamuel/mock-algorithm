@@ -23,22 +23,28 @@ import {
 } from "./mesh";
 import { MATERIAL } from "./shaders";
 
-/* Your right hand around the phone, seen from your own eyes. It is built in
+/* Your right hand under the phone, seen from your own eyes. It is built in
    the phone's own space: the middle of the screen is the origin, right is
    +x, up the phone is +y, and +z comes out of the screen towards you. One
    unit is about 2.3 mm.
 
+   The phone lies in the hand more than it is gripped: nothing reaches over
+   the screen. The fingers come round its left edge and stop there, and the
+   thumb lies along the right one, until it swipes.
+
    Each finger is a chain of rounded sticks from joint to joint. That is
    what makes it slightly off even at the start; as the hut decays the hand
-   stops being yours: the fingers stretch across the screen and thin to the
+   stops being yours: the fingers grow out past the phone and thin to the
    bone, the nails grow, and a sixth finger comes round the edge. */
 
 const HALF_WIDTH = PHONE.width / 2;
 const HALF_HEIGHT = PHONE.height / 2;
 
+type Joints = readonly [Vec3, Vec3, Vec3, Vec3];
+
 type Finger = {
   /** The knuckle, the two joints after it, and the tip. */
-  joints: readonly [Vec3, Vec3, Vec3, Vec3];
+  joints: Joints;
   /** How thick the finger is at each of those. */
   radii: readonly [number, number, number, number];
   /** How far the hand has turned (0 to 1) when this finger starts to grow.
@@ -47,75 +53,85 @@ type Finger = {
 };
 
 /** The four fingers come from behind the phone, round its left edge, and
-    rest their tips on the glass. The last one is not yours. */
+    turn up along it, with their tips against its side. The last one is not
+    yours. */
 const FINGERS: readonly Finger[] = [
   {
     joints: [
-      [-1, 3, -8.2],
-      [-18.2, 6, -6.4],
-      [-19.4, 7.2, 2.2],
-      [-12, 8.2, 3],
+      [-1, 1, -8.2],
+      [-13.2, 3.4, -7.8],
+      [-18.8, 4.6, -4.6],
+      [-17.6, 8.6, 0.8],
     ],
     radii: [3.5, 3.2, 3, 2.7],
     from: 0,
   },
   {
     joints: [
-      [-2, -5.5, -8.6],
-      [-18.6, -4.2, -6.6],
-      [-19.8, -3.4, 2.4],
-      [-12, -2.8, 3.1],
+      [-2, -7.5, -8.6],
+      [-13.4, -6.6, -8],
+      [-19, -5.6, -4.7],
+      [-17.7, -1.6, 0.9],
     ],
     radii: [3.6, 3.3, 3.1, 2.8],
     from: 0,
   },
   {
     joints: [
-      [-2, -14, -8.6],
-      [-18.3, -13.6, -6.5],
-      [-19.4, -13.2, 2.2],
-      [-12.3, -12.8, 3],
+      [-2, -16, -8.6],
+      [-13.2, -15.9, -7.9],
+      [-18.7, -15.2, -4.6],
+      [-17.5, -11.4, 0.8],
     ],
     radii: [3.4, 3.1, 2.9, 2.6],
     from: 0,
   },
   {
     joints: [
-      [-1, -22, -8.2],
-      [-17.6, -22.8, -6],
-      [-18.4, -23.3, 1.6],
-      [-12.8, -23.8, 2.6],
+      [-1, -24, -8.2],
+      [-12.6, -24.8, -7.4],
+      [-17.8, -24.6, -4.2],
+      [-17, -21.4, 0.5],
     ],
     radii: [2.9, 2.6, 2.4, 2.2],
     from: 0,
   },
   {
     joints: [
-      [-1, 13, -8],
-      [-18, 16.5, -6.2],
-      [-19.2, 17.6, 2.2],
-      [-12, 18.4, 3],
+      [-1, 11, -8],
+      [-13, 14, -7.6],
+      [-18.5, 15.4, -4.5],
+      [-17.3, 19.2, 0.8],
     ],
     radii: [3.2, 2.9, 2.7, 2.4],
     from: 0.5,
   },
 ];
 
-/** The thumb comes up the right edge and lies across the bottom of the
-    screen. At rest, and at the top of a swipe. */
-const THUMB: readonly [Vec3, Vec3, Vec3, Vec3] = [
+/** The thumb comes up the right edge and lies along it. For a swipe it
+    comes down on the glass, slides up it, and goes back. */
+const THUMB: Joints = [
   [12, -31, -9],
-  [20.2, -27, -1.2],
-  [16.4, -21, 4.3],
-  [7, -18.6, 3.4],
+  [20.4, -27, -3],
+  [19.2, -19.5, 0.2],
+  [18.4, -11.5, 0.9],
 ];
-const THUMB_SWIPED: readonly [Vec3, Vec3, Vec3, Vec3] = [
+const THUMB_DOWN: Joints = [
   [12, -31, -9],
-  [20.2, -25, -1],
-  [16, -16.5, 4.4],
-  [5.5, -9.5, 3.4],
+  [20.4, -26.5, -1.6],
+  [18.8, -19, 4.6],
+  [9, -15.5, 3.9],
+];
+const THUMB_UP: Joints = [
+  [12, -31, -9],
+  [20.2, -25, -1.2],
+  [18.6, -15.5, 4.6],
+  [8, -7, 3.9],
 ];
 const THUMB_RADII = [5.2, 4.5, 4, 3.5] as const;
+/** How high the thumb lifts on its way to the glass and back, so that it
+    goes over the edge of the phone and not through it. */
+const THUMB_LIFT = 3;
 
 const SKIN: Vec3 = [0.88, 0.67, 0.55];
 const SKIN_TURNED: Vec3 = [0.6, 0.61, 0.56];
@@ -126,7 +142,7 @@ const SLEEVE: Vec3 = [0.24, 0.38, 0.62];
 export type HandState = {
   /** How far the hand has turned: 0 is yours, 1 is not. */
   turned: number;
-  /** The thumb: 0 at rest, 1 at the top of a swipe. */
+  /** How far through a swipe the thumb is. At 0 and at 1 it is at rest. */
   swipe: number;
 };
 
@@ -151,6 +167,22 @@ function phoneOutline(): [number, number][] {
     }
   }
   return points;
+}
+
+/** Where the thumb's joints are, `swipe` of the way through a swipe. */
+function thumbAt(swipe: number): Vec3[] {
+  // On its way to the glass, sliding up it, and on its way back.
+  const [from, to, part] =
+    swipe < 0.3
+      ? [THUMB, THUMB_DOWN, smoothstep(0, 0.3, swipe)]
+      : swipe < 0.6
+        ? [THUMB_DOWN, THUMB_UP, smoothstep(0.3, 0.6, swipe)]
+        : [THUMB_UP, THUMB, smoothstep(0.6, 1, swipe)];
+  const sliding = swipe >= 0.3 && swipe < 0.6;
+  const lift = sliding ? 0 : THUMB_LIFT * Math.sin(Math.PI * part);
+  return from.map((joint, i) =>
+    add(mix(joint, to[i], part), [0, 0, i >= 2 ? lift : 0]),
+  );
 }
 
 /**
@@ -242,7 +274,7 @@ export function buildHand(mesh: Mesh, { turned, swipe }: HandState): void {
       mesh,
       finger.joints,
       finger.radii,
-      [-0.3, 0, 1],
+      [-0.7, 0, 0.7],
       size,
       turned,
       skin,
@@ -251,9 +283,9 @@ export function buildHand(mesh: Mesh, { turned, swipe }: HandState): void {
   }
   addFinger(
     mesh,
-    THUMB.map((joint, i) => mix(joint, THUMB_SWIPED[i], swipe)),
+    thumbAt(swipe),
     THUMB_RADII,
-    [0.1, 0.3, 1],
+    [0.6, 0, 0.8],
     1,
     turned * 0.7,
     skin,
@@ -262,7 +294,7 @@ export function buildHand(mesh: Mesh, { turned, swipe }: HandState): void {
 
   // The palm behind the phone, the ball of the thumb, and the heel.
   addEllipsoid(mesh, [7, -14, -9.4], [14, 19, 5], skin);
-  addEllipsoid(mesh, [15.5, -27, -5.5], [6.5, 9, 5.5], skin);
+  addEllipsoid(mesh, [16.5, -28, -6.2], [6, 8.5, 5], skin);
   addEllipsoid(mesh, [9, -32, -8.6], [11, 6, 5.4], skin);
   // The wrist and forearm, down towards you, into a sleeve.
   const wrist: Vec3 = [10.5, -37, -9];

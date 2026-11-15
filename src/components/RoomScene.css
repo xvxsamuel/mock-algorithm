@@ -47,6 +47,24 @@
 .room-phone-body {
   position: absolute;
   cursor: auto;
+  /* Few shades of each colour, like the hut (the filter is in RoomScene). */
+  filter: url("#room-shades");
+}
+
+/* The pattern of dots that goes with it. The hut sets how big one is. */
+.room-phone-dots {
+  position: absolute;
+  inset: 0;
+  border-radius: 48px;
+  background-size: calc(var(--room-dot, 4px) * 4) calc(var(--room-dot, 4px) * 4);
+  pointer-events: none;
+}
+
+/* Only holds the filter: it takes up no room. */
+.room-filters {
+  position: absolute;
+  width: 0;
+  height: 0;
 }
 
 /* The feed's own phone frame, at the size the room gives it (also on small
@@ -58,6 +76,8 @@
   border: 10px solid #1d1d1f;
   border-radius: 48px;
   box-shadow: none;
+  /* Whatever is stacked inside it stays under the dots. */
+  isolation: isolate;
 }
 
 /* --- Flat controls over the room --- */

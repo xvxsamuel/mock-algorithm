@@ -60,6 +60,28 @@ const FIRE: Vec3 = [1.05, 0.56, 0.2];
 const INK: Vec3 = [0.015, 0.02, 0.03];
 const PAPER: Vec3 = [0.86, 0.8, 0.64];
 
+/** How the page is cut into the hut's pixels. The page is drawn on `sharp`
+    times as sharp as CSS counts, up to a limit, and each pixel of the hut
+    covers a square of `cell` of those. */
+function gridOf(width: number, height: number) {
+  const sharp = Math.min(
+    window.devicePixelRatio,
+    2,
+    Math.sqrt(MAX_PIXELS / (width * height)),
+  );
+  const cell = Math.max(
+    2,
+    Math.round((Math.min(width, height) / ROWS) * sharp),
+  );
+  return { sharp, cell };
+}
+
+/** How big one pixel of the hut is on a page of this size, in CSS pixels. */
+export function hutPixel(width: number, height: number): number {
+  const { sharp, cell } = gridOf(width, height);
+  return cell / sharp;
+}
+
 export type HutFrame = {
   /** The size of the picture on the page, in CSS pixels. */
   width: number;
@@ -335,20 +357,10 @@ export function createHutRenderer(
     if (gl.isContextLost()) return;
     if (frame.width < 1 || frame.height < 1) return;
 
-    // The page is drawn on as sharp as the screen, up to a limit. The hut
-    // is a much smaller picture: each of its pixels covers a square of
-    // `cell` pixels of the page.
-    const sharp = Math.min(
-      window.devicePixelRatio,
-      2,
-      Math.sqrt(MAX_PIXELS / (frame.width * frame.height)),
-    );
+    // The hut is a much smaller picture than the page it is drawn on.
+    const { sharp, cell } = gridOf(frame.width, frame.height);
     const pageWidth = Math.max(1, Math.round(frame.width * sharp));
     const pageHeight = Math.max(1, Math.round(frame.height * sharp));
-    const cell = Math.max(
-      2,
-      Math.round((Math.min(frame.width, frame.height) / ROWS) * sharp),
-    );
     const width = Math.ceil(pageWidth / cell);
     const height = Math.ceil(pageHeight / cell);
     if (canvas.width !== pageWidth || canvas.height !== pageHeight) {
@@ -456,10 +468,12 @@ export function createHutRenderer(
     // phone moves smoothly, and the hole has to stay on it.
     hutInputs.matrix("uModel", IDENTITY);
     hutInputs.pair("uSnap", width / 2, height / 2);
+    hutInputs.number("uHeld", 0);
     drawLayer(gl, hut);
     drawLayer(gl, props);
     hutInputs.matrix("uModel", frame.phone);
     hutInputs.pair("uSnap", 0, 0);
+    hutInputs.number("uHeld", 1);
     drawLayer(gl, hand);
 
     // The panes go on top of what is behind them, and hide nothing.
@@ -468,6 +482,7 @@ export function createHutRenderer(
     gl.depthMask(false);
     hutInputs.matrix("uModel", IDENTITY);
     hutInputs.pair("uSnap", width / 2, height / 2);
+    hutInputs.number("uHeld", 0);
     drawLayer(gl, glass);
     gl.depthMask(true);
     gl.disable(gl.BLEND);

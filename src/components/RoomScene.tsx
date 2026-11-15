@@ -12,6 +12,29 @@ const LOOK_SPEED = 0.12;
 /** The phone is laid out at this size; the hut shrinks it into your hand. */
 const PHONE_WIDTH = (PHONE_PIXELS * PHONE.width) / PHONE.height;
 
+/** The phone's screen gets the hut's look as well: this many shades of red,
+    of green and of blue, with a pattern of dots to make up the ones
+    between. Few enough to see, enough for a video to stay easy to watch. */
+const SHADES = 8;
+const STEPS = Array.from({ length: SHADES }, (_, i) =>
+  (i / (SHADES - 1)).toFixed(4),
+).join(" ");
+
+/** The classic 4x4 pattern of dots, the same one the hut is drawn with, as
+    a small picture to tile over the screen. Each dot is a grey that says
+    how soon it tips a colour over into the next shade up. */
+const DOT_ORDER = [0, 8, 2, 10, 12, 4, 14, 6, 3, 11, 1, 9, 15, 7, 13, 5];
+const DOTS = `url("data:image/svg+xml,${encodeURIComponent(
+  `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 4 4" shape-rendering="crispEdges">${DOT_ORDER.map(
+    (order, i) => {
+      // Not quite from black to white, so that black stays black and white
+      // stays white however the browser rounds.
+      const grey = Math.round(255 * (0.06 + (0.88 * (order + 0.5)) / 16));
+      return `<rect x="${i % 4}" y="${Math.floor(i / 4)}" width="1" height="1" fill="rgb(${grey},${grey},${grey})"/>`;
+    },
+  ).join("")}</svg>`,
+)}")`;
+
 const VIEWS = ["phone", "up", "left"] as const;
 type View = (typeof VIEWS)[number];
 
@@ -123,12 +146,37 @@ function RoomScene() {
             onPointerDown={(event) => event.stopPropagation()}
           >
             <PhoneFeed feed={feed} />
+            {/* The dots: laid over the screen this faintly, they push each
+                colour up by less than one shade, and the filter below then
+                rounds it down to a whole one. */}
+            <div
+              className="room-phone-dots"
+              style={{ backgroundImage: DOTS, opacity: 1 / SHADES }}
+            />
           </div>
         </div>
         {/* The hut and your hand, drawn over the phone with a hole in the
             picture where its screen is. */}
         <canvas className="room-canvas" ref={canvas} aria-hidden="true" />
       </div>
+
+      {/* Rounds every colour on the phone down to one of a few shades. */}
+      <svg className="room-filters" aria-hidden="true">
+        <filter
+          id="room-shades"
+          x="0"
+          y="0"
+          width="100%"
+          height="100%"
+          colorInterpolationFilters="sRGB"
+        >
+          <feComponentTransfer>
+            <feFuncR type="discrete" tableValues={STEPS} />
+            <feFuncG type="discrete" tableValues={STEPS} />
+            <feFuncB type="discrete" tableValues={STEPS} />
+          </feComponentTransfer>
+        </filter>
+      </svg>
 
       <header className="room-hud is-top">
         <p className="room-title">Room prototype</p>
