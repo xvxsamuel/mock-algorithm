@@ -38,6 +38,9 @@ export const MATERIAL = {
   dusty: 13,
   /** The fire in the stove. The extra numbers run 0 to 1 across it. */
   fire: 14,
+  /** Its own colour, lit, for something thin that lies flat on something
+      else: a scratch in the wall, a hand on the clock's face. */
+  mark: 15,
 } as const;
 
 const MATERIAL_NAMES = Object.entries(MATERIAL)
@@ -45,6 +48,8 @@ const MATERIAL_NAMES = Object.entries(MATERIAL)
   .join("\n");
 
 export const HUT_VERTEX = `#version 300 es
+${MATERIAL_NAMES}
+
 layout(location = 0) in vec3 aPosition;
 layout(location = 1) in vec3 aNormal;
 layout(location = 2) in vec3 aColor;
@@ -56,6 +61,11 @@ uniform mat4 uModel;
 // Half the picture's size in pixels. Corners jump to whole pixels, so the
 // hut wobbles a little as you look around. 0: they stay where they are.
 uniform vec2 uSnap;
+
+// How far the things that lie flat on something else are drawn in front of
+// where they are. The further away they are, the more it comes to: about a
+// hand's width at the far wall, and nothing you could measure in your hand.
+const float PULL = 0.00025;
 
 out vec3 vWorld;
 out vec3 vLocal;
@@ -75,6 +85,16 @@ void main() {
   vec4 at = uCamera * world;
   if (uSnap.x > 0.0 && abs(at.w) > 0.0001) {
     at.xy = round(at.xy / at.w * uSnap) / uSnap * at.w;
+  }
+  // A rug on the floor, a picture in its frame, a scratch in the wall: each
+  // lies a hair in front of what it is on. Their corners jump to different
+  // pixels than the corners of what is behind them, and that is enough to
+  // put parts of them behind it, in patches that change as you look around.
+  // So they are drawn a little nearer to you than they are.
+  if (
+    vMaterial == M_RUG || vMaterial == M_PICTURE || vMaterial == M_MARK
+  ) {
+    at.z -= PULL * at.w;
   }
   gl_Position = at;
 }
