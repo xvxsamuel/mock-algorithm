@@ -100,7 +100,8 @@ export type ReactionKind =
   | "notInterested";
 
 type State = {
-  /** False until the user picks how long they want to scroll. */
+  /** The feed is running. It is from the moment the page opens: nothing
+      asks you first. */
   started: boolean;
   /** The time the user said they would scroll for, or null for no limit. */
   intentMs: number | null;
@@ -158,7 +159,6 @@ type State = {
 
 // Time and random seeds are passed in, so the reducer itself stays pure.
 type Action =
-  | { type: "begin"; intentMs: number | null; now: number }
   | { type: "tick"; now: number; seed: number }
   | { type: "view"; index: number; now: number; seed: number }
   | { type: "togglePause"; now: number }
@@ -197,22 +197,6 @@ function feedReducer(state: State, action: Action): State {
         ...clockRuns(state, now),
         // Still held: the clock waits for that too.
         asideSince: state.held ? now : null,
-        now,
-      };
-    }
-
-    case "begin": {
-      if (state.started) return state;
-      const { now } = action;
-      return {
-        ...state,
-        started: true,
-        intentMs: action.intentMs,
-        sessionStart: now,
-        asideSince: state.held ? now : null,
-        current: { ...state.current, startedAt: now, clockAt: 0 },
-        playingSince: state.held ? null : now,
-        resumeAfterHold: state.held,
         now,
       };
     }
@@ -647,7 +631,7 @@ function createInitialState(): State {
     cause: null,
   };
   const state: State = {
-    started: false,
+    started: true,
     intentMs: null,
     items: [first],
     activeIndex: 0,
@@ -662,7 +646,7 @@ function createInitialState(): State {
       predictedMs,
       ranking.source,
     ),
-    playingSince: null,
+    playingSince: now,
     held: false,
     resumeAfterHold: false,
     sessionStart: now,
@@ -819,8 +803,6 @@ export function useFeed() {
     savedIds: state.savedIds,
     followedCreators: state.followedCreators,
 
-    begin: (intentMs: number | null) =>
-      dispatch({ type: "begin", intentMs, now: Date.now() }),
     view: (index: number) =>
       dispatch({ type: "view", index, now: Date.now(), seed: Math.random() }),
     togglePause: () => dispatch({ type: "togglePause", now: Date.now() }),

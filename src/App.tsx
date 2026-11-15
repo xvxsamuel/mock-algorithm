@@ -21,7 +21,7 @@ function App() {
 function SplitView() {
   const feed = useFeed();
   // Lines from the phone to whatever part of the panel just changed.
-  const { links, feedArea, trackPress, removeLink } = useLinks(feed);
+  const { links, feedArea, trackPress, pathOf, removeLink } = useLinks(feed);
   const session = useSession(feed);
   const { current } = feed;
 
@@ -63,7 +63,7 @@ function SplitView() {
         />
         <AlgorithmPanel feed={feed} onLeave={session.leave} />
       </section>
-      <LinkLayer links={links} onDone={removeLink} />
+      <LinkLayer links={links} onDone={removeLink} pathOf={pathOf} />
       {feed.ended && (
         <SessionEnd
           feed={feed}

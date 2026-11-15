@@ -60,6 +60,34 @@
   pointer-events: none;
 }
 
+/* The phone's corners, for the lines from it (useLinks). */
+.room-phone-corner {
+  position: absolute;
+  width: 0;
+  height: 0;
+  pointer-events: none;
+}
+
+.room-phone-corner[data-phone-corner="tl"] {
+  top: 0;
+  left: 0;
+}
+
+.room-phone-corner[data-phone-corner="tr"] {
+  top: 0;
+  right: 0;
+}
+
+.room-phone-corner[data-phone-corner="br"] {
+  right: 0;
+  bottom: 0;
+}
+
+.room-phone-corner[data-phone-corner="bl"] {
+  bottom: 0;
+  left: 0;
+}
+
 /* Only holds the filter: it takes up no room. */
 .room-filters {
   position: absolute;
@@ -103,17 +131,19 @@
     right: var(--panel-gap);
     bottom: var(--panel-gap);
     width: var(--panel-width);
-    border-radius: 20px;
     transition:
       transform 0.45s var(--ease),
       visibility 0s;
   }
 
+  /* A pixel window: thick edge, cut corners, scan lines. Not frosted:
+     the hut behind it is already all pixels. */
   .room-glass {
     display: block;
-    border: 1px solid var(--line-strong);
-    background: color-mix(in srgb, var(--bg) 82%, transparent);
-    backdrop-filter: blur(16px);
+    border: 2px solid var(--line-strong);
+    background: var(--scan), color-mix(in srgb, var(--bg) 90%, transparent);
+    box-shadow: var(--bevel);
+    clip-path: var(--notch);
   }
 
   /* Nothing here may start a new layer: the panel's cards have to stack
@@ -127,17 +157,30 @@
      much of its own padding: its cards keep the height they have in the
      flat view. */
   .room .panel {
-    padding: 14px 20px 6px;
+    padding: 40px 20px 6px;
   }
 
+  /* The window's title bar, under its top edge. It says what the whole
+     panel is. */
   .room .panel-note {
-    top: 1px;
-    right: 20px;
+    top: 2px;
+    right: 2px;
+    left: 2px;
+    padding: 6px 18px 5px;
+    border-bottom: 2px solid var(--line-strong);
+    background: var(--stage);
+    color: var(--muted);
   }
 
   @media (max-height: 860px) {
     .room .panel {
       gap: 8px;
+      padding-top: 36px;
+    }
+
+    .room .panel-note {
+      top: 2px;
+      padding-block: 4px 3px;
     }
   }
 
@@ -162,15 +205,14 @@
     gap: 6px;
     min-height: 56px;
     padding: 0 7px;
-    border: 1px solid var(--line-strong);
+    border: 2px solid var(--line-strong);
     border-right: 0;
-    border-radius: 10px 0 0 10px;
-    background: color-mix(in srgb, var(--bg) 82%, transparent);
-    backdrop-filter: blur(16px);
+    background: color-mix(in srgb, var(--bg) 92%, transparent);
+    box-shadow: var(--bevel);
     color: var(--text);
-    font-size: 12.5px;
-    font-weight: 700;
+    font-size: 11px;
     line-height: 1;
+    text-transform: uppercase;
     cursor: pointer;
     transform: translateY(-50%);
     transition: right 0.45s var(--ease);
@@ -178,7 +220,7 @@
 
   .room-tab span {
     color: var(--you);
-    font-size: 16px;
+    font-size: 11px;
   }
 
   .room.is-bare .room-tab {
@@ -207,8 +249,8 @@
 }
 
 .room-looks .levers {
-  background: color-mix(in srgb, var(--bg) 80%, transparent);
-  backdrop-filter: blur(10px);
+  background: color-mix(in srgb, var(--bg) 92%, transparent);
+  box-shadow: var(--drop);
   pointer-events: auto;
 }
 

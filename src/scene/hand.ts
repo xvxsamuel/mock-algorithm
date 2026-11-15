@@ -109,7 +109,7 @@ const FINGERS: readonly Finger[] = [
 ];
 
 /** The thumb comes up the right edge and lies along it. For a swipe it
-    comes down on the glass, slides up it, and goes back. */
+    comes down on the glass, slides along it with the feed, and goes back. */
 const THUMB: Joints = [
   [12, -31, -9],
   [20.4, -27, -3],
@@ -142,8 +142,12 @@ const SLEEVE: Vec3 = [0.24, 0.38, 0.62];
 export type HandState = {
   /** How far the hand has turned: 0 is yours, 1 is not. */
   turned: number;
-  /** How far through a swipe the thumb is. At 0 and at 1 it is at rest. */
-  swipe: number;
+  /** How far the thumb has come down on the glass: 0 is at rest along the
+      edge, 1 is on it. */
+  press: number;
+  /** Where on the glass it is: 0 at the bottom of its stroke, 1 at the
+      top. */
+  slide: number;
 };
 
 /** The phone's outline: a rectangle with round corners, going round. */
@@ -169,19 +173,17 @@ function phoneOutline(): [number, number][] {
   return points;
 }
 
-/** Where the thumb's joints are, `swipe` of the way through a swipe. */
-function thumbAt(swipe: number): Vec3[] {
-  // On its way to the glass, sliding up it, and on its way back.
-  const [from, to, part] =
-    swipe < 0.3
-      ? [THUMB, THUMB_DOWN, smoothstep(0, 0.3, swipe)]
-      : swipe < 0.6
-        ? [THUMB_DOWN, THUMB_UP, smoothstep(0.3, 0.6, swipe)]
-        : [THUMB_UP, THUMB, smoothstep(0.6, 1, swipe)];
-  const sliding = swipe >= 0.3 && swipe < 0.6;
-  const lift = sliding ? 0 : THUMB_LIFT * Math.sin(Math.PI * part);
-  return from.map((joint, i) =>
-    add(mix(joint, to[i], part), [0, 0, i >= 2 ? lift : 0]),
+/** Where the thumb's joints are: `press` of the way down from rest to the
+    glass, at `slide` of the way up its stroke. */
+function thumbAt(press: number, slide: number): Vec3[] {
+  const down = smoothstep(0, 1, press);
+  const lift = THUMB_LIFT * Math.sin(Math.PI * down);
+  return THUMB.map((joint, i) =>
+    add(mix(joint, mix(THUMB_DOWN[i], THUMB_UP[i], slide), down), [
+      0,
+      0,
+      i >= 2 ? lift : 0,
+    ]),
   );
 }
 
@@ -239,7 +241,10 @@ function addFinger(
 }
 
 /** The phone and the hand that holds it. */
-export function buildHand(mesh: Mesh, { turned, swipe }: HandState): void {
+export function buildHand(
+  mesh: Mesh,
+  { turned, press, slide }: HandState,
+): void {
   // The phone: its body, and a front that the real screen shows through.
   addSlab(mesh, phoneOutline(), -PHONE.depth, -0.05, {
     color: [0.09, 0.09, 0.1],
@@ -283,7 +288,7 @@ export function buildHand(mesh: Mesh, { turned, swipe }: HandState): void {
   }
   addFinger(
     mesh,
-    thumbAt(swipe),
+    thumbAt(press, slide),
     THUMB_RADII,
     [0.6, 0, 0.8],
     1,

@@ -4,7 +4,6 @@ import type { FeedController } from "../hooks/useFeed";
 import CommentsSheet from "./CommentsSheet";
 import Icon from "./Icon";
 import ShareSheet from "./ShareSheet";
-import StartGate from "./StartGate";
 import VideoCard from "./VideoCard";
 import "./PhoneFeed.css";
 
@@ -17,12 +16,15 @@ type Sheet = "comments" | "share" | null;
 
 type PhoneFeedProps = {
   feed: FeedController;
-  /** Laid over the screen, like the start gate. */
+  /** Told how far the feed is scrolled, in videos, whenever that changes:
+      1.5 is half way from the second video to the third. */
+  onScrolled?: (videos: number) => void;
+  /** Laid over the screen, like the cards that come over a video. */
   children?: ReactNode;
 };
 
 /** The TikTok-like side: a phone with an endless vertical feed. */
-function PhoneFeed({ feed, children }: PhoneFeedProps) {
+function PhoneFeed({ feed, onScrolled, children }: PhoneFeedProps) {
   const scroller = useRef<HTMLDivElement>(null);
   const [sheet, setSheet] = useState<Sheet>(null);
   const [toast, setToast] = useState<string | null>(null);
@@ -87,7 +89,9 @@ function PhoneFeed({ feed, children }: PhoneFeedProps) {
     if (!element) return;
     // A resize moved the cards, not a swipe.
     if (keepCard(element)) return;
-    const index = Math.round(element.scrollTop / element.clientHeight);
+    const videos = element.scrollTop / element.clientHeight;
+    onScrolled?.(videos);
+    const index = Math.round(videos);
     if (index !== activeIndex) view(index);
   }
 
@@ -215,8 +219,6 @@ function PhoneFeed({ feed, children }: PhoneFeedProps) {
       )}
 
       {children}
-
-      {!feed.started && <StartGate onStart={feed.begin} />}
 
       {toast !== null && (
         <div className="phone-toast" role="status">

@@ -140,19 +140,18 @@ function SessionEnd({ feed, onBack, onRestart, returnTo }: SessionEndProps) {
               <span className="end-kicker">You gave</span>
               <span className="end-clock">{formatClock(sessionMs)}</span>
             </p>
-            {intentMs === null ? (
-              <p className="end-open">No limit</p>
-            ) : over > 0 ? (
-              <p className="end-stat is-right is-over">
-                <span className="end-clock">+{formatClock(over)}</span>
-                <span className="end-kicker">over your plan</span>
-              </p>
-            ) : (
-              <p className="end-stat is-right is-early">
-                <span className="end-clock">{formatClock(-over)}</span>
-                <span className="end-kicker">left early</span>
-              </p>
-            )}
+            {intentMs !== null &&
+              (over > 0 ? (
+                <p className="end-stat is-right is-over">
+                  <span className="end-clock">+{formatClock(over)}</span>
+                  <span className="end-kicker">over your plan</span>
+                </p>
+              ) : (
+                <p className="end-stat is-right is-early">
+                  <span className="end-clock">{formatClock(-over)}</span>
+                  <span className="end-kicker">left early</span>
+                </p>
+              ))}
           </div>
           {intentMs !== null && (
             <div className="end-bar" aria-hidden="true">

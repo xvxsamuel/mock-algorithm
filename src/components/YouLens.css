@@ -15,12 +15,12 @@
   place-items: center;
   width: 46px;
   height: 46px;
-  border-radius: 50%;
+  border-radius: 0;
   background:
     linear-gradient(var(--surface), var(--surface)) padding-box,
     conic-gradient(var(--you), var(--take), var(--you)) border-box;
   border: 2px solid transparent;
-  font-size: 15px;
+  font-size: 11px;
   font-weight: 700;
 }
 
@@ -32,14 +32,14 @@
 .you-number {
   overflow: hidden;
   color: color-mix(in srgb, var(--muted), var(--text) 30%);
-  font-size: 12px;
+  font-size: 11px;
   font-variant-numeric: tabular-nums;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
 
 .you-name {
-  font-size: 17px;
+  font-size: 11px;
   font-weight: 650;
   line-height: 1.2;
 }
@@ -59,14 +59,14 @@
   align-items: center;
   gap: 7px;
   color: color-mix(in srgb, var(--muted), var(--text) 30%);
-  font-size: 12px;
+  font-size: 11px;
   font-weight: 600;
   white-space: nowrap;
 }
 
 .you-real {
   padding: 1px 7px;
-  border-radius: 999px;
+  border-radius: 0;
   background: var(--text);
   color: var(--bg);
   font-size: 11px;
@@ -85,9 +85,9 @@
 .you-fact {
   padding: 2px 9px;
   border: 1px solid var(--line-strong);
-  border-radius: 999px;
+  border-radius: 0;
   color: var(--text);
-  font-size: 12px;
+  font-size: 11px;
   font-weight: 600;
   font-variant-numeric: tabular-nums;
   white-space: nowrap;
@@ -105,9 +105,9 @@
 .you-rec-dot {
   width: 8px;
   height: 8px;
-  border-radius: 50%;
+  border-radius: 0;
   background: currentColor;
-  box-shadow: 0 0 8px rgb(254 44 85 / 0.8);
+  box-shadow: 0 0 0 2px rgb(254 44 85 / 0.8);
   animation: you-blink 1.6s ease-in-out infinite;
 }
 
@@ -189,21 +189,21 @@
 
 .trait-label {
   color: var(--muted);
-  font-size: 12px;
+  font-size: 11px;
 }
 
 .trait-value {
   grid-row: 2;
-  font-size: 19px;
+  font-size: 22px;
   font-weight: 650;
-  letter-spacing: -0.01em;
+  letter-spacing: 0;
 }
 
 .trait-bar {
   grid-column: 1 / -1;
   height: 3px;
   overflow: hidden;
-  border-radius: 2px;
+  border-radius: 0;
   background: var(--line);
 }
 
@@ -236,8 +236,8 @@
   place-items: center;
   width: 44px;
   height: 60px;
-  border-radius: 8px;
-  font-size: 24px;
+  border-radius: 0;
+  font-size: 22px;
 }
 
 /* The signals this video has sent: chips that pop in as they happen. */
@@ -262,8 +262,8 @@
   gap: 6px;
   padding: 5px 11px 5px 9px;
   border: 1px solid;
-  border-radius: 999px;
-  font-size: 12px;
+  border-radius: 0;
+  font-size: 11px;
   font-weight: 600;
   animation: signal-in 0.35s var(--ease);
 }
@@ -298,7 +298,7 @@
   .you-avatar {
     width: 38px;
     height: 38px;
-    font-size: 13px;
+    font-size: 11px;
   }
 
   .you-id .figure {
@@ -314,7 +314,7 @@
   .trait-value {
     grid-row: 1;
     grid-column: 2;
-    font-size: 15px;
+    font-size: 11px;
   }
 
   .trait-sure {
@@ -325,7 +325,7 @@
   .you-thumb {
     width: 36px;
     height: 48px;
-    font-size: 20px;
+    font-size: 22px;
   }
 
   .you-id {
@@ -385,15 +385,15 @@
   .you-avatar {
     width: 36px;
     height: 36px;
-    font-size: 12px;
+    font-size: 11px;
   }
 
   .you-name {
-    font-size: 15px;
+    font-size: 11px;
   }
 
   .you-id .figure {
-    font-size: 20px;
+    font-size: 22px;
   }
 
   .you-points .eyebrow {

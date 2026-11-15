@@ -34,7 +34,7 @@
   margin: 0;
   overflow: hidden;
   color: var(--you);
-  font-size: 14px;
+  font-size: 11px;
   font-weight: 700;
   white-space: nowrap;
   text-overflow: ellipsis;
@@ -59,7 +59,7 @@
   place-items: center;
   aspect-ratio: 3 / 4;
   min-width: 0;
-  border-radius: 5px;
+  border-radius: 0;
   font-size: clamp(11px, 1.3vw, 17px);
   line-height: 1;
   animation: end-pop 0.3s var(--ease) both;
@@ -81,7 +81,7 @@
   display: flex;
   overflow: hidden;
   height: 8px;
-  border-radius: 4px;
+  border-radius: 0;
   background: var(--line);
 }
 
@@ -91,7 +91,7 @@
 
 .fork-top {
   color: color-mix(in srgb, var(--muted), var(--text) 30%);
-  font-size: 12.5px;
+  font-size: 11px;
 }
 
 .fork-top b {
@@ -102,7 +102,7 @@
 .fork-says {
   margin: 2px 0 0;
   color: var(--text);
-  font-size: 15px;
+  font-size: 11px;
   font-weight: 600;
 }
 
@@ -114,17 +114,17 @@
   margin: 0;
   padding: 0;
   color: color-mix(in srgb, var(--muted), var(--text) 30%);
-  font-size: 13.5px;
+  font-size: 11px;
   list-style: none;
 }
 
 .fork-study-who {
-  font-size: 12.5px;
+  font-size: 11px;
 }
 
 .fork-study b {
   color: var(--text);
-  font-size: 18px;
+  font-size: 22px;
   font-weight: 700;
   font-variant-numeric: tabular-nums;
 }
@@ -147,7 +147,7 @@
   }
 
   .fork-tile {
-    font-size: 15px;
+    font-size: 11px;
   }
 
   .fork-mix {

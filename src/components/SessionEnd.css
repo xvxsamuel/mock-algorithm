@@ -7,8 +7,7 @@
   display: flex;
   overflow-y: auto;
   padding: 24px;
-  background: rgb(5 5 7 / 0.88);
-  backdrop-filter: blur(14px);
+  background: var(--scan), rgb(5 5 7 / 0.92);
   animation: end-in 0.5s var(--ease) both;
 }
 
@@ -40,14 +39,14 @@
 .end-note {
   margin: 0;
   color: color-mix(in srgb, var(--muted), var(--text) 30%);
-  font-size: 12px;
+  font-size: 11px;
 }
 
 .end-title {
   margin: 0 0 2px;
-  font-size: 30px;
+  font-size: 33px;
   font-weight: 700;
-  letter-spacing: -0.02em;
+  letter-spacing: 0;
 }
 
 /* One beat at a time: your time, then the tiles (and, once they are in,
@@ -94,7 +93,7 @@
 
 .end-kicker {
   color: var(--muted);
-  font-size: 12px;
+  font-size: 11px;
   font-weight: 600;
 }
 
@@ -102,7 +101,7 @@
   font-size: 44px;
   font-weight: 600;
   line-height: 1;
-  letter-spacing: -0.03em;
+  letter-spacing: 0;
   font-variant-numeric: tabular-nums;
 }
 
@@ -112,30 +111,23 @@
 
 .end-stat.is-over .end-clock {
   color: var(--take);
-  text-shadow: 0 0 24px rgb(254 44 85 / 0.45);
+  text-shadow: 2px 2px 0 rgb(254 44 85 / 0.45);
 }
 
 .end-stat.is-early .end-clock {
   color: var(--you);
 }
 
-/* No limit: said beside the time, no bar under it. */
+/* No plan: no bar under the time. */
 .end-times:only-child {
   margin-bottom: 0;
-}
-
-.end-open {
-  margin: 0 0 4px;
-  color: var(--muted);
-  font-size: 18px;
-  font-weight: 600;
 }
 
 /* Cyan up to your plan, pink for what it took past it. */
 .end-bar {
   position: relative;
   height: 8px;
-  border-radius: 4px;
+  border-radius: 0;
   background: var(--line);
 }
 
@@ -144,7 +136,7 @@
   top: 0;
   bottom: 0;
   left: 0;
-  border-radius: 4px;
+  border-radius: 0;
   transform-origin: left;
   animation: end-grow 0.6s var(--ease) 0.15s both;
 }
@@ -155,7 +147,7 @@
 
 .end-bar-part.is-over {
   background: var(--take);
-  box-shadow: 0 0 14px rgb(254 44 85 / 0.6);
+  box-shadow: 0 0 0 2px rgb(254 44 85 / 0.6);
   animation-duration: 0.45s;
   animation-delay: 0.75s;
 }
@@ -171,7 +163,7 @@
   top: -5px;
   width: 2px;
   height: 18px;
-  border-radius: 1px;
+  border-radius: 0;
   background: var(--text);
   transform: translateX(-1px);
 }
@@ -181,10 +173,10 @@
 /* The line the whole app has been building to. */
 .end-verdict {
   margin: 6px 0 12px;
-  font-size: 26px;
+  font-size: 22px;
   font-weight: 700;
   line-height: 1.1;
-  letter-spacing: -0.02em;
+  letter-spacing: 0;
 }
 
 .end-tiles {
@@ -199,7 +191,7 @@
 .end-tiles.is-few .end-tile {
   width: 40px;
   height: 40px;
-  font-size: 20px;
+  font-size: 22px;
 }
 
 /* The same tile as the strip, coloured by who chose it. */
@@ -211,9 +203,9 @@
   width: 34px;
   height: 34px;
   border: 1.5px solid color-mix(in srgb, var(--tone) 80%, transparent);
-  border-radius: 7px;
+  border-radius: 0;
   background: color-mix(in srgb, var(--tone) 30%, var(--bg));
-  font-size: 17px;
+  font-size: 11px;
   line-height: 1;
   animation: end-pop 0.3s var(--ease) both;
 }
@@ -253,7 +245,7 @@
   right: -4px;
   width: 7px;
   height: 7px;
-  border-radius: 50%;
+  border-radius: 0;
   background: var(--platform);
   box-shadow: 0 0 0 1.5px var(--surface);
 }
@@ -272,7 +264,7 @@
   right: 2px;
   bottom: -6px;
   height: 2px;
-  border-radius: 1px;
+  border-radius: 0;
   background: var(--take);
 }
 
@@ -283,7 +275,7 @@
   margin: 0;
   padding: 0;
   color: color-mix(in srgb, var(--muted), var(--text) 30%);
-  font-size: 13.5px;
+  font-size: 11px;
   list-style: none;
   animation: end-in 0.3s var(--ease) 1.75s both;
 }
@@ -299,7 +291,7 @@
   content: "";
   width: 8px;
   height: 8px;
-  border-radius: 2px;
+  border-radius: 0;
   background: var(--tone);
 }
 
@@ -311,7 +303,7 @@
 
 .end-counts .is-late::before {
   height: 2px;
-  border-radius: 1px;
+  border-radius: 0;
   background: var(--take);
 }
 
@@ -319,7 +311,7 @@
 .end-counts .is-paid::before {
   width: 7px;
   height: 7px;
-  border-radius: 50%;
+  border-radius: 0;
   background: var(--platform);
 }
 
@@ -363,13 +355,13 @@
   align-items: center;
   gap: 6px;
   color: var(--muted);
-  font-size: 12px;
+  font-size: 11px;
 }
 
 .end-year-square {
   width: 8px;
   height: 8px;
-  border-radius: 2px;
+  border-radius: 0;
   background: var(--take);
 }
 
@@ -378,16 +370,16 @@
   gap: 4px;
   margin: 0;
   color: var(--text);
-  font-size: 40px;
+  font-size: 44px;
   font-weight: 700;
   line-height: 1;
-  letter-spacing: -0.02em;
+  letter-spacing: 0;
   font-variant-numeric: tabular-nums;
 }
 
 .end-points span {
   color: var(--muted);
-  font-size: 12px;
+  font-size: 11px;
   font-weight: 600;
   letter-spacing: 0;
 }
@@ -404,10 +396,10 @@
 /* Cyan: it is yours, and it keeps it. */
 .end-chip {
   padding: 3px 10px;
-  border-radius: 999px;
+  border-radius: 0;
   background: rgb(37 244 238 / 0.12);
   color: var(--you);
-  font-size: 12.5px;
+  font-size: 11px;
   font-weight: 600;
 }
 
@@ -427,9 +419,9 @@
 
 .end-days b {
   color: var(--take);
-  font-size: 28px;
+  font-size: 22px;
   font-weight: 700;
-  letter-spacing: -0.02em;
+  letter-spacing: 0;
 }
 
 .end-days.is-earth b {
@@ -442,12 +434,12 @@
 
 .end-days.is-less b {
   color: color-mix(in srgb, var(--earth) 65%, var(--surface));
-  font-size: 20px;
+  font-size: 22px;
 }
 
 .end-days span {
   color: color-mix(in srgb, var(--muted), var(--text) 30%);
-  font-size: 13.5px;
+  font-size: 11px;
 }
 
 /* --- The way out, or back in --- */
@@ -461,13 +453,14 @@
 }
 
 .end-button {
-  padding: 9px 22px;
-  border: 1px solid var(--line-strong);
-  border-radius: 999px;
-  background: transparent;
+  padding: 9px 22px 8px;
+  border: 2px solid var(--line-strong);
+  border-radius: 0;
+  background: var(--surface-2);
+  box-shadow: var(--bevel);
   color: var(--text);
-  font-size: 14px;
-  font-weight: 650;
+  font-size: 11px;
+  text-transform: uppercase;
   cursor: pointer;
   transition:
     border-color 0.2s var(--ease),
@@ -481,6 +474,9 @@
 .end-button.is-primary {
   border-color: var(--text);
   background: var(--text);
+  box-shadow:
+    inset -2px -2px 0 rgb(0 0 0 / 0.3),
+    var(--drop);
   color: var(--bg);
 }
 
@@ -510,21 +506,21 @@
   }
 
   .end-title {
-    font-size: 24px;
+    font-size: 22px;
   }
 
   .end-clock {
-    font-size: 36px;
+    font-size: 33px;
   }
 
   .end-points {
-    font-size: 32px;
+    font-size: 33px;
   }
 
   .end-tile {
     width: 26px;
     height: 26px;
-    font-size: 13px;
+    font-size: 11px;
   }
 }
 
@@ -548,10 +544,6 @@
     gap: 18px;
   }
 
-  .end-open {
-    font-size: 15px;
-  }
-
   .end-verdict {
     font-size: 22px;
   }
@@ -559,22 +551,22 @@
   .end-tiles.is-few .end-tile {
     width: 30px;
     height: 30px;
-    font-size: 15px;
+    font-size: 11px;
   }
 
   .end-clock {
-    font-size: 30px;
+    font-size: 33px;
   }
 
   .end-tile {
     width: 24px;
     height: 24px;
-    font-size: 12px;
-    border-radius: 6px;
+    font-size: 11px;
+    border-radius: 0;
   }
 
   .end-points {
-    font-size: 30px;
+    font-size: 33px;
   }
 
   .end-actions {
