@@ -35,7 +35,7 @@ import { MATERIAL } from "./shaders";
    Each finger is a chain of rounded sticks from joint to joint. That is
    what makes it slightly off even at the start; as the hut decays the hand
    stops being yours: the fingers grow out past the phone and thin to the
-   bone, the nails grow, and a sixth finger comes round the edge. */
+   bone, and the nails grow. */
 
 const HALF_WIDTH = PHONE.width / 2;
 const HALF_HEIGHT = PHONE.height / 2;
@@ -47,14 +47,10 @@ type Finger = {
   joints: Joints;
   /** How thick the finger is at each of those. */
   radii: readonly [number, number, number, number];
-  /** How far the hand has turned (0 to 1) when this finger starts to grow.
-      0: it is there from the start. */
-  from: number;
 };
 
 /** The four fingers come from behind the phone, round its left edge, and
-    turn up along it, with their tips against its side. The last one is not
-    yours. */
+    turn up along it, with their tips against its side. */
 const FINGERS: readonly Finger[] = [
   {
     joints: [
@@ -64,7 +60,6 @@ const FINGERS: readonly Finger[] = [
       [-17.6, 8.6, 0.8],
     ],
     radii: [3.5, 3.2, 3, 2.7],
-    from: 0,
   },
   {
     joints: [
@@ -74,7 +69,6 @@ const FINGERS: readonly Finger[] = [
       [-17.7, -1.6, 0.9],
     ],
     radii: [3.6, 3.3, 3.1, 2.8],
-    from: 0,
   },
   {
     joints: [
@@ -84,7 +78,6 @@ const FINGERS: readonly Finger[] = [
       [-17.5, -11.4, 0.8],
     ],
     radii: [3.4, 3.1, 2.9, 2.6],
-    from: 0,
   },
   {
     joints: [
@@ -94,41 +87,21 @@ const FINGERS: readonly Finger[] = [
       [-17, -21.4, 0.5],
     ],
     radii: [2.9, 2.6, 2.4, 2.2],
-    from: 0,
-  },
-  {
-    joints: [
-      [-1, 11, -8],
-      [-13, 14, -7.6],
-      [-18.5, 15.4, -4.5],
-      [-17.3, 19.2, 0.8],
-    ],
-    radii: [3.2, 2.9, 2.7, 2.4],
-    from: 0.5,
   },
 ];
 
-/** The thumb comes up the right edge and lies along it. For a swipe it
-    comes down on the glass, slides along it with the feed, and goes back. */
+/** The thumb comes up the right edge and lies along it. To tap or swipe it
+    comes down on the glass, with its tip where it touches. */
 const THUMB: Joints = [
   [12, -31, -9],
   [20.4, -27, -3],
   [19.2, -19.5, 0.2],
   [18.4, -11.5, 0.9],
 ];
-const THUMB_DOWN: Joints = [
-  [12, -31, -9],
-  [20.4, -26.5, -1.6],
-  [18.8, -19, 4.6],
-  [9, -15.5, 3.9],
-];
-const THUMB_UP: Joints = [
-  [12, -31, -9],
-  [20.2, -25, -1.2],
-  [18.6, -15.5, 4.6],
-  [8, -7, 3.9],
-];
 const THUMB_RADII = [5.2, 4.5, 4, 3.5] as const;
+/** How far the tip can reach from the root of the thumb. A tap further
+    away lands as far as it gets, on the way there. */
+const THUMB_REACH = 42;
 /** How high the thumb lifts on its way to the glass and back, so that it
     goes over the edge of the phone and not through it. */
 const THUMB_LIFT = 3;
@@ -145,9 +118,8 @@ export type HandState = {
   /** How far the thumb has come down on the glass: 0 is at rest along the
       edge, 1 is on it. */
   press: number;
-  /** Where on the glass it is: 0 at the bottom of its stroke, 1 at the
-      top. */
-  slide: number;
+  /** Where its tip touches the glass, in the phone's space (x, y). */
+  tip: readonly [number, number];
 };
 
 /** The phone's outline: a rectangle with round corners, going round. */
@@ -173,38 +145,53 @@ function phoneOutline(): [number, number][] {
   return points;
 }
 
+/** The thumb on the glass with its tip at (x, y): the first joint stays
+    by the edge, and the middle one bows out between it and the tip. */
+function thumbOnGlass(x: number, y: number): Vec3[] {
+  const root = THUMB[0];
+  let tipX = x - root[0];
+  let tipY = y - root[1];
+  const reach = Math.hypot(tipX, tipY);
+  if (reach > THUMB_REACH) {
+    tipX *= THUMB_REACH / reach;
+    tipY *= THUMB_REACH / reach;
+  }
+  const tip: Vec3 = [root[0] + tipX, root[1] + tipY, 3.9];
+  const first: Vec3 = [
+    20.4,
+    Math.min(Math.max(-26.5 + (tip[1] + 15.5) * 0.2, -28), -22),
+    -1.4,
+  ];
+  const middle: Vec3 = add(mix(first, tip, 0.5), [4.3, 1.2, 0]);
+  return [root, first, [middle[0], middle[1], 4.6], tip];
+}
+
 /** Where the thumb's joints are: `press` of the way down from rest to the
-    glass, at `slide` of the way up its stroke. */
-function thumbAt(press: number, slide: number): Vec3[] {
+    glass, where it touches at `tip`. */
+function thumbAt(press: number, tip: readonly [number, number]): Vec3[] {
   const down = smoothstep(0, 1, press);
   const lift = THUMB_LIFT * Math.sin(Math.PI * down);
+  const onGlass = thumbOnGlass(tip[0], tip[1]);
   return THUMB.map((joint, i) =>
-    add(mix(joint, mix(THUMB_DOWN[i], THUMB_UP[i], slide), down), [
-      0,
-      0,
-      i >= 2 ? lift : 0,
-    ]),
+    add(mix(joint, onGlass[i], down), [0, 0, i >= 2 ? lift : 0]),
   );
 }
 
-/**
- * One finger. `size` below 1 is a finger still growing out of its knuckle.
- * `nailFaces` is roughly which way the back of the fingertip points.
- */
+/** One finger. `nailFaces` is roughly which way the back of the fingertip
+    points. */
 function addFinger(
   mesh: Mesh,
   joints: readonly Vec3[],
   radii: readonly number[],
   nailFaces: Vec3,
-  size: number,
   turned: number,
   skin: Paint,
   nail: Paint,
 ): void {
-  const points = joints.map((joint) => mix(joints[0], joint, size));
+  const points = [...joints];
   // The last bone stretches as the hand turns.
   points[3] = add(points[3], scale(sub(points[3], points[2]), 0.7 * turned));
-  const thin = (1 - 0.3 * turned) * size;
+  const thin = 1 - 0.3 * turned;
   for (let i = 0; i < 3; i++) {
     addRoundCone(
       mesh,
@@ -218,7 +205,7 @@ function addFinger(
   // The joints do not thin with the rest, so they start to stand out.
   if (turned > 0.05) {
     for (const i of [1, 2]) {
-      const knuckle = radii[i] * size * (1 - 0.12 * turned);
+      const knuckle = radii[i] * (1 - 0.12 * turned);
       addEllipsoid(mesh, points[i], [knuckle, knuckle, knuckle], skin);
     }
   }
@@ -241,10 +228,7 @@ function addFinger(
 }
 
 /** The phone and the hand that holds it. */
-export function buildHand(
-  mesh: Mesh,
-  { turned, press, slide }: HandState,
-): void {
+export function buildHand(mesh: Mesh, { turned, press, tip }: HandState): void {
   // The phone: its body, and a front that the real screen shows through.
   addSlab(mesh, phoneOutline(), -PHONE.depth, -0.05, {
     color: [0.09, 0.09, 0.1],
@@ -270,17 +254,11 @@ export function buildHand(
   };
 
   for (const finger of FINGERS) {
-    const size =
-      finger.from === 0
-        ? 1
-        : smoothstep(finger.from, finger.from + 0.4, turned);
-    if (size < 0.03) continue;
     addFinger(
       mesh,
       finger.joints,
       finger.radii,
       [-0.7, 0, 0.7],
-      size,
       turned,
       skin,
       nail,
@@ -288,10 +266,9 @@ export function buildHand(
   }
   addFinger(
     mesh,
-    thumbAt(press, slide),
+    thumbAt(press, tip),
     THUMB_RADII,
     [0.6, 0, 0.8],
-    1,
     turned * 0.7,
     skin,
     nail,

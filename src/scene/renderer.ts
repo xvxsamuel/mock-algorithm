@@ -43,9 +43,9 @@ import { daylightAt } from "./time";
 
 /** The most pixels of the page drawn on, however big or sharp it is. */
 const MAX_PIXELS = 2_200_000;
-/** About how many rows the small picture has: more than an old console's,
+/** About how many rows the small picture has: well over an old console's,
     and still few enough to see its pixels. */
-const ROWS = 360;
+const ROWS = 540;
 /** Nothing nearer or further than this is drawn. */
 const NEAR = 6;
 const FAR = 6000;
@@ -385,8 +385,8 @@ export function createHutRenderer(
       buildProps(props.mesh, frame.props);
       refresh(gl, props);
     }
-    const { turned, press, slide } = frame.hand;
-    const nextHand = `${Math.round(turned * 400)} ${Math.round(press * 100)} ${Math.round(slide * 200)}`;
+    const { turned, press, tip } = frame.hand;
+    const nextHand = `${Math.round(turned * 400)} ${Math.round(press * 100)} ${Math.round(tip[0] * 4)} ${Math.round(tip[1] * 4)}`;
     if (nextHand !== handKey) {
       handKey = nextHand;
       clearMesh(hand.mesh);
