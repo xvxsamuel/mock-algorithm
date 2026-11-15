@@ -88,6 +88,9 @@ export type HutFrame = {
   height: number;
   /** Turns the hut to where you look: from the hut's space to your eyes'. */
   view: Mat4;
+  /** How far the middle of the view is moved sideways, in page widths:
+      -0.25 puts it half way between the left edge and the middle. */
+  shift: number;
   /** Where the phone is: from the phone's space to the hut's. */
   phone: Mat4;
   props: PropsState;
@@ -408,6 +411,7 @@ export function createHutRenderer(
     hutInputs.matrix(
       "uCamera",
       [
+        translation([2 * frame.shift, 0, 0]),
         translation([fitX - 1, fitY - 1, 0]),
         scaling(fitX, fitY, 1),
         perspective(FOCAL, pageWidth / pageHeight, NEAR, FAR),

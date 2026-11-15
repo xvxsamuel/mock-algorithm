@@ -80,63 +80,150 @@
   isolation: isolate;
 }
 
-/* --- Flat controls over the room --- */
+/* --- What the algorithm sees, over the hut --- */
 
-.room-hud {
-  position: absolute;
-  right: 0;
-  left: 0;
-  display: flex;
-  align-items: center;
-  gap: 16px;
-  padding: 16px 20px;
-  pointer-events: none;
+/* Narrow screens: the sheet from the flat view (index.css), as it is. */
+.room-glass,
+.room-tab {
+  display: none;
 }
 
-.room-hud > * {
+/* Wide screens: a pane of dark glass beside the phone. The hut moves the
+   phone over to make room for it (useHutScene). */
+@media (min-width: 901px) {
+  .room {
+    --panel-width: clamp(460px, 45vw, 660px);
+    --panel-gap: 10px;
+  }
+
+  .room-glass,
+  .room .app-panel {
+    position: absolute;
+    top: var(--panel-gap);
+    right: var(--panel-gap);
+    bottom: var(--panel-gap);
+    width: var(--panel-width);
+    border-radius: 20px;
+    transition:
+      transform 0.45s var(--ease),
+      visibility 0s;
+  }
+
+  .room-glass {
+    display: block;
+    border: 1px solid var(--line-strong);
+    background: color-mix(in srgb, var(--bg) 82%, transparent);
+    backdrop-filter: blur(16px);
+  }
+
+  /* Nothing here may start a new layer: the panel's cards have to stack
+     with the lines, which are drawn outside it. */
+  .room .app-panel {
+    border: 0;
+    background: none;
+  }
+
+  /* The glass stops short of the page's edges, so the panel gives up as
+     much of its own padding: its cards keep the height they have in the
+     flat view. */
+  .room .panel {
+    padding: 14px 20px 8px;
+  }
+
+  .room .panel-note {
+    top: 1px;
+    right: 20px;
+  }
+
+  /* Put away: off the right edge. */
+  .room.is-bare .room-glass,
+  .room.is-bare .app-panel {
+    visibility: hidden;
+    transform: translateX(calc(100% + var(--panel-gap) * 2));
+    transition:
+      transform 0.45s var(--ease),
+      visibility 0s 0.45s;
+  }
+
+  /* The grip on the panel's edge. With the panel put away it is the way
+     back in, so it says what is there. */
+  .room-tab {
+    position: absolute;
+    top: 50%;
+    right: calc(var(--panel-width) + var(--panel-gap));
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    min-height: 56px;
+    padding: 0 7px;
+    border: 1px solid var(--line-strong);
+    border-right: 0;
+    border-radius: 10px 0 0 10px;
+    background: color-mix(in srgb, var(--bg) 82%, transparent);
+    backdrop-filter: blur(16px);
+    color: var(--text);
+    font-size: 12.5px;
+    font-weight: 700;
+    line-height: 1;
+    cursor: pointer;
+    transform: translateY(-50%);
+    transition: right 0.45s var(--ease);
+  }
+
+  .room-tab span {
+    color: var(--you);
+    font-size: 16px;
+  }
+
+  .room.is-bare .room-tab {
+    right: 0;
+    padding: 0 12px 0 10px;
+  }
+
+  .room-tab:focus-visible {
+    outline: 2px solid var(--you);
+    outline-offset: 2px;
+  }
+}
+
+/* --- Where you look --- */
+
+/* Under the phone, wherever the hut has put it. */
+.room-looks {
+  position: absolute;
+  right: 0;
+  bottom: 16px;
+  left: 0;
+  display: flex;
+  justify-content: center;
+  pointer-events: none;
+  transition: right 0.45s var(--ease);
+}
+
+.room-looks .levers {
+  background: color-mix(in srgb, var(--bg) 80%, transparent);
+  backdrop-filter: blur(10px);
   pointer-events: auto;
 }
 
-.room-hud.is-top {
-  top: 0;
-  justify-content: space-between;
+@media (min-width: 901px) {
+  .room:not(.is-bare) .room-looks {
+    right: calc(var(--panel-width) + var(--panel-gap));
+  }
 }
 
-.room-hud.is-bottom {
-  bottom: 0;
-  flex-direction: column;
-  gap: 8px;
+/* Clear of the sheet's handle. */
+@media (max-width: 900px) {
+  .room-looks {
+    bottom: 62px;
+  }
 }
 
-.room-hud .levers {
-  background: color-mix(in srgb, var(--bg) 80%, transparent);
-  backdrop-filter: blur(10px);
-}
-
-.room-title {
-  margin: 0;
-  font-size: 15px;
-  font-weight: 700;
-}
-
-.room-back {
-  color: var(--muted);
-  font-size: 14px;
-  font-weight: 600;
-}
-
-.room-back:hover {
-  color: var(--text);
-}
-
-.room-back:focus-visible {
-  outline: 2px solid var(--you);
-  outline-offset: 2px;
-}
-
-.room-hint {
-  margin: 0;
-  color: var(--muted);
-  font-size: 13px;
-  text-shadow: 0 1px 6px #000;
+@media (prefers-reduced-motion: reduce) {
+  .room-glass,
+  .room .app-panel,
+  .room-tab,
+  .room-looks {
+    transition: none;
+  }
 }

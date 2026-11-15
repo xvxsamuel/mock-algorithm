@@ -46,6 +46,8 @@ type HutInput = {
   videos: number;
   /** The colour of the video on screen, like "#ff8a00". */
   glow: string;
+  /** The panel is open beside the phone: the view moves over for it. */
+  aside: boolean;
 };
 
 /** The pitch at which the phone is held up, and at which it has dropped. */
@@ -61,7 +63,8 @@ const FLIP = scaling(1, -1, 1);
 /**
  * Runs the hut: every frame it turns the view to where you look, lets time
  * pass, draws the hut on the canvas, and moves the real phone on the page
- * to where your hand holds it.
+ * to where your hand holds it. With the panel open beside the phone, the
+ * middle of the view is half way between the page's left edge and the panel.
  *
  * Time in the hut only moves while you look at the phone. Look up and it
  * stands still, so you never see it pass: it is just later than it was.
@@ -70,6 +73,7 @@ export function useHutScene(
   stage: RefObject<HTMLElement | null>,
   canvas: RefObject<HTMLCanvasElement | null>,
   phone: RefObject<HTMLElement | null>,
+  panel: RefObject<HTMLElement | null>,
   input: HutInput,
 ): void {
   const latest = useRef(input);
@@ -81,6 +85,7 @@ export function useHutScene(
     const stageElement = stage.current;
     const canvasElement = canvas.current;
     const phoneElement = phone.current;
+    const panelElement = panel.current;
     if (
       stageElement === null ||
       canvasElement === null ||
@@ -101,6 +106,8 @@ export function useHutScene(
 
     let width = stageElement.clientWidth;
     let height = stageElement.clientHeight;
+    // Where the panel starts, from the left of the page.
+    let panelLeft = panelElement?.offsetLeft ?? width;
     // The dots on the phone's screen are as big on the page as the hut's
     // pixels. The phone is laid out bigger than it is shown, so in its own
     // px they are bigger too.
@@ -114,11 +121,16 @@ export function useHutScene(
     const observer = new ResizeObserver(() => {
       width = stageElement.clientWidth;
       height = stageElement.clientHeight;
+      panelLeft = panelElement?.offsetLeft ?? width;
       sizeDots();
     });
     observer.observe(stageElement);
+    if (panelElement !== null) observer.observe(panelElement);
 
     let { yaw, pitch } = latest.current.look;
+    /** How far the middle of the view is from the middle of the page, in
+        page widths. Not known until the first frame. */
+    let shift: number | null = null;
     /** Seconds you have looked at the phone while the feed ran. */
     let seconds = 0;
     let glow = colorOf(latest.current.glow);
@@ -137,6 +149,13 @@ export function useHutScene(
       const ease = want.dragging || calm ? 1 : 1 - Math.exp(-elapsed * EASE);
       yaw += (want.look.yaw - yaw) * ease;
       pitch += (want.look.pitch - pitch) * ease;
+
+      const wantShift =
+        want.aside && width > 0 ? panelLeft / (2 * width) - 0.5 : 0;
+      shift =
+        shift === null || calm
+          ? wantShift
+          : shift + (wantShift - shift) * (1 - Math.exp(-elapsed * EASE));
 
       // How far, in degrees, you look away from where your hand holds the
       // phone up. Time passes while you look at it.
@@ -198,6 +217,7 @@ export function useHutScene(
         FLIP,
         scaling(size, size, size),
       ].reduce(multiply);
+      phoneElement.style.left = `${(50 + shift * 100).toFixed(3)}%`;
       phoneElement.style.transform = `perspective(${depth}px) matrix3d(${onPage
         .map((value) => value.toFixed(6))
         .join(",")})`;
@@ -206,6 +226,7 @@ export function useHutScene(
         width,
         height,
         view,
+        shift,
         phone: held,
         props: { decay, hour: hourAfter(seconds), videos },
         hand: { turned: smoothstep(0.3, 1, decay), swipe },
@@ -222,5 +243,5 @@ export function useHutScene(
       canvasElement.removeEventListener("webglcontextrestored", onRestored);
       renderer?.dispose();
     };
-  }, [stage, canvas, phone]);
+  }, [stage, canvas, phone, panel]);
 }
