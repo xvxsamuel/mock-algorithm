@@ -122,25 +122,6 @@
 }
 
 /* A small label above the target, e.g. "+0.4 comedy". */
-.link-chip {
-  opacity: 0;
-  animation: link-show 0.2s ease-out forwards;
-}
-
-.link-chip rect {
-  fill: color-mix(in srgb, currentColor 22%, #0b0b0f);
-  stroke: currentColor;
-  stroke-width: 2;
-  stroke-opacity: 0.8;
-}
-
-.link-chip text {
-  fill: currentColor;
-  font-size: 11px;
-  text-transform: uppercase;
-  font-variant-numeric: tabular-nums;
-}
-
 @keyframes link-fade {
   0%,
   70% {
@@ -182,7 +163,6 @@
 
   .link-box,
   .link-dot,
-  .link-chip,
   .link-notch {
     opacity: 1;
     animation: none;

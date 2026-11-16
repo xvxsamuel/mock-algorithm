@@ -1,6 +1,7 @@
 import { useRef } from "react";
 import { CATEGORIES, type Category } from "../data/categories";
 import { useElementSize } from "../hooks/useElementSize";
+import type { LinkNote } from "../hooks/useLinks";
 import "./InterestRadar.css";
 
 /** The shape never shrinks below this, so a new profile is a small dot. */
@@ -18,13 +19,15 @@ const LABEL_PX = 12;
 type InterestRadarProps = {
   topics: { name: Category; score: number }[];
   current: Category;
+  /** "more" or "less" for a topic a line from the phone just reached. */
+  notes: LinkNote[];
 };
 
 /**
  * Your interests as a shape that grows towards what you watch. Topics you
  * reject collapse to the middle and their names turn pink.
  */
-function InterestRadar({ topics, current }: InterestRadarProps) {
+function InterestRadar({ topics, current, notes }: InterestRadarProps) {
   const ref = useRef<SVGSVGElement>(null);
   const { width, height } = useElementSize(ref);
   // How big one unit of the drawing is on screen.
@@ -102,6 +105,34 @@ function InterestRadar({ topics, current }: InterestRadarProps) {
             data-link={`topic:${name}`}
           >
             {name}
+          </text>
+        );
+      })}
+      {/* Over the topic's own name, so it reads "more cooking". Drawn here,
+          not by the line, so it is always right where the name is. */}
+      {notes.map((note) => {
+        const i = CATEGORIES.findIndex(
+          (name) => `topic:${name}` === note.target,
+        );
+        if (i < 0) return null;
+        const label = polar(i, 1.2);
+        // Under the names on the bottom half, so it stays in the picture.
+        const below = label.y > CENTER + 8;
+        return (
+          <text
+            key={note.id}
+            className={`radar-note is-${note.tone}`}
+            style={{
+              fontSize: labelSize,
+              animationDelay: `${note.delay}ms`,
+              animationDuration: `${note.duration - note.delay}ms`,
+            }}
+            x={label.x}
+            y={label.y + (below ? 1 : -1) * labelSize * 1.15}
+            textAnchor={anchor(label.x)}
+            dominantBaseline="middle"
+          >
+            {note.label}
           </text>
         );
       })}

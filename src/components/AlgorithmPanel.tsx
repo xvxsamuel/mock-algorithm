@@ -3,6 +3,7 @@ import { formatClock } from "../algorithm/clock";
 import { footprint, PHONE_YEARS } from "../data/world";
 import type { FeedController } from "../hooks/useFeed";
 import { useMoreBelow } from "../hooks/useMoreBelow";
+import type { LinkNote } from "../hooks/useLinks";
 import type { Lens, Reveal } from "../hooks/useReveal";
 import ContentLens from "./ContentLens";
 import EngineLens from "./EngineLens";
@@ -41,6 +42,8 @@ const UNFOLD_AT = 4;
 
 type AlgorithmPanelProps = {
   feed: FeedController;
+  /** Notes for parts of the panel to show while a line to them is there. */
+  notes: LinkNote[];
   /** How much of the machine has been shown so far. */
   reveal: Reveal;
   /** The simulation is paused by hand. */
@@ -57,6 +60,7 @@ type AlgorithmPanelProps = {
  */
 function AlgorithmPanel({
   feed,
+  notes,
   reveal,
   paused,
   onPause,
@@ -186,7 +190,7 @@ function AlgorithmPanel({
           else if (top < UNFOLD_AT) setFolded(false);
         }}
       >
-        {lens === "you" && <YouLens feed={feed} />}
+        {lens === "you" && <YouLens feed={feed} notes={notes} />}
         {lens === "engine" && <EngineLens feed={feed} />}
         {lens === "content" && <ContentLens feed={feed} />}
         {lens === "market" && <MarketLens feed={feed} />}

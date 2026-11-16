@@ -51,6 +51,37 @@
   fill: color-mix(in srgb, var(--muted), var(--surface) 12%);
 }
 
+/* "more" or "less" over a topic, while the line to it is there. Pixel
+   type with a hard dark edge, so it reads over the rings. */
+.radar-note {
+  opacity: 0;
+  fill: var(--you);
+  stroke: var(--surface);
+  stroke-width: 4px;
+  paint-order: stroke;
+  text-transform: uppercase;
+  animation-name: radar-note;
+  animation-timing-function: steps(1, end);
+  animation-fill-mode: both;
+}
+
+.radar-note.is-down {
+  fill: var(--less);
+}
+
+@keyframes radar-note {
+  0% {
+    opacity: 0;
+  }
+  1%,
+  85% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
   .radar-shape,
   .radar-dot {

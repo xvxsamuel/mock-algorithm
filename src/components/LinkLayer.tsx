@@ -1,15 +1,14 @@
 import { useEffect, useRef } from "react";
-import type { Link } from "../hooks/useLinks";
+import {
+  arrivalOf,
+  lifetimeOf,
+  TRACE_MS,
+  TRAVEL_MS,
+  type Link,
+  type LiveLink,
+} from "../hooks/useLinks";
 import "./LinkLayer.css";
 
-/** How long the head of a line takes to travel from the phone to the panel. */
-const TRAVEL_MS = 550;
-/** How long a tab glows when its lens is not open. */
-const PING_MS = 900;
-/** How long the trace inside a card takes to reach its target. */
-const TRACE_MS = 260;
-/** Rough width of one character of a label, for its background. */
-const CHAR_PX = 8;
 /** Targets bigger than this (px²) are whole cards: outline only, no fill. */
 const CARD_AREA = 30_000;
 /** Targets taller than this (px), like a chart column, get a quieter box. */
@@ -19,40 +18,76 @@ type LinkLayerProps = {
   links: Link[];
   /** Called when a link has faded out and can be removed. */
   onDone: (id: number) => void;
-  /** A link's line as it is now, or null to hide it. The phone can move
-      (in the hut, with your hand and your head), and the lines keep to
-      it. */
-  pathOf: (link: Link) => string | null;
+  /** A link as it is now, or null to hide it. The phone can move (in the
+      hut, with your hand and your head) and so can its target (a chart
+      that animates, a panel that slides in): the lines keep to both. */
+  liveOf: (link: Link) => LiveLink | null;
 };
 
 /**
  * Lines from the side of the phone to the part of the panel that changed.
- * Two layers: the lines run behind the cards, the highlights and labels sit
- * on top of them. Bigger changes are thicker, brighter and stay longer.
+ * Two layers: the lines run behind the cards, the highlights sit on top of
+ * them. Bigger changes are thicker, brighter and stay longer. A note like
+ * "more" is not drawn here: the target shows it itself (see notesOf), so
+ * it sits exactly where it belongs.
  */
-function LinkLayer({ links, onDone, pathOf }: LinkLayerProps) {
+function LinkLayer({ links, onDone, liveOf }: LinkLayerProps) {
   const under = useRef<SVGSVGElement>(null);
+  const over = useRef<SVGSVGElement>(null);
 
-  // Every frame while there are lines, move their phone end with the phone.
+  // Every frame while there are lines, measure both ends again and move
+  // every part of each line to where they are now.
   useEffect(() => {
-    const layer = under.current;
-    if (layer === null || links.length === 0) return;
+    const below = under.current;
+    const above = over.current;
+    if (below === null || above === null || links.length === 0) return;
     const byId = new Map(links.map((link) => [String(link.id), link]));
     let request = 0;
     const frame = () => {
       request = requestAnimationFrame(frame);
-      for (const group of layer.querySelectorAll<SVGGElement>("[data-id]")) {
-        const link = byId.get(group.dataset.id ?? "");
-        if (link === undefined) continue;
-        const d = pathOf(link) ?? "";
+      const live = new Map<string, LiveLink | null>();
+      for (const [id, link] of byId) live.set(id, liveOf(link));
+      for (const group of below.querySelectorAll<SVGGElement>("[data-id]")) {
+        const now = live.get(group.dataset.id ?? "");
+        if (now === undefined) continue;
+        group.style.visibility = now === null ? "hidden" : "";
+        if (now === null) continue;
         for (const path of group.querySelectorAll("path")) {
-          if (path.getAttribute("d") !== d) path.setAttribute("d", d);
+          if (path.getAttribute("d") !== now.d) path.setAttribute("d", now.d);
         }
+      }
+      for (const group of above.querySelectorAll<SVGGElement>("[data-id]")) {
+        const now = live.get(group.dataset.id ?? "");
+        if (now === undefined) continue;
+        group.style.visibility = now === null ? "hidden" : "";
+        if (now === null) continue;
+        const { box, entry, trace } = now;
+        const rect = group.querySelector(".link-box");
+        if (rect !== null) {
+          rect.setAttribute("x", String(box.x));
+          rect.setAttribute("y", String(box.y));
+          rect.setAttribute("width", String(box.width));
+          rect.setAttribute("height", String(box.height));
+        }
+        const dot = group.querySelector(".link-dot");
+        if (dot !== null) {
+          dot.setAttribute("x", String(Math.round(box.x + box.width + 2)));
+          dot.setAttribute("y", String(Math.round(box.y + box.height / 2 - 4)));
+        }
+        const notch = group.querySelector(".link-notch");
+        if (notch !== null) {
+          notch.setAttribute("x1", String(entry.x));
+          notch.setAttribute("x2", String(entry.x));
+          notch.setAttribute("y1", String(entry.y - 7));
+          notch.setAttribute("y2", String(entry.y + 7));
+        }
+        const path = group.querySelector(".link-trace");
+        if (path !== null && trace !== null) path.setAttribute("d", trace);
       }
     };
     request = requestAnimationFrame(frame);
     return () => cancelAnimationFrame(request);
-  }, [links, pathOf]);
+  }, [links, liveOf]);
 
   return (
     <>
@@ -65,7 +100,7 @@ function LinkLayer({ links, onDone, pathOf }: LinkLayerProps) {
               key={link.id}
               data-id={link.id}
               className={`link is-${link.tone}`}
-              style={{ animationDuration: `${lifetime(link)}ms` }}
+              style={{ animationDuration: `${lifetimeOf(link)}ms` }}
             >
               <path
                 className="link-trail"
@@ -94,21 +129,20 @@ function LinkLayer({ links, onDone, pathOf }: LinkLayerProps) {
         })}
       </svg>
 
-      <svg className="links is-over" aria-hidden="true">
+      <svg className="links is-over" aria-hidden="true" ref={over}>
         {links.map((link) => {
-          const { box, strength, label } = link;
+          const { box, strength } = link;
           const isPing = link.style === "ping";
           const isCard = box.width * box.height > CARD_AREA;
           const isTall = box.height > TALL_PX;
           const enter = TRAVEL_MS - 80;
-          const arrive = isPing
-            ? 0
-            : enter + (link.trace === null ? 0 : TRACE_MS);
+          const arrive = arrivalOf(link);
           return (
             <g
               key={link.id}
+              data-id={link.id}
               className={`link is-${link.tone} is-${link.style}`}
-              style={{ animationDuration: `${lifetime(link)}ms` }}
+              style={{ animationDuration: `${lifetimeOf(link)}ms` }}
               onAnimationEnd={(event) => {
                 // Ignore the inner animations bubbling up.
                 if (event.target === event.currentTarget) onDone(link.id);
@@ -158,42 +192,12 @@ function LinkLayer({ links, onDone, pathOf }: LinkLayerProps) {
                   style={{ animationDelay: `${arrive}ms` }}
                 />
               )}
-              {label !== null && (
-                <g
-                  className="link-chip"
-                  transform={`translate(${box.x + box.width / 2} ${box.y - 4})`}
-                  style={{ animationDelay: `${arrive}ms` }}
-                >
-                  <rect
-                    x={-(label.length * CHAR_PX + 16) / 2}
-                    y={-20}
-                    width={label.length * CHAR_PX + 16}
-                    height={20}
-                  />
-                  <text
-                    x={0}
-                    y={-10}
-                    textAnchor="middle"
-                    dominantBaseline="central"
-                  >
-                    {label}
-                  </text>
-                </g>
-              )}
             </g>
           );
         })}
       </svg>
     </>
   );
-}
-
-/** How long a link stays on screen before it is removed. */
-function lifetime(link: Link): number {
-  if (link.style === "ping") return PING_MS;
-  const extra =
-    (link.label === null ? 0 : 500) + (link.trace === null ? 0 : TRACE_MS);
-  return TRAVEL_MS + 700 + link.strength * 1100 + extra;
 }
 
 export default LinkLayer;
