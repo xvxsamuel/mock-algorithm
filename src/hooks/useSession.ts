@@ -9,14 +9,18 @@ const WHY_AFTER = 3;
 /**
  * What goes on around the feed in one session: the panel as a sheet on
  * narrow screens, the two cards that come over a video, and leaving.
+ * `waiting` holds everything back, e.g. while the page is still loading.
  */
-export function useSession(feed: FeedController) {
+export function useSession(feed: FeedController, waiting = false) {
   // On narrow screens the panel is a sheet that slides up over the video.
   const [sheetOpen, setSheetOpen] = useState(false);
   // Two cards come over a video in the feed, each once a session and never
   // both on one video. Each remembers the video it was passed on.
   const [breakAt, setBreakAt] = useState<number | null>(null);
   const [whyAt, setWhyAt] = useState<number | null>(null);
+  // Paused by hand, say to talk over it: the video, the clock and the hut
+  // all wait until you go on.
+  const [paused, setPaused] = useState(false);
   const { current } = feed;
   const live = feed.started && !feed.ended;
   // The first video you swipe to past your plan (3 min in, with no limit)
@@ -40,7 +44,8 @@ export function useSession(feed: FeedController) {
   const { hold, end } = feed;
   // Reading the panel or a card is not watching: the video and the
   // session clock wait.
-  const held = sheetOpen || planBreak || cause !== null;
+  const held =
+    waiting || sheetOpen || planBreak || cause !== null || (live && paused);
   useEffect(() => {
     hold(held);
   }, [held, hold]);
@@ -50,6 +55,7 @@ export function useSession(feed: FeedController) {
   function leave(button: HTMLElement | null) {
     leftFrom.current = button;
     setSheetOpen(false);
+    setPaused(false);
     if (breakAt === null) setBreakAt(current.index);
     if (cause !== null) setWhyAt(current.index);
     hold(false);
@@ -74,6 +80,8 @@ export function useSession(feed: FeedController) {
     cause,
     /** Swiped past the "why this video" card. */
     keepWhy: () => setWhyAt(current.index),
+    paused: live && paused,
+    togglePause: () => setPaused((was) => !was),
     leave,
     leftFrom,
   };

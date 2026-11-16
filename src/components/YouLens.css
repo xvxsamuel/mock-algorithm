@@ -15,11 +15,13 @@
   place-items: center;
   width: 46px;
   height: 46px;
-  border-radius: 0;
-  background:
-    linear-gradient(var(--surface), var(--surface)) padding-box,
-    conic-gradient(var(--you), var(--take), var(--you)) border-box;
-  border: 2px solid transparent;
+  /* The app's own split: a white frame with a cyan copy up and left of it
+     and a pink one down and right, in hard steps instead of a gradient. */
+  border: 2px solid var(--text);
+  background: var(--surface);
+  box-shadow:
+    -3px -3px 0 var(--you),
+    3px 3px 0 var(--take);
   font-size: 11px;
   font-weight: 700;
 }

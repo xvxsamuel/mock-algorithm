@@ -15,16 +15,13 @@
 
 .brk-kicker {
   color: var(--muted);
-  font-size: 12px;
-  font-weight: 600;
+  font-size: 11px;
+  text-transform: uppercase;
 }
 
 .brk-clock {
-  font-size: 34px;
-  font-weight: 600;
+  font-size: 33px;
   line-height: 1;
-  letter-spacing: -0.03em;
-  font-variant-numeric: tabular-nums;
 }
 
 .brk-clock.is-meant {
@@ -33,16 +30,16 @@
 
 .brk-stat.is-over .brk-clock {
   color: var(--take);
-  text-shadow: 0 0 20px rgb(254 44 85 / 0.45);
+  text-shadow: 2px 2px 0 rgb(254 44 85 / 0.45);
 }
 
 /* Cyan up to your plan, then pink for what it took past it. */
 .brk-bar {
   position: relative;
-  height: 8px;
+  height: 10px;
   overflow: hidden;
-  border-radius: 4px;
-  background: var(--line);
+  background: var(--stage);
+  box-shadow: var(--sunk);
 }
 
 .brk-bar-part {
@@ -52,12 +49,11 @@
   left: 0;
   background: var(--you);
   transform-origin: left;
-  animation: brk-grow 0.7s var(--ease, ease-out) 0.15s both;
+  animation: brk-grow 0.7s steps(10) 0.15s both;
 }
 
 .brk-bar-part.is-over {
   background: var(--take);
-  box-shadow: 0 0 12px rgb(254 44 85 / 0.6);
   animation-duration: 0.5s;
   animation-delay: 0.85s;
 }
@@ -72,8 +68,9 @@
 
 .brk-label {
   margin: 10px 0 0;
-  font-size: 14px;
-  font-weight: 650;
+  font-size: 11px;
+  font-weight: 400;
+  text-transform: uppercase;
 }
 
 .brk-tiles {
@@ -91,18 +88,16 @@
   place-items: center;
   width: 20px;
   height: 20px;
-  border: 1.5px solid color-mix(in srgb, var(--tone) 80%, transparent);
-  border-radius: 5px;
+  border: 2px solid color-mix(in srgb, var(--tone) 80%, transparent);
   background: color-mix(in srgb, var(--tone) 30%, var(--bg));
   font-size: 11px;
   line-height: 1;
-  animation: brk-pop 0.3s var(--ease, ease-out) both;
+  animation: brk-pop 0.3s steps(3) both;
 }
 
 .brk-tiles.is-few .brk-tile {
   width: 28px;
   height: 28px;
-  border-radius: 6px;
   font-size: 15px;
 }
 
@@ -121,7 +116,7 @@
   margin: -2px 0 0;
   padding: 0;
   color: color-mix(in srgb, var(--muted), var(--text) 30%);
-  font-size: 12px;
+  font-size: 11px;
   list-style: none;
 }
 
@@ -136,7 +131,6 @@
   content: "";
   width: 8px;
   height: 8px;
-  border-radius: 2px;
   background: var(--tone);
 }
 
@@ -175,14 +169,11 @@
 
 .brk-chips li {
   --tone: var(--you);
-  padding: 4px 10px;
-  border: 1px solid color-mix(in srgb, var(--tone) 45%, transparent);
-  border-radius: 999px;
+  padding: 4px 8px 2px;
+  border: 2px solid color-mix(in srgb, var(--tone) 45%, transparent);
   background: color-mix(in srgb, var(--tone) 14%, transparent);
   color: var(--tone);
-  font-size: 12.5px;
-  font-weight: 650;
-  font-variant-numeric: tabular-nums;
+  font-size: 11px;
 }
 
 @media (prefers-reduced-motion: reduce) {

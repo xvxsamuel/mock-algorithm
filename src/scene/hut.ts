@@ -5,6 +5,7 @@ import {
   HALF_WIDTH,
   RIDGE,
   STOVE,
+  TABLE_TOP,
   TALLY,
   WALL_THICKNESS,
   WINDOW,
@@ -260,7 +261,7 @@ export function buildHut(mesh: Mesh): void {
   );
 
   // A table under the window, with a mug and a plant pot on it.
-  addBox(mesh, [-630, 318, -838], [-330, 336, -650], FURNITURE);
+  addBox(mesh, TABLE_TOP[0], TABLE_TOP[1], FURNITURE);
   for (const x of [-622, -362]) {
     for (const z of [-830, -682]) {
       addBox(mesh, [x, 0, z], [x + 24, 318, z + 24], FURNITURE);
@@ -422,8 +423,12 @@ export function buildHut(mesh: Mesh): void {
   web(mesh, [W, EAVE - 34, -D], [-300, -70, 0], [0, -70, 300]);
   web(mesh, [-W, EAVE - 30, -300], [280, 0, 0], [0, -280, 0]);
   web(mesh, [W, EAVE - 30, -300], [-280, 0, 0], [0, -280, 0]);
-  web(mesh, [x1, y1, -D + 12], [-170, 0, 0], [0, -170, 0]);
-  web(mesh, [-630, 318, -660], [150, 0, 0], [0, -150, 0]);
+  // In the top right corner of the window, inside its frame, just in front
+  // of the glass: held by the frame on two sides, the glass behind it.
+  web(mesh, [x1, y1, -D - 15], [-120, 0, 0], [0, -120, 0]);
+  // Under the table, from the inside of its front left leg along the
+  // underside of the top, just in front of the leg.
+  web(mesh, [-598, 318, -656], [150, 0, 0], [0, -150, 0]);
 }
 
 /** The window panes, drawn last because you see through them. */
