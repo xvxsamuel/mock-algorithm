@@ -2,6 +2,7 @@ import type { SignalCode } from "../algorithm/signals";
 import { CATEGORY_COLORS } from "../data/categories";
 import { useDevice } from "../hooks/useDevice";
 import type { FeedController } from "../hooks/useFeed";
+import type { LinkNote } from "../hooks/useLinks";
 import PixelIcon, { type PixelIconName } from "./PixelIcon";
 import InterestRadar from "./InterestRadar";
 import WatchBar from "./WatchBar";
@@ -26,10 +27,10 @@ const USER_ID =
   "7" +
   Array.from({ length: 18 }, () => Math.floor(Math.random() * 10)).join("");
 
-type YouLensProps = { feed: FeedController };
+type YouLensProps = { feed: FeedController; notes: LinkNote[] };
 
 /** What the app has learned about you: a shape, some guesses, a live feed of signals. */
-function YouLens({ feed }: YouLensProps) {
+function YouLens({ feed, notes }: YouLensProps) {
   const { current, currentSignals, counters, traits } = feed;
   const device = useDevice();
   const { video } = current;
@@ -79,7 +80,11 @@ function YouLens({ feed }: YouLensProps) {
 
         <div className="you-model-body">
           <div className="you-radar">
-            <InterestRadar topics={feed.topicScores} current={video.category} />
+            <InterestRadar
+              topics={feed.topicScores}
+              current={video.category}
+              notes={notes}
+            />
           </div>
           <div className="you-guesses">
             <ul className="traits">

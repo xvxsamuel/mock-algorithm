@@ -585,10 +585,9 @@
 
 /* Narrow screens, cards scrolled: the header folds to one row (time and
    the dial) with short labels, the strip keeps only its colour key. The
-   rescue note still shows. */
+   rescue note keeps its line, so the meter does not jump. */
 @media (max-width: 900px) {
   .panel.is-folded .intent-label,
-  .panel.is-folded .leave-note:not(.is-on),
   .panel.is-folded .strip-head .eyebrow {
     display: none;
   }

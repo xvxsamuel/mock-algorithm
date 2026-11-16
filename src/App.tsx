@@ -9,7 +9,7 @@ import SessionEnd from "./components/SessionEnd";
 import SheetHandle from "./components/SheetHandle";
 import { useFeed } from "./hooks/useFeed";
 import { useHash } from "./hooks/useHash";
-import { useLinks } from "./hooks/useLinks";
+import { notesOf, useLinks } from "./hooks/useLinks";
 import { useReveal } from "./hooks/useReveal";
 import { useSession } from "./hooks/useSession";
 
@@ -23,7 +23,7 @@ function App() {
 function SplitView() {
   const feed = useFeed();
   // Lines from the phone to whatever part of the panel just changed.
-  const { links, feedArea, trackPress, pathOf, removeLink } = useLinks(feed);
+  const { links, feedArea, trackPress, liveOf, removeLink } = useLinks(feed);
   const session = useSession(feed);
   const reveal = useReveal(feed);
   const { current } = feed;
@@ -67,13 +67,14 @@ function SplitView() {
         />
         <AlgorithmPanel
           feed={feed}
+          notes={notesOf(links)}
           reveal={reveal}
           paused={session.paused}
           onPause={session.togglePause}
           onLeave={session.leave}
         />
       </section>
-      <LinkLayer links={links} onDone={removeLink} pathOf={pathOf} />
+      <LinkLayer links={links} onDone={removeLink} liveOf={liveOf} />
       {feed.ended && (
         <SessionEnd
           feed={feed}

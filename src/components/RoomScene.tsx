@@ -2,7 +2,7 @@ import { useRef, useState, type PointerEvent } from "react";
 import { CATEGORY_COLORS } from "../data/categories";
 import { useFeed } from "../hooks/useFeed";
 import { useHutScene, type Look } from "../hooks/useHutScene";
-import { useLinks } from "../hooks/useLinks";
+import { notesOf, useLinks } from "../hooks/useLinks";
 import { useMedia } from "../hooks/useMedia";
 import { useReveal } from "../hooks/useReveal";
 import { useSession } from "../hooks/useSession";
@@ -92,7 +92,7 @@ function RoomScene() {
   const aside = wide && panelShown && reveal.panel;
   // Lines from the phone to whatever part of the panel just changed. None
   // while the panel is away: they would point at nothing over the hut.
-  const { links, clear, feedArea, trackPress, pathOf, removeLink } = useLinks(
+  const { links, clear, feedArea, trackPress, liveOf, removeLink } = useLinks(
     feed,
     reveal.panel && (panelShown || !wide),
   );
@@ -275,6 +275,7 @@ function RoomScene() {
         />
         <AlgorithmPanel
           feed={feed}
+          notes={notesOf(links)}
           reveal={reveal}
           paused={session.paused}
           onPause={session.togglePause}
@@ -301,7 +302,7 @@ function RoomScene() {
           </>
         )}
       </button>
-      <LinkLayer links={links} onDone={removeLink} pathOf={pathOf} />
+      <LinkLayer links={links} onDone={removeLink} liveOf={liveOf} />
 
       <div className="room-looks" inert={feed.ended || !reveal.panel}>
         <div className="levers" role="group" aria-label="Where you look">

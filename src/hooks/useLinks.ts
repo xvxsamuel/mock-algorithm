@@ -45,9 +45,19 @@ const SIDE: Point = { x: 1, y: 0.5 };
 export type Point = { x: number; y: number };
 export type Box = { x: number; y: number; width: number; height: number };
 
+/** How long the head of a line takes to travel from the phone to the panel. */
+export const TRAVEL_MS = 550;
+/** How long a tab glows when its lens is not open. */
+export const PING_MS = 900;
+/** How long the trace inside a card takes to reach its target. */
+export const TRACE_MS = 260;
+
 /** One animated line from the side of the phone to an element in the panel. */
 export type Link = {
   id: number;
+  /** The `data-link` it points at. Found again every frame, so the line
+      follows it while it moves. */
+  target: string;
   /**
    * up = the algorithm now likes this more, down = less,
    * keep = the engine acting to keep you in the app, sold = money changing
@@ -61,7 +71,8 @@ export type Link = {
    * glow, for a target on a lens that is not open.
    */
   style: "line" | "ping";
-  /** A short note shown where the line lands, e.g. "more". */
+  /** A short note for the target to show itself when the line lands, e.g.
+      "more" over a topic on the radar. */
   label: string | null;
   /** Where on the phone the line starts: 0-1 across it and 0-1 down it,
       so it stays on the same spot however the phone moves. */
@@ -138,11 +149,21 @@ export function useLinks(feed: FeedController, enabled = true) {
     };
   }
 
-  /** A link's line as it is now, from wherever the phone has moved to. */
-  const pathOf = useCallback((link: Link): string | null => {
+  /** A link as it is now: from wherever the phone has moved to, to
+      wherever its target has moved to. Null while either is out of sight. */
+  const liveOf = useCallback((link: Link): LiveLink | null => {
     const phone = phoneOf(feedArea.current);
     if (phone === null) return null;
-    return route(phone, link.spot, link.fromButton, link.entry);
+    const ping = link.style === "ping";
+    const element = document.querySelector(
+      ping
+        ? `[data-link="lens:${lensOf(link.target)}"]`
+        : `[data-link="${link.target}"]`,
+    );
+    if (element === null || (!ping && !inView(element))) return null;
+    const aim = measure(element, ping);
+    const d = route(phone, link.spot, link.fromButton, aim.entry);
+    return d === null ? null : { ...aim, d };
   }, []);
 
   function send({ target, change, delay, label, tone }: Pulse) {
@@ -169,51 +190,7 @@ export function useLinks(feed: FeedController, enabled = true) {
       const recent =
         press !== null &&
         performance.now() - press.time < PRESS_MEMORY_MS + delay;
-      // A ping marks the tab's label (a dot goes after it), not the tab.
-      const box = outset(
-        shown === null ? textRect(element) : element.getBoundingClientRect(),
-        3,
-      );
-      const aim = { x: box.x, y: box.y + box.height / 2 };
-      // Lines run behind the cards, so a target deep inside a card gets the
-      // line to the card's edge at the target's height, then a trace inside.
-      const card = element.closest(CARD);
-      let entry = aim;
-      let trace: string | null = null;
-      // A ping only lights its tab: no line, so no trace either.
-      if (shown !== null && card !== null && card !== element) {
-        const edge = card.getBoundingClientRect();
-        if (aim.x - edge.left > TRACE_FROM) {
-          const hub = element.closest("[data-link-hub]");
-          const centre = hub === null ? null : middleOf(hub);
-          if (element.matches("[data-link-floor]")) {
-            // Charts: run along the bottom of the card, not through the bars.
-            entry = { x: edge.left, y: edge.bottom - 8 };
-            trace = `M ${entry.x} ${entry.y} H ${box.x + box.width / 2}`;
-          } else if (centre !== null && box.x > centre.x) {
-            // The far side of the radar: in through its centre, then out
-            // along the topic's spoke, so no other label is crossed.
-            const off = aim.y - centre.y;
-            const y =
-              Math.abs(off) < HUB_CLEAR
-                ? centre.y + (off < 0 ? -HUB_CLEAR : HUB_CLEAR)
-                : aim.y;
-            entry = { x: edge.left, y };
-            const end = {
-              x: clamp(centre.x, box.x, box.x + box.width),
-              y: clamp(centre.y, box.y, box.y + box.height),
-            };
-            trace = `M ${entry.x} ${y} L ${centre.x} ${centre.y} L ${end.x} ${end.y}`;
-          } else {
-            const y = Math.min(
-              Math.max(aim.y, edge.top + 12),
-              edge.bottom - 12,
-            );
-            entry = { x: edge.left, y };
-            trace = `M ${entry.x} ${y} L ${aim.x} ${aim.y}`;
-          }
-        }
-      }
+      const { box, entry, trace } = measure(element, shown === null);
       const spot = recent ? press.spot : SIDE;
       const fromButton = recent && press.onButton;
       // Only draw when the panel is beside the phone, not stacked below it.
@@ -222,6 +199,7 @@ export function useLinks(feed: FeedController, enabled = true) {
 
       const link: Link = {
         id: nextId.current++,
+        target,
         tone: tone ?? (change >= 0 ? "up" : "down"),
         strength: Math.min(Math.sqrt(Math.abs(change) / FULL_CHANGE), 1),
         style: shown === null ? "ping" : "line",
@@ -291,7 +269,7 @@ export function useLinks(feed: FeedController, enabled = true) {
     /** Attach to the element around the phone. */
     feedArea,
     trackPress,
-    pathOf,
+    liveOf,
     removeLink: (id: number) =>
       setLinks((all) => all.filter((link) => link.id !== id)),
   };
@@ -445,6 +423,103 @@ function lensOf(target: string): string {
 
 function topicDelta(signals: Signal[]): number {
   return signals.reduce((sum, signal) => sum + signal.topic, 0);
+}
+
+/** Where a line ends on the page: the box around its target, where it
+    enters the target's card, and its trace inside the card. */
+type Aim = { box: Box; entry: Point; trace: string | null };
+
+/** A link as it is now: its end measured again, and its line. */
+export type LiveLink = Aim & { d: string };
+
+/** Measures a line's end against the page as it is now. A ping marks the
+    tab's label (a dot goes after it), not the tab. */
+function measure(element: Element, ping: boolean): Aim {
+  const box = outset(
+    ping ? textRect(element) : element.getBoundingClientRect(),
+    3,
+  );
+  const aim = { x: box.x, y: box.y + box.height / 2 };
+  // Lines run behind the cards, so a target deep inside a card gets the
+  // line to the card's edge at the target's height, then a trace inside.
+  const card = element.closest(CARD);
+  let entry = aim;
+  let trace: string | null = null;
+  // A ping only lights its tab: no line, so no trace either.
+  if (!ping && card !== null && card !== element) {
+    const edge = card.getBoundingClientRect();
+    if (aim.x - edge.left > TRACE_FROM) {
+      const hub = element.closest("[data-link-hub]");
+      const centre = hub === null ? null : middleOf(hub);
+      if (element.matches("[data-link-floor]")) {
+        // Charts: run along the bottom of the card, not through the bars.
+        entry = { x: edge.left, y: edge.bottom - 8 };
+        trace = `M ${entry.x} ${entry.y} H ${box.x + box.width / 2}`;
+      } else if (centre !== null && box.x > centre.x) {
+        // The far side of the radar: in through its centre, then out
+        // along the topic's spoke, so no other label is crossed.
+        const off = aim.y - centre.y;
+        const y =
+          Math.abs(off) < HUB_CLEAR
+            ? centre.y + (off < 0 ? -HUB_CLEAR : HUB_CLEAR)
+            : aim.y;
+        entry = { x: edge.left, y };
+        const end = {
+          x: clamp(centre.x, box.x, box.x + box.width),
+          y: clamp(centre.y, box.y, box.y + box.height),
+        };
+        trace = `M ${entry.x} ${y} L ${centre.x} ${centre.y} L ${end.x} ${end.y}`;
+      } else {
+        const y = Math.min(Math.max(aim.y, edge.top + 12), edge.bottom - 12);
+        entry = { x: edge.left, y };
+        trace = `M ${entry.x} ${y} L ${aim.x} ${aim.y}`;
+      }
+    }
+  }
+  return { box, entry, trace };
+}
+
+/** How long after it is sent a line reaches its target. */
+export function arrivalOf(link: Link): number {
+  if (link.style === "ping") return 0;
+  return TRAVEL_MS - 80 + (link.trace === null ? 0 : TRACE_MS);
+}
+
+/** How long a link stays on screen before it is removed. */
+export function lifetimeOf(link: Link): number {
+  if (link.style === "ping") return PING_MS;
+  const extra =
+    (link.label === null ? 0 : 500) + (link.trace === null ? 0 : TRACE_MS);
+  return TRAVEL_MS + 700 + link.strength * 1100 + extra;
+}
+
+/** A note a target shows itself while a line to it is there: the radar
+    writes "more" or "less" over a topic, in its own drawing. */
+export type LinkNote = {
+  id: number;
+  target: string;
+  label: string;
+  tone: Link["tone"];
+  /** When to show it, after the line was sent, and for how long in all. */
+  delay: number;
+  duration: number;
+};
+
+export function notesOf(links: Link[]): LinkNote[] {
+  return links.flatMap((link) =>
+    link.label === null
+      ? []
+      : [
+          {
+            id: link.id,
+            target: link.target,
+            label: link.label,
+            tone: link.tone,
+            delay: arrivalOf(link),
+            duration: lifetimeOf(link),
+          },
+        ],
+  );
 }
 
 /** How the phone lies on the page. A spot on it is 0-1 across and 0-1
