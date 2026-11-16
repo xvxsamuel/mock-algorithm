@@ -44,11 +44,14 @@ function LeaveMeter({ feed }: LeaveMeterProps) {
     >
       <div className="leave-text">
         <h2 className="eyebrow">Chance you leave</h2>
-        {note !== null && (
-          <p className={queued || playing ? "leave-note is-on" : "leave-note"}>
-            {note}
-          </p>
-        )}
+        {/* Always there, empty or not, so the meter never changes height
+            and the lines into the panel stay on their targets. */}
+        <p
+          className={note !== null ? "leave-note is-on" : "leave-note"}
+          aria-hidden={note === null}
+        >
+          {note}
+        </p>
       </div>
       <RiskGauge
         value={started ? exitRisk.value : 0}

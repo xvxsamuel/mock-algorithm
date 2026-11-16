@@ -27,7 +27,9 @@
   align-items: center;
   gap: 6px;
   color: var(--muted);
+  height: 14px;
   font-size: 11px;
+  line-height: 14px;
   white-space: nowrap;
 }
 
