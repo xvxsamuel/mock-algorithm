@@ -18,10 +18,11 @@ function LoadingScreen({ ready }: LoadingScreenProps) {
       aria-live="polite"
       aria-busy={!ready}
     >
-      {/* The site's icon, big: the eye split into cyan and pink. */}
+      {/* The site's eye, drawn finer than the favicon so its pixels match
+          the title type's: cyan and pink split behind it like the title. */}
       <img
         className="loading-eye"
-        src={`${import.meta.env.BASE_URL}favicon.svg`}
+        src={`${import.meta.env.BASE_URL}eye.svg`}
         width={96}
         height={96}
         alt=""

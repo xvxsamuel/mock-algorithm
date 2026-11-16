@@ -1,6 +1,14 @@
-/* Pixel type, to sit with the hut's own pixels: Departure Mono, under the
-   SIL Open Font License (see src/fonts). It is drawn on an 11px grid, so
-   it is only sharp at 11, 22, 33 and 44px; it has no bold. */
+/* Pixel type, to sit with the hut's own pixels: White Rabbit by Matthew
+   Welch, snapped to square pixels (see src/fonts). It has 22 pixels to the
+   em, so it is sharpest at 22 and 44px and keeps whole-pixel strokes at 11px;
+   it has no bold. Departure Mono (SIL Open Font License) fills in any
+   character it lacks. */
+@font-face {
+  font-family: "White Rabbit Pixel";
+  src: url("./fonts/WhiteRabbitPixel.woff2") format("woff2");
+  font-display: swap;
+}
+
 @font-face {
   font-family: "Departure Mono";
   src: url("./fonts/DepartureMono-Regular.woff2") format("woff2");
@@ -25,7 +33,7 @@
   --font-app:
     "Inter", "Segoe UI Variable Text", "Segoe UI", system-ui, -apple-system,
     Roboto, sans-serif;
-  --font-pixel: "Departure Mono", ui-monospace, monospace;
+  --font-pixel: "White Rabbit Pixel", "Departure Mono", ui-monospace, monospace;
 
   --bg: #0b0b0f;
   --stage: #050507;

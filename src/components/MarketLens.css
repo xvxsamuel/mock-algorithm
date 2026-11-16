@@ -170,12 +170,13 @@
 
 /* --- The auction: every advertiser's bid for you, grown by your data --- */
 
-/* Rows grow up to a cap. Never squeezed below its bids: on a short screen
-   the lens scrolls instead. */
+/* Rows grow up to a cap while there is room, and give it back when the
+   lens runs short, down to the height of their own content. */
 .lens > .mkt-auction {
   display: flex;
-  flex: none;
+  flex: 0 1 auto;
   flex-direction: column;
+  min-height: 0;
 }
 
 .mkt-stage {
@@ -224,7 +225,8 @@
   grid-area: brand;
   align-items: center;
   gap: 10px;
-  overflow: hidden;
+  /* Long names are cut at the side; the logo is never cut top or bottom. */
+  overflow: clip visible;
   font-size: 11px;
   font-weight: 600;
   white-space: nowrap;
@@ -452,7 +454,7 @@
   }
 
   .mkt-bid {
-    grid-template-columns: 104px minmax(0, 1fr) 54px;
+    grid-template-columns: 114px minmax(0, 1fr) 54px;
     column-gap: 8px;
   }
 

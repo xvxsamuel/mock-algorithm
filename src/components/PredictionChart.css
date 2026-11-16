@@ -160,6 +160,14 @@
   transform: translateX(-50%);
 }
 
+/* The last column is at the chart's right edge: its tag hangs left from
+   there instead of running past it. */
+.pchart-col:last-child .pchart-tag {
+  left: auto;
+  right: 0;
+  transform: none;
+}
+
 .pchart-tag.is-sure-hit {
   background: var(--take);
   color: #fff;

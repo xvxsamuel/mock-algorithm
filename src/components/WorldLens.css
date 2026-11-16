@@ -471,7 +471,7 @@
 }
 
 /* Short screens: tighter, with a smaller key. */
-@media (min-width: 901px) and (max-height: 760px) {
+@media (min-width: 901px) and (max-height: 800px) {
   .lens > .world {
     gap: 6px;
   }
