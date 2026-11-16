@@ -197,6 +197,55 @@
   color: var(--text);
 }
 
+/* A lens you have not opened yet, just shown: a pixel blinks on it. */
+.lens-tab.is-new {
+  position: relative;
+  color: var(--text);
+}
+
+.lens-tab.is-new::after {
+  content: "";
+  position: absolute;
+  top: 4px;
+  right: 4px;
+  width: 4px;
+  height: 4px;
+  background: var(--you);
+  animation: lens-new 1s steps(1) infinite;
+}
+
+@keyframes lens-new {
+  50% {
+    opacity: 0;
+  }
+}
+
+/* Each part the reveal adds comes in in a few hard steps, like an old
+   screen drawing it. */
+.panel-head > .leave,
+.panel-grams,
+.lens-tabs,
+.panel > .strip {
+  animation: panel-arrive 0.5s steps(4) both;
+}
+
+@keyframes panel-arrive {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .lens-tab.is-new::after,
+  .panel-head > .leave,
+  .panel-grams,
+  .lens-tabs,
+  .panel > .strip {
+    animation: none;
+  }
+}
+
 .lens-tab:focus-visible {
   outline: 2px solid var(--you);
   outline-offset: 2px;
@@ -213,11 +262,51 @@
   margin-top: 7px;
 }
 
+/* Pause, beside the clock: everything waits while you talk over it. */
+.icon-button {
+  display: grid;
+  place-items: center;
+  align-self: center;
+  width: 34px;
+  height: 34px;
+  padding: 0;
+  border: 2px solid var(--line-strong);
+  border-radius: 0;
+  background: var(--surface-2);
+  box-shadow: var(--bevel);
+  color: var(--text);
+  cursor: pointer;
+}
+
+.icon-button:hover {
+  border-color: var(--text);
+}
+
+.icon-button:active,
+.icon-button.is-on {
+  box-shadow: var(--sunk);
+}
+
+.icon-button.is-on {
+  border-color: var(--you);
+  color: var(--you);
+}
+
+.icon-button:focus-visible {
+  outline: 2px solid var(--you);
+  outline-offset: 2px;
+}
+
+/* The way out: an exit sign, a door and an arrow walking through it. */
 .leave-button {
   position: relative;
+  display: grid;
+  place-items: center;
   flex-shrink: 0;
   align-self: center;
-  padding: 7px 16px 6px;
+  width: 44px;
+  height: 40px;
+  padding: 0;
   border: 2px solid var(--line-strong);
   border-radius: 0;
   background: var(--surface-2);
@@ -234,6 +323,10 @@
 
 .leave-button:hover {
   border-color: var(--text);
+}
+
+.leave-button:active {
+  box-shadow: var(--sunk);
 }
 
 .leave-button:focus-visible {

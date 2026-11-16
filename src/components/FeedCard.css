@@ -8,10 +8,21 @@
   place-items: center;
   padding: 24px 22px;
   overflow: hidden;
-  background: rgb(5 5 7 / 0.84);
-  backdrop-filter: blur(18px) saturate(1.2);
+  /* Pixel type and pixel edges, like the panel and the hut around the phone:
+     the card is the machine talking, not the app. The video shows through a
+     coarse checker of dots instead of a blur. */
+  font-family: var(--font-pixel);
+  background:
+    conic-gradient(
+        rgb(5 5 7 / 0.55) 25%,
+        transparent 0 50%,
+        rgb(5 5 7 / 0.55) 0 75%,
+        transparent 0
+      )
+      0 0 / 4px 4px,
+    rgb(5 5 7 / 0.8);
   touch-action: none;
-  animation: fcard-in 0.45s var(--ease, ease-out);
+  animation: fcard-in 0.45s steps(4) both;
   transition: opacity 0.25s var(--ease, ease-out);
 }
 
@@ -36,14 +47,18 @@
   gap: 12px;
   width: 100%;
   max-width: 320px;
+  padding: 18px 16px 16px;
+  border: 2px solid var(--line-strong);
+  background: var(--surface);
+  box-shadow: var(--bevel), var(--drop);
 }
 
 .fcard-title {
   margin: 0 0 4px;
   font-size: 22px;
-  font-weight: 700;
-  line-height: 1.15;
-  letter-spacing: -0.02em;
+  font-weight: 400;
+  line-height: 1.1;
+  text-transform: uppercase;
 }
 
 /* The way on is the easy one, as in the app. */
@@ -55,14 +70,12 @@
 
 .fcard-button {
   flex: 1;
-  padding: 12px 10px;
-  border-radius: 12px;
-  font-size: 15px;
-  font-weight: 700;
+  padding: 10px 10px 9px;
+  border-radius: 0;
+  font-size: 11px;
+  text-transform: uppercase;
   cursor: pointer;
-  transition:
-    background 0.2s,
-    border-color 0.2s;
+  box-shadow: var(--bevel);
 }
 
 .fcard-button:focus-visible {
@@ -71,9 +84,12 @@
 }
 
 .fcard-button.is-keep {
-  border: 0;
+  border: 2px solid #fff;
   background: #fff;
   color: #000;
+  box-shadow:
+    inset -2px -2px 0 rgb(0 0 0 / 0.25),
+    var(--drop);
 }
 
 .fcard-button.is-keep:hover {
@@ -81,14 +97,22 @@
 }
 
 .fcard-button.is-leave {
-  border: 1px solid var(--take);
+  border: 2px solid var(--take);
   background: transparent;
   color: var(--text);
-  box-shadow: 0 0 16px rgb(254 44 85 / 0.3);
+  box-shadow: var(--drop);
 }
 
 .fcard-button.is-leave:hover {
   background: rgb(254 44 85 / 0.12);
+}
+
+/* Pressed: the button sinks into the card. */
+.fcard-button:active,
+.fcard-button.is-keep:active,
+.fcard-button.is-leave:active {
+  box-shadow: var(--sunk);
+  translate: 2px 2px;
 }
 
 /* The closed sheet's handle sits over the bottom of the phone. */
@@ -103,8 +127,7 @@
     animation: none;
   }
 
-  .fcard,
-  .fcard-button {
+  .fcard {
     transition: none;
   }
 }

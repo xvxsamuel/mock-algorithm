@@ -2,13 +2,13 @@ import type { SignalCode } from "../algorithm/signals";
 import { CATEGORY_COLORS } from "../data/categories";
 import { useDevice } from "../hooks/useDevice";
 import type { FeedController } from "../hooks/useFeed";
-import Icon, { type IconName } from "./Icon";
+import PixelIcon, { type PixelIconName } from "./PixelIcon";
 import InterestRadar from "./InterestRadar";
 import WatchBar from "./WatchBar";
 import "./YouLens.css";
 
 /** Signals that show up as chips when the live video sends them. Watch time has its own bar. */
-const SIGNALS: { code: SignalCode; icon: IconName; label: string }[] = [
+const SIGNALS: { code: SignalCode; icon: PixelIconName; label: string }[] = [
   { code: "LIKE", icon: "heart", label: "like" },
   { code: "COMMENTS_OPEN", icon: "comment", label: "comments" },
   { code: "SAVE", icon: "bookmark", label: "save" },
@@ -44,7 +44,7 @@ function YouLens({ feed }: YouLensProps) {
       <section className="pane you-model">
         <header className="you-id">
           <span className="you-avatar" aria-hidden="true">
-            <Icon name="profile" size={22} />
+            <PixelIcon name="user" size={24} />
           </span>
           <div className="you-who">
             <p className="you-name">You</p>
@@ -132,7 +132,7 @@ function YouLens({ feed }: YouLensProps) {
               className={up ? "signal is-up" : "signal is-down"}
               data-link={`signal:${code}`}
             >
-              <Icon name={icon} size={14} />
+              <PixelIcon name={icon} size={16} />
               {label}
             </li>
           ))}

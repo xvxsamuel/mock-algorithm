@@ -98,9 +98,14 @@ type Snapshot = {
 /**
  * Watches the feed and sends an animated line from the phone to every part
  * of the panel that just changed, sized by how big the change was.
+ * With `enabled` off (the panel is put away), no lines are sent or shown.
  */
-export function useLinks(feed: FeedController) {
+export function useLinks(feed: FeedController, enabled = true) {
   const [links, setLinks] = useState<Link[]>([]);
+  const on = useRef(enabled);
+  useEffect(() => {
+    on.current = enabled;
+  });
   const nextId = useRef(0);
   const feedArea = useRef<HTMLElement>(null);
   const lastPress = useRef<{
@@ -143,6 +148,7 @@ export function useLinks(feed: FeedController) {
   function send({ target, change, delay, label, tone }: Pulse) {
     const timer = window.setTimeout(() => {
       timers.current.delete(timer);
+      if (!on.current) return;
       // The phone is the only element inside the feed area.
       const phone = feedArea.current?.firstElementChild;
       // A card over the video: a line would seem to come from it.
@@ -275,7 +281,13 @@ export function useLinks(feed: FeedController) {
   }, []);
 
   return {
-    links,
+    links: enabled ? links : [],
+    /** Drops every line, shown or still to come: the panel went away. */
+    clear: () => {
+      timers.current.forEach((timer) => window.clearTimeout(timer));
+      timers.current.clear();
+      setLinks([]);
+    },
     /** Attach to the element around the phone. */
     feedArea,
     trackPress,

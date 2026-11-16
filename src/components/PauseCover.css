@@ -1,0 +1,64 @@
+/* The video shows through a coarse checker of dots, like the cards that
+   come over it, and everything waits. */
+.pause-cover {
+  position: absolute;
+  inset: 0;
+  z-index: 30;
+  display: grid;
+  place-content: center;
+  justify-items: center;
+  gap: 12px;
+  border: 0;
+  background: conic-gradient(
+      rgb(5 5 7 / 0.7) 25%,
+      transparent 0 50%,
+      rgb(5 5 7 / 0.7) 0 75%,
+      transparent 0
+    )
+    0 0 / 4px 4px;
+  color: var(--text);
+  font-family: var(--font-pixel);
+  cursor: pointer;
+}
+
+.pause-cover-box {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 18px 10px;
+  border: 2px solid var(--line-strong);
+  background: var(--surface-2);
+  box-shadow: var(--bevel), var(--drop);
+  font-size: 22px;
+  text-transform: uppercase;
+}
+
+.pause-cover-hint {
+  padding: 2px 6px 1px;
+  background: var(--stage);
+  color: var(--muted);
+  font-size: 11px;
+  text-transform: uppercase;
+  animation: pause-blink 1.2s steps(1) infinite;
+}
+
+@keyframes pause-blink {
+  50% {
+    opacity: 0;
+  }
+}
+
+.pause-cover:focus-visible {
+  outline: none;
+}
+
+.pause-cover:focus-visible .pause-cover-box {
+  outline: 2px solid var(--you);
+  outline-offset: 2px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .pause-cover-hint {
+    animation: none;
+  }
+}

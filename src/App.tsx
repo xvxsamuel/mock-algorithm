@@ -1,6 +1,7 @@
 import AlgorithmPanel from "./components/AlgorithmPanel";
 import ChainCard from "./components/ChainCard";
 import LinkLayer from "./components/LinkLayer";
+import PauseCover from "./components/PauseCover";
 import PhoneFeed from "./components/PhoneFeed";
 import PlanBreak from "./components/PlanBreak";
 import RoomScene from "./components/RoomScene";
@@ -9,6 +10,7 @@ import SheetHandle from "./components/SheetHandle";
 import { useFeed } from "./hooks/useFeed";
 import { useHash } from "./hooks/useHash";
 import { useLinks } from "./hooks/useLinks";
+import { useReveal } from "./hooks/useReveal";
 import { useSession } from "./hooks/useSession";
 
 function App() {
@@ -23,6 +25,7 @@ function SplitView() {
   // Lines from the phone to whatever part of the panel just changed.
   const { links, feedArea, trackPress, pathOf, removeLink } = useLinks(feed);
   const session = useSession(feed);
+  const reveal = useReveal(feed);
   const { current } = feed;
 
   return (
@@ -49,6 +52,7 @@ function SplitView() {
               onKeep={session.keepWhy}
             />
           )}
+          {session.paused && <PauseCover onResume={session.togglePause} />}
         </PhoneFeed>
       </section>
       <section
@@ -61,7 +65,13 @@ function SplitView() {
           open={session.sheetOpen}
           onToggle={session.toggleSheet}
         />
-        <AlgorithmPanel feed={feed} onLeave={session.leave} />
+        <AlgorithmPanel
+          feed={feed}
+          reveal={reveal}
+          paused={session.paused}
+          onPause={session.togglePause}
+          onLeave={session.leave}
+        />
       </section>
       <LinkLayer links={links} onDone={removeLink} pathOf={pathOf} />
       {feed.ended && (

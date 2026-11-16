@@ -24,7 +24,11 @@ import {
   translation,
   type Mat4,
 } from "../scene/math";
-import { createHutRenderer, hutPixel } from "../scene/renderer";
+import {
+  createHutRenderer,
+  hutPixel,
+  type HutRenderer,
+} from "../scene/renderer";
 import { decayAfter, hourAfter } from "../scene/time";
 
 /** Where your head is turned, in degrees. */
@@ -48,6 +52,8 @@ type HutInput = {
   glow: string;
   /** The panel is open beside the phone: the view moves over for it. */
   aside: boolean;
+  /** Called once, when the hut has been drawn (or can't be). */
+  onReady: () => void;
 };
 
 /** The pitch at which the phone is held up, and at which it has dropped. */
@@ -73,6 +79,10 @@ const TAP_UP_MS = 150;
 const STILL = 0.005;
 /** How fast the tip follows where it should be on the glass. */
 const TIP_EASE = 45;
+/** Frames drawn before the hut counts as loaded: the first one is where the
+    graphics card builds its programs, which can take seconds. */
+const READY_AFTER = 2;
+
 /** Turns a point upside down: the page counts down, the hut counts up. */
 const FLIP = scaling(1, -1, 1);
 
@@ -113,7 +123,11 @@ export function useHutScene(
     ) {
       return;
     }
-    let renderer = createHutRenderer(canvasElement);
+    // Set up on the second frame, not now: setting up blocks the page for
+    // a while, and the loading screen has to be on it first.
+    let renderer: HutRenderer | null = null;
+    let made = false;
+    let drawn = 0;
     // The graphics card can drop the picture (e.g. the tab was asleep for a
     // long time). Asking to get it back means setting the hut up again.
     const onLost = (event: Event) => event.preventDefault();
@@ -191,6 +205,13 @@ export function useHutScene(
 
     const frame = (now: number) => {
       request = requestAnimationFrame(frame);
+      if (!made) {
+        made = true;
+        renderer = createHutRenderer(canvasElement);
+        // No WebGL: there is nothing to wait for.
+        if (renderer === null) latest.current.onReady();
+        return;
+      }
       const elapsed = Math.min((now - before) / 1000, 0.1);
       before = now;
       const want = latest.current;
@@ -317,8 +338,13 @@ export function useHutScene(
         glow,
         time: beat,
       });
+      drawn += 1;
+      if (drawn === READY_AFTER) latest.current.onReady();
     };
-    request = requestAnimationFrame(frame);
+    // Two frames in, so the loading screen has been painted.
+    request = requestAnimationFrame(() => {
+      request = requestAnimationFrame(frame);
+    });
 
     return () => {
       cancelAnimationFrame(request);

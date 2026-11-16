@@ -1,3 +1,5 @@
+import { SHADOW_CASTERS } from "./layout";
+
 /* The programs the graphics card runs: one colours the hut, one turns that
    picture into the one you see. They are written in GLSL, the language WebGL
    takes them in.
@@ -46,6 +48,14 @@ export const MATERIAL = {
 const MATERIAL_NAMES = Object.entries(MATERIAL)
   .map(([name, id]) => `const int M_${name.toUpperCase()} = ${id};`)
   .join("\n");
+
+/** The shadow casters as GLSL constants: each box's lowest and highest
+    corner. */
+const glslVec3 = (v: readonly number[]) =>
+  `vec3(${v.map((n) => n.toFixed(1)).join(", ")})`;
+const CASTERS = `const int CASTERS = ${SHADOW_CASTERS.length};
+const vec3 CASTER_MIN[${SHADOW_CASTERS.length}] = vec3[](${SHADOW_CASTERS.map(([min]) => glslVec3(min)).join(", ")});
+const vec3 CASTER_MAX[${SHADOW_CASTERS.length}] = vec3[](${SHADOW_CASTERS.map(([, max]) => glslVec3(max)).join(", ")});`;
 
 export const HUT_VERTEX = `#version 300 es
 ${MATERIAL_NAMES}
@@ -104,6 +114,7 @@ export const HUT_FRAGMENT = `#version 300 es
 precision highp float;
 
 ${MATERIAL_NAMES}
+${CASTERS}
 
 in vec3 vWorld;
 in vec3 vLocal;
@@ -196,11 +207,19 @@ float pattern(ivec2 cell) {
 // Every pattern below is worked out for the middle of a square this wide,
 // not for the exact spot: that is what makes it look like a small picture
 // stretched over a big wall.
-const float TEXEL = 8.0;
+const float TEXEL = 6.0;
 
 vec2 texels(vec2 uv) {
   return (floor(uv / TEXEL) + 0.5) * TEXEL;
 }
+
+// The same with squares of another width.
+vec2 texels(vec2 uv, float size) {
+  return (floor(uv / size) + 0.5) * size;
+}
+
+// The floor's squares: finer, so the gaps between its boards stay thin.
+const float FLOOR_TEXEL = 4.0;
 
 // Shifted a little, so that no face of a box lies on the edge of a square.
 vec3 texels(vec3 at) {
@@ -242,21 +261,37 @@ vec3 stained(vec3 color, float field, float reach, vec3 tint) {
 
 // --- Materials ---
 
-// Painted boards. The damp comes down from the roof and up from the floor,
-// the paint flakes off the wood, and the gaps between the boards open.
-vec3 wallColor(vec2 uv, float id) {
-  float board = uv.y / 96.0;
-  float row = floor(board);
-  float fy = fract(board);
-  float along = uv.x / 656.0 + hash12(vec2(row, id + 1.0)) * 9.0;
-  float fx = fract(along);
-  float piece = hash12(vec2(floor(along) + id * 13.0, row));
-  // How far into its board this square is: the first one is the gap.
-  float seam = min(fy * 96.0, fx * 656.0);
-  float grain = fbm(vec2(uv.x * 0.005, uv.y * 0.12) + piece * 40.0);
+// The walls are round logs laid one on another, limewashed pale, with dark
+// chinking in the gaps between them. They are flat in the mesh: their
+// roundness is in the light (logNormal), and the shadow each log throws on
+// the one under it is in logShade. The damp comes down from the roof and up
+// from the floor, the limewash flakes off the wood, and the gaps open.
+const float LOG = 112.0;
 
-  vec3 paint = vec3(0.96, 0.9, 0.76) * (0.93 + 0.1 * piece) * (0.94 + 0.1 * grain);
-  vec3 wood = mix(vec3(0.42, 0.3, 0.2), vec3(0.25, 0.2, 0.16), grain);
+// How far up its log a height is, from -1 at the bottom to 1 at the top.
+float logAcross(float y) {
+  return fract(y / LOG) * 2.0 - 1.0;
+}
+
+vec3 wallColor(vec2 uv, float id) {
+  float row = floor(uv.y / LOG);
+  float t = logAcross(uv.y);
+  // Each log is its own tree: its own shade, and where it was joined.
+  float piece = hash12(vec2(row, id + 1.0));
+  float along = uv.x / 1500.0 + piece * 9.0;
+  float joint = fract(along) * 1500.0;
+  // Grain runs along the log, bending round knots.
+  float knotField = noise(vec2(uv.x * 0.012, row * 3.1 + id));
+  float grain = fbm(vec2(uv.x * 0.004, uv.y * 0.09 + knotField * 0.6) + piece * 40.0);
+  float knot = smoothstep(0.82, 0.9, noise(vec2(uv.x * 0.02, row * 7.3 + id * 2.0))) *
+    (1.0 - smoothstep(0.4, 0.7, abs(t)));
+
+  // Limewash is nearly white and a little cool: a warmer cream turns
+  // orange in the hut's few colours and runs into your hand.
+  vec3 paint = vec3(0.93, 0.92, 0.88) * (0.94 + 0.07 * piece) * (0.94 + 0.08 * grain);
+  paint = mix(paint, paint * vec3(0.7, 0.66, 0.6), knot * 0.6);
+  vec3 wood = mix(vec3(0.46, 0.33, 0.22), vec3(0.28, 0.21, 0.15), grain);
+  wood = mix(wood, vec3(0.16, 0.11, 0.08), knot);
   wood = mix(wood, vec3(0.2, 0.19, 0.17), uDecay * 0.6);
 
   float blot = fbm(uv * 0.0032 + id * 9.1);
@@ -279,9 +314,32 @@ vec3 wallColor(vec2 uv, float id) {
   float lip = smoothstep(peelAt - 0.035, peelAt, flake) * (1.0 - peel);
   color = mix(color * (1.0 - 0.3 * lip), wood, peel);
 
-  float gap = step(seam, TEXEL * (1.0 + 0.6 * uDecay));
-  color = mix(color, vec3(0.1, 0.08, 0.06), gap * (0.28 + 0.5 * uDecay));
+  // The chinking between two logs: a dark line of mortar that crumbles.
+  float chink = 1.0 - step(TEXEL * (1.1 + 0.6 * uDecay) / LOG * 2.0, 1.0 - abs(t));
+  color = mix(color, vec3(0.16, 0.13, 0.1), chink * (0.75 + 0.2 * uDecay));
+  // Where two lengths of log meet end to end.
+  float butt = 1.0 - step(TEXEL, joint);
+  color = mix(color, vec3(0.2, 0.15, 0.11), butt * 0.6);
   return color * (1.0 - 0.2 * uDecay);
+}
+
+// The way a spot on a log faces: a flat wall's facing, turned up at the top
+// of the log and down at the bottom, as if it were round. In a few steps,
+// so it stays pixel art.
+vec3 logNormal(vec3 face, float y) {
+  float t = logAcross(y);
+  t = floor(t * 4.0 + 0.5) / 4.0;
+  return normalize(face * sqrt(max(1.0 - t * t * 0.4, 0.0)) + vec3(0.0, t * 0.6, 0.0));
+}
+
+// The round log falls away into shadow near its top and bottom, deepest
+// just under the log above, which overhangs it.
+float logShade(float y) {
+  float t = logAcross(y);
+  float edge = 1.0 - abs(t);
+  float rounded = mix(0.8, 1.0, smoothstep(0.0, 0.35, edge));
+  float under = mix(0.86, 1.0, smoothstep(0.6, 0.85, 1.0 - t));
+  return floor(rounded * under * 10.0 + 0.5) / 10.0;
 }
 
 // Floorboards running away from you. Dust settles, and it stains from the
@@ -296,8 +354,12 @@ vec3 floorColor(vec2 uv) {
   float seam = min(fx * 128.0, fz * 896.0);
   float grain = fbm(vec2(uv.x * 0.09, uv.y * 0.0045) + piece * 50.0);
 
-  vec3 color = mix(vec3(0.84, 0.6, 0.34), vec3(0.62, 0.42, 0.24), grain) *
-    (0.86 + 0.22 * piece);
+  // Dark brown boards, oiled: darker than your hand, so the two don't run
+  // together, and worn a little lighter where feet go.
+  vec3 color = mix(vec3(0.4, 0.27, 0.17), vec3(0.27, 0.18, 0.11), grain) *
+    (0.86 + 0.2 * piece);
+  float worn = smoothstep(0.72, 0.8, fbm(uv * 0.006 + piece * 7.0 + 30.0));
+  color = mix(color, color * vec3(1.25, 1.2, 1.15), worn * 0.6);
 
   float edge = min(uRoom.x - abs(uv.x), uRoom.z - abs(uv.y));
   float field = fbm(uv * 0.004 + 60.0) * 0.75 + (1.0 - smoothstep(0.0, 380.0, edge)) * 0.4;
@@ -306,8 +368,9 @@ vec3 floorColor(vec2 uv) {
   float grit = step(0.95 - 0.1 * uDecay, hash12(floor(uv / TEXEL))) * uDecay;
   color = mix(color, vec3(0.12, 0.1, 0.08), grit * 0.6);
 
-  float gap = step(seam, TEXEL * (1.0 + uDecay));
-  return mix(color, vec3(0.12, 0.08, 0.05), gap * (0.45 + 0.3 * uDecay));
+  // A thin dark line between boards: one fine square, wider as they shrink.
+  float gap = step(seam, FLOOR_TEXEL * (1.0 + uDecay));
+  return mix(color, vec3(0.08, 0.05, 0.03), gap * (0.5 + 0.3 * uDecay));
 }
 
 // The underside of the roof: bare boards, the first to get wet.
@@ -438,7 +501,51 @@ float cornerShade(vec3 at) {
   float b = uRoom.z - abs(at.z);
   // On a wall or the floor, this is how far the nearest corner is.
   float edge = max(min(a, b), min(max(a, b), at.y));
-  return mix(mix(0.74, 0.4, uDecay), 1.0, smoothstep(0.0, mix(220.0, 420.0, uDecay), edge));
+  return mix(mix(0.56, 0.34, uDecay), 1.0, smoothstep(0.0, mix(260.0, 440.0, uDecay), edge));
+}
+
+// --- Shadows ---
+
+// Whether the way from a spot towards a light runs into one of the shadow
+// casters: 0 if it does, 1 if it gets through. A box does not shade itself.
+float clearTowards(vec3 at, vec3 way, float far) {
+  // Nudged off zero, so no part of the way divides by nothing.
+  vec3 inverse = 1.0 / (way + vec3(1e-5));
+  for (int i = 0; i < CASTERS; i++) {
+    vec3 a = (CASTER_MIN[i] - at) * inverse;
+    vec3 b = (CASTER_MAX[i] - at) * inverse;
+    vec3 near = min(a, b);
+    vec3 farther = max(a, b);
+    float enter = max(max(near.x, near.y), near.z);
+    float leave = min(min(farther.x, farther.y), farther.z);
+    if (enter < leave && enter > 2.0 && enter < far) return 0.0;
+  }
+  return 1.0;
+}
+
+// The dark patch right under each caster, on the floor: hard edged, with a
+// lighter rim, and fainter under what stands higher. 1 is no shadow.
+float underShade(vec3 at) {
+  if (at.y > 2.0) return 1.0;
+  float shade = 1.0;
+  for (int i = 0; i < CASTERS; i++) {
+    float high = CASTER_MIN[i].y;
+    float rim = 10.0 + high * 0.1;
+    vec2 lo = CASTER_MIN[i].xz;
+    vec2 hi = CASTER_MAX[i].xz;
+    vec2 out2 = max(max(lo - at.xz, at.xz - hi), 0.0);
+    float away = max(out2.x, out2.y);
+    float dark = mix(0.3, 0.55, smoothstep(0.0, 400.0, high));
+    if (away <= 0.0) shade = min(shade, dark);
+    else if (away < rim) shade = min(shade, mix(dark, 1.0, 0.5));
+  }
+  return shade;
+}
+
+// Light on an object in three flat steps instead of a smooth fall-off, like
+// a cel-shaded model.
+float banded(float facing) {
+  return floor(facing * 3.0 + 0.5) / 3.0;
 }
 
 // How much of the screen's light falls on the hand that holds the phone.
@@ -456,16 +563,32 @@ float screenOn(vec3 normal) {
   return 0.9 * facing * inFront / (1.0 + far * far / (15.0 * 15.0));
 }
 
-vec3 lightAt(vec3 at, vec3 normal, float shade) {
-  vec3 light = uAmbient * (0.82 + 0.18 * normal.y) * shade;
-
+vec3 lightAt(vec3 at, vec3 normal, float shade, bool object) {
   vec3 toWindow = uWindowAt - at;
   float far = length(toWindow);
   vec3 window = toWindow / far;
-  light += uSkyLight * max(dot(normal, window), 0.0) * max(-window.z, 0.0) * shade /
+  // Everything that stands between a spot and the window throws a hard,
+  // dark shadow over it, darker than real on purpose, like the drawn
+  // shadows of an old game. And right under each thing it is darker still.
+  float open = clearTowards(at + normal * 2.0, window, far);
+  shade *= mix(0.4, 1.0, open) * underShade(at);
+
+  // On objects, sides and undersides are darker than real, so every shape
+  // reads clearly. The walls keep their light.
+  float up = object ? 0.6 + 0.4 * normal.y : 0.82 + 0.18 * normal.y;
+  vec3 light = uAmbient * up * shade;
+
+  float facing = max(dot(normal, window), 0.0);
+  if (object) facing = banded(facing);
+  light += uSkyLight * facing * max(-window.z, 0.0) * shade /
     (1.0 + far * far / (650.0 * 650.0));
 
-  light += uBeam * max(dot(normal, uBeamFrom), 0.0) * beamAt(at);
+  // The sun's patch has sharp shadows cut out of it.
+  float sun = beamAt(at);
+  if (sun > 0.0) sun *= clearTowards(at + normal * 2.0, uBeamFrom, 4000.0);
+  float sunFacing = max(dot(normal, uBeamFrom), 0.0);
+  if (object) sunFacing = banded(sunFacing);
+  light += uBeam * sunFacing * sun;
 
   // The screen lights what is in front of it.
   if (uHeld > 0.5) {
@@ -556,9 +679,10 @@ vec4 surface() {
       at.xy = texels(at.xy);
       color = wallColor(at.xy, id);
     }
-    shade = cornerShade(at);
+    normal = logNormal(normal, at.y);
+    shade = cornerShade(at) * logShade(at.y);
   } else if (vMaterial == M_FLOOR) {
-    at.xz = texels(at.xz);
+    at.xz = texels(at.xz, FLOOR_TEXEL);
     color = floorColor(at.xz);
     shade = cornerShade(at);
   } else if (vMaterial == M_ROOF) {
@@ -599,7 +723,10 @@ vec4 surface() {
     normal = vec3(0.0, 0.0, 1.0);
   }
 
-  vec3 lit = color * lightAt(at, normal, shade);
+  // Your hand keeps its soft, warm light: it has to stand out.
+  bool object = vMaterial == M_PLAIN || vMaterial == M_WOOD ||
+    vMaterial == M_DUSTY;
+  vec3 lit = color * lightAt(at, normal, shade, object);
   lit *= mix(1.0, exp(-length(uEye - vWorld) * 0.00045), uGloom);
   return vec4(lit, alpha);
 }
@@ -636,8 +763,10 @@ void main() {
 
 /** Takes the small picture of the hut and makes the one you see: each of
     its pixels a square of the page, in the few colours an old console had,
-    with dots where one of those is not enough. Decay makes it dimmer,
-    greyer, darker in the corners and noisier, through the numbers below. */
+    with dots where one of those is not enough. Bright things bleed a little
+    light around them, and each row of pixels has a darker line under it,
+    like a screen from back then. Decay makes it dimmer, greyer, darker in
+    the corners and noisier, through the numbers below. */
 export const SCREEN_FRAGMENT = `#version 300 es
 precision highp float;
 
@@ -646,6 +775,11 @@ uniform sampler2D uScene;
 uniform float uCell;
 // How many shades of brightness there are.
 uniform float uLevels;
+// How much of the way between two shades or two colours is dotted: 1 dots
+// all of it, smaller leaves flat colour in the middle and dots only near
+// the edge. Fewer dots means less of a pattern that slides over things as
+// you look around.
+uniform float uSpread;
 // How far the colours are pulled to the two below: shadow and light.
 uniform float uMono;
 uniform vec3 uInk;
@@ -660,6 +794,10 @@ uniform float uTick;
 // Below 2, dark shades come out a little lighter than they went in, so
 // that there is still something to see in a dark room.
 uniform float uLift;
+// How much light the bright things bleed around them.
+uniform float uBloom;
+// How dark the line under each row of pixels is.
+uniform float uScan;
 
 out vec4 outColor;
 
@@ -691,6 +829,88 @@ float pattern(ivec2 cell) {
   return (order[(cell.x & 3) + (cell.y & 3) * 4] + 0.5) / 16.0;
 }
 
+// The colours there are, each at full brightness. Every pixel gets one of
+// them, at one of the shades. They are picked for the hut: paint, wood,
+// fire, the rug, the hills, the sky, skin, and the phone's pink and cyan.
+const int INKS = 19;
+const vec3 INK[19] = vec3[19](
+  vec3(1.0, 1.0, 1.0),    // white
+  vec3(0.86, 0.9, 1.0),   // cold grey
+  vec3(1.0, 0.94, 0.8),   // cream paint
+  vec3(1.0, 0.87, 0.68),  // sand
+  vec3(1.0, 0.8, 0.56),   // pale wood
+  vec3(1.0, 0.66, 0.4),   // wood
+  vec3(1.0, 0.5, 0.26),   // fire
+  vec3(1.0, 0.34, 0.27),  // rug red
+  vec3(1.0, 0.4, 0.58),   // pink
+  vec3(1.0, 0.74, 0.64),  // skin
+  vec3(1.0, 0.6, 0.62),   // skin in the screen's light
+  vec3(1.0, 0.95, 0.58),  // sun
+  vec3(0.88, 0.94, 0.62), // damp
+  vec3(0.55, 1.0, 0.56),  // grass
+  vec3(0.5, 1.0, 0.96),   // cyan
+  vec3(0.6, 0.82, 1.0),   // sky
+  vec3(0.42, 0.56, 1.0),  // deep blue
+  vec3(0.74, 0.62, 1.0),  // violet
+  vec3(0.8, 0.74, 0.9)    // dusk
+);
+
+// The nearest of the colours to this tint, and the one after it. The third
+// number is how far the tint is towards the second: 0 on the first, 0.5
+// half way between the two.
+vec3 inksFor(vec3 tint) {
+  float best = 1e9;
+  float next = 1e9;
+  int a = 0;
+  int b = 0;
+  for (int i = 0; i < INKS; i++) {
+    vec3 d = (tint - INK[i]) * vec3(1.0, 1.2, 0.9);
+    float far = dot(d, d);
+    if (far < best) {
+      next = best;
+      b = a;
+      best = far;
+      a = i;
+    } else if (far < next) {
+      next = far;
+      b = i;
+    }
+  }
+  float toward = sqrt(best) / max(sqrt(best) + sqrt(next), 0.0001);
+  return vec3(float(a), float(b), toward);
+}
+
+// Squeezes a dot threshold towards the middle, so that only the part of the
+// way near the edge between two steps is dotted.
+float spread(float threshold) {
+  return 0.5 + (threshold - 0.5) * uSpread;
+}
+
+vec3 sceneAt(ivec2 cell) {
+  ivec2 size = textureSize(uScene, 0);
+  return texelFetch(uScene, clamp(cell, ivec2(0), size - 1), 0).rgb;
+}
+
+// What is brighter than this bleeds light.
+const float BRIGHT = 0.62;
+
+vec3 bleed(vec3 color) {
+  return max(color - BRIGHT, 0.0);
+}
+
+// The light bled onto this pixel by the bright ones around it: two rings,
+// near and far, a few pixels apart, so that the glow is lumpy, not smooth.
+vec3 bloomAt(ivec2 cell) {
+  vec3 sum = vec3(0.0);
+  for (int i = 0; i < 8; i++) {
+    float turn = float(i) * 0.7854;
+    vec2 way = vec2(cos(turn), sin(turn));
+    sum += bleed(sceneAt(cell + ivec2(round(way * 3.0)))) * 0.6;
+    sum += bleed(sceneAt(cell + ivec2(round(way * 7.0)))) * 0.4;
+  }
+  return sum / 8.0;
+}
+
 void main() {
   ivec2 cell = ivec2(gl_FragCoord.xy / uCell);
   vec4 scene = texelFetch(uScene, cell, 0);
@@ -699,7 +919,7 @@ void main() {
     outColor = vec4(0.0);
     return;
   }
-  vec3 color = scene.rgb;
+  vec3 color = scene.rgb + bloomAt(cell) * uBloom;
   vec2 uv = (vec2(cell) + 0.5) / vec2(textureSize(uScene, 0));
 
   // Dark creeps in from the corners, unevenly, like dirt on a lens.
@@ -714,12 +934,33 @@ void main() {
 
   // Few shades: the brightness is cut into steps, and the dots decide which
   // of the two nearest a pixel gets. Its square root is cut, so that the
-  // dark gets most of the steps. The tint is left alone: cutting red, green
-  // and blue each on their own speckles the picture with stray colours.
+  // dark gets most of the steps.
   float bright = max(max(color.r, color.g), max(color.b, 0.0001));
-  float shaken = pattern(cell) +
+  float shaken = spread(pattern(cell)) +
     (hash12(vec2(cell) + uTick * 17.0) - 0.5) * uGrain;
   float shade = clamp(floor(sqrt(bright) * uLevels + shaken) / uLevels, 0.0, 1.0);
-  outColor = vec4(color / bright * pow(shade, uLift), 1.0);
+
+  // Few colours: the tint is moved to the nearest of the inks. Only where it
+  // lies almost half way between two are there dots of both, so that the
+  // edge between them is not a hard line. These dots follow their own
+  // pattern, turned, so they do not line up with the ones for shade.
+  vec3 inks = inksFor(color / bright);
+  float toSecond = smoothstep(0.5 - 0.12 * uSpread, 0.5, inks.z) * 0.5;
+  float pick = pattern(cell.yx + ivec2(1, 2)) < toSecond ? inks.y : inks.x;
+  vec3 tint = INK[int(pick)];
+  // The dark end of every colour leans cold and purple, and the light end
+  // warm, the way pixel artists shade.
+  vec3 cold = tint * vec3(0.84, 0.86, 1.0);
+  vec3 warm = tint * vec3(1.0, 0.99, 0.96);
+  tint = mix(cold, warm, smoothstep(0.15, 0.8, shade));
+  tint /= max(max(tint.r, tint.g), tint.b);
+
+  vec3 shown = tint * pow(shade, uLift);
+  // A darker line under each row of pixels. Brighter on the rest, so that
+  // the picture is no darker for it.
+  float row = mod(gl_FragCoord.y, uCell);
+  if (uCell >= 2.0 && row < 1.0) shown *= 1.0 - uScan;
+  else shown *= 1.0 + uScan / max(uCell - 1.0, 1.0);
+  outColor = vec4(shown, 1.0);
 }
 `;
