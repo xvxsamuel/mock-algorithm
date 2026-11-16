@@ -3,27 +3,26 @@ import { formatClock } from "../algorithm/clock";
 import { footprint, PHONE_YEARS } from "../data/world";
 import type { FeedController } from "../hooks/useFeed";
 import { useMoreBelow } from "../hooks/useMoreBelow";
+import type { Lens, Reveal } from "../hooks/useReveal";
 import ContentLens from "./ContentLens";
 import EngineLens from "./EngineLens";
 import FeedStrip from "./FeedStrip";
 import InfluenceLens from "./InfluenceLens";
 import LeaveMeter from "./LeaveMeter";
 import MarketLens from "./MarketLens";
+import PixelIcon from "./PixelIcon";
 import WorldLens from "./WorldLens";
 import YouLens from "./YouLens";
 import "./AlgorithmPanel.css";
 
-export type Lens =
-  "you" | "engine" | "content" | "market" | "influence" | "world";
-
-const LENSES: { id: Lens; label: string }[] = [
-  { id: "you", label: "You" },
-  { id: "engine", label: "Engine" },
-  { id: "content", label: "Content" },
-  { id: "market", label: "Market" },
-  { id: "influence", label: "Influence" },
-  { id: "world", label: "World" },
-];
+const LENS_NAMES: Record<Lens, string> = {
+  you: "You",
+  engine: "Engine",
+  content: "Content",
+  market: "Market",
+  influence: "Influence",
+  world: "World",
+};
 
 /** Where your plan ends on the time bar. It never moves. */
 const PLAN_AT = 0.4;
@@ -42,6 +41,11 @@ const UNFOLD_AT = 4;
 
 type AlgorithmPanelProps = {
   feed: FeedController;
+  /** How much of the machine has been shown so far. */
+  reveal: Reveal;
+  /** The simulation is paused by hand. */
+  paused: boolean;
+  onPause: () => void;
   /** Pressing Leave: the session ends. Focus comes back to the button. */
   onLeave: (button: HTMLElement) => void;
 };
@@ -51,8 +55,24 @@ type AlgorithmPanelProps = {
  * chose your feed) frame one "lens" at a time, so nothing ever scrolls.
  * Elements with `data-link` are where lines from the phone can point to.
  */
-function AlgorithmPanel({ feed, onLeave }: AlgorithmPanelProps) {
-  const [lens, setLens] = useState<Lens>("you");
+function AlgorithmPanel({
+  feed,
+  reveal,
+  paused,
+  onPause,
+  onLeave,
+}: AlgorithmPanelProps) {
+  const [chosen, setChosen] = useState<Lens>("you");
+  // Lenses you have opened. A new one blinks until you do.
+  const [opened, setOpened] = useState<ReadonlySet<Lens>>(
+    () => new Set(["you"]),
+  );
+  const lens = reveal.lenses.includes(chosen) ? chosen : "you";
+  function open(id: Lens) {
+    setChosen(id);
+    setOpened((old) => new Set(old).add(id));
+    setFolded(false);
+  }
   const [phoneYears, setPhoneYears] = useState(PHONE_YEARS);
   const [folded, setFolded] = useState(false);
   const body = useRef<HTMLDivElement>(null);
@@ -78,8 +98,20 @@ function AlgorithmPanel({ feed, onLeave }: AlgorithmPanelProps) {
           ) : (
             <p className="clock">{formatClock(sessionMs)}</p>
           )}
-          {/* What the scroll is made of, always in view: opens World. */}
           {started && (
+            <button
+              type="button"
+              className={paused ? "icon-button is-on" : "icon-button"}
+              aria-pressed={paused}
+              aria-label={paused ? "Resume" : "Pause"}
+              title={paused ? "Resume" : "Pause"}
+              onClick={onPause}
+            >
+              <PixelIcon name={paused ? "play" : "pause"} />
+            </button>
+          )}
+          {/* What the scroll is made of, always in view: opens World. */}
+          {started && reveal.grams && (
             <button
               type="button"
               className={
@@ -90,10 +122,7 @@ function AlgorithmPanel({ feed, onLeave }: AlgorithmPanelProps) {
                 (sessionMs / 60_000) *
                 footprint(phoneYears).total
               ).toFixed(1)} g CO2e so far. Open World`}
-              onClick={() => {
-                setLens("world");
-                setFolded(false);
-              }}
+              onClick={() => open("world")}
             >
               <b>
                 {((sessionMs / 60_000) * footprint(phoneYears).total).toFixed(
@@ -110,34 +139,41 @@ function AlgorithmPanel({ feed, onLeave }: AlgorithmPanelProps) {
           <button
             type="button"
             className="leave-button"
+            aria-label="Leave"
+            title="Leave"
             onClick={(event) => onLeave(event.currentTarget)}
           >
-            Leave
+            <PixelIcon name="exit" size={24} />
           </button>
         )}
-        <LeaveMeter feed={feed} />
+        {reveal.risk && <LeaveMeter feed={feed} />}
         {started && intentMs !== null && (
           <div className="panel-time-row">{intentBar(sessionMs, intentMs)}</div>
         )}
       </header>
 
-      <nav className="lens-tabs" aria-label="Lenses">
-        {LENSES.map(({ id, label }) => (
-          <button
-            key={id}
-            type="button"
-            className={lens === id ? "lens-tab is-active" : "lens-tab"}
-            aria-pressed={lens === id}
-            data-link={`lens:${id}`}
-            onClick={() => {
-              setLens(id);
-              setFolded(false);
-            }}
-          >
-            {label}
-          </button>
-        ))}
-      </nav>
+      {/* One lens alone needs no tabs. They come in as you keep scrolling. */}
+      {reveal.lenses.length > 1 && (
+        <nav className="lens-tabs" aria-label="Lenses">
+          {reveal.lenses.map((id) => {
+            const classes = ["lens-tab"];
+            if (lens === id) classes.push("is-active");
+            if (!opened.has(id)) classes.push("is-new");
+            return (
+              <button
+                key={id}
+                type="button"
+                className={classes.join(" ")}
+                aria-pressed={lens === id}
+                data-link={`lens:${id}`}
+                onClick={() => open(id)}
+              >
+                {LENS_NAMES[id]}
+              </button>
+            );
+          })}
+        </nav>
+      )}
 
       {/* Only scrolls on narrow screens, where the header folds away. */}
       <div
@@ -160,7 +196,7 @@ function AlgorithmPanel({ feed, onLeave }: AlgorithmPanelProps) {
         )}
       </div>
 
-      <FeedStrip feed={feed} />
+      {reveal.risk && <FeedStrip feed={feed} />}
     </div>
   );
 }

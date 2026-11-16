@@ -267,6 +267,48 @@
   }
 }
 
+/* --- Before the reveal: the phone alone --- */
+
+/* The first videos are just a feed. The panel, its grip and the view
+   buttons wait out of sight, and come in once you have scrolled a bit. */
+.room.is-alone .room-looks {
+  visibility: hidden;
+  opacity: 0;
+}
+
+.room-looks {
+  transition:
+    right 0.45s var(--ease),
+    opacity 0.6s var(--ease);
+}
+
+.room.is-alone .app-panel {
+  visibility: hidden;
+}
+
+@media (min-width: 901px) {
+  .room.is-alone .room-glass,
+  .room.is-alone .app-panel {
+    visibility: hidden;
+    transform: translateX(calc(100% + var(--panel-gap) * 2));
+    transition: none;
+  }
+
+  .room.is-alone .room-tab {
+    visibility: hidden;
+  }
+
+  .room.is-alone .room-looks {
+    right: 0;
+  }
+}
+
+@media (max-width: 900px) {
+  .room.is-alone .app-panel {
+    transform: translateY(100%);
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
   .room-glass,
   .room .app-panel,

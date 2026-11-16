@@ -45,7 +45,7 @@ import { daylightAt } from "./time";
 const MAX_PIXELS = 2_200_000;
 /** About how many rows the small picture has: well over an old console's,
     and still few enough to see its pixels. */
-const ROWS = 540;
+const ROWS = 720;
 /** Nothing nearer or further than this is drawn. */
 const NEAR = 6;
 const FAR = 6000;
@@ -501,15 +501,25 @@ export function createHutRenderer(
     gl.bindTexture(gl.TEXTURE_2D, target.texture);
     const gone = smoothstep(0.15, 1, decay);
     screenInputs.number("uCell", cell);
-    screenInputs.number("uLevels", lerp(14, 8, gone));
+    // Enough shades that light and shadow fall off in small steps, not in
+    // big flat clumps.
+    screenInputs.number("uLevels", lerp(18, 10, gone));
+    // Dots only near the edge between two steps at first, so that little
+    // of the pattern slides over the hut as you look around. A ruined hut
+    // is dotted all over, like a bad signal.
+    screenInputs.number("uSpread", lerp(0.4, 1, gone));
     screenInputs.number("uMono", smoothstep(0.3, 1, decay) * 0.45);
     screenInputs.vector("uInk", INK);
     screenInputs.vector("uPaper", PAPER);
     screenInputs.number("uVignette", lerp(0.22, 0.55, gone));
     screenInputs.number("uGrime", gone);
-    screenInputs.number("uGrain", lerp(0.06, 0.34, gone));
-    screenInputs.number("uTick", Math.floor(frame.time * 10) % 1000);
+    // No shaking while the hut is cosy. Later the dots shake, a few times a
+    // second rather than every frame.
+    screenInputs.number("uGrain", 0.3 * smoothstep(0.25, 1, decay));
+    screenInputs.number("uTick", Math.floor(frame.time * 5) % 1000);
     screenInputs.number("uLift", lerp(2, 1.25, smoothstep(0.3, 0.9, decay)));
+    screenInputs.number("uBloom", lerp(0.45, 0.3, gone));
+    screenInputs.number("uScan", 0.1);
     gl.bindVertexArray(nothing);
     gl.drawArrays(gl.TRIANGLES, 0, 3);
     gl.bindVertexArray(null);

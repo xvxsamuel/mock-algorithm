@@ -52,3 +52,42 @@ export const STOVE: Vec3 = [660, 0, -745];
 
 /** The middle of the clock, on the wall in front of you. */
 export const CLOCK: Vec3 = [330, 1010, -HALF_DEPTH];
+
+/** A box from its lowest corner to its highest. */
+export type Box = readonly [Vec3, Vec3];
+
+/** The table under the window: its top. */
+export const TABLE_TOP: Box = [
+  [-630, 318, -838],
+  [-330, 336, -650],
+];
+
+/** The big things in the hut that throw a shadow: hard edged and darker
+    than real, on purpose, like the drawn shadows of an old game. The sun
+    through the window is blocked by them, and each one darkens the floor
+    right under it. The plants and small things don't. */
+export const SHADOW_CASTERS: readonly Box[] = [
+  TABLE_TOP,
+  // The table's legs.
+  ...[-622, -362].flatMap((x) =>
+    [-830, -682].map((z): Box => [
+      [x, 0, z],
+      [x + 24, 318, z + 24],
+    ]),
+  ),
+  // The plant pot on the table, as a box.
+  [
+    [-585, 336, -785],
+    [-505, 396, -705],
+  ],
+  // The stove: its body on short legs, and the plate on top.
+  [
+    [STOVE[0] - 100, 0, STOVE[2] - 95],
+    [STOVE[0] + 100, 314, STOVE[2] + 95],
+  ],
+  // The shelf on the left wall.
+  [
+    [-HALF_WIDTH, 560, -790],
+    [-HALF_WIDTH + 96, 636, -460],
+  ],
+];

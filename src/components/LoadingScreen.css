@@ -1,0 +1,106 @@
+/* A plain pixel screen, like an old console starting up. Only transform
+   and opacity move here: setting up the hut blocks the page for a while,
+   and those keep running while it does. */
+.loading {
+  position: fixed;
+  inset: 0;
+  z-index: 100;
+  display: grid;
+  place-content: center;
+  justify-items: center;
+  gap: 18px;
+  background: var(--stage);
+  color: var(--text);
+  font-family: var(--font-pixel);
+}
+
+.loading-eye {
+  image-rendering: pixelated;
+}
+
+/* Split like the eye: white letters, a cyan copy up and left, a pink one
+   down and right. */
+.loading-title {
+  margin: 0 0 6px;
+  color: #fff;
+  font-size: 44px;
+  line-height: 1;
+  text-transform: uppercase;
+  text-shadow:
+    -3px -3px 0 var(--you),
+    3px 3px 0 var(--take);
+}
+
+.loading-bar {
+  position: relative;
+  overflow: hidden;
+  width: 264px;
+  padding: 4px;
+  border: 2px solid var(--line-strong);
+  background: var(--surface);
+  box-shadow: var(--sunk);
+}
+
+.loading-fill {
+  display: flex;
+  gap: 4px;
+}
+
+/* Fills block by block, over and over, until the hut is there: a cover
+   over the blocks slides off them one block at a time. */
+.loading-bar::after {
+  content: "";
+  position: absolute;
+  inset: 4px;
+  background: var(--surface);
+  animation: loading-fill 2.4s steps(12, jump-start) infinite;
+}
+
+.loading-block {
+  flex: 1;
+  height: 14px;
+  background: var(--you);
+  box-shadow: var(--bevel);
+}
+
+@keyframes loading-fill {
+  from {
+    transform: translateX(0);
+  }
+  to {
+    transform: translateX(calc(100% + 4px));
+  }
+}
+
+.loading-text {
+  margin: 0;
+  color: var(--muted);
+  font-size: 11px;
+  text-transform: uppercase;
+}
+
+/* Loaded: the bar fills, and the screen goes in four steps. */
+.loading.is-ready {
+  visibility: hidden;
+  opacity: 0;
+  pointer-events: none;
+  transition:
+    opacity 0.5s steps(4) 0.25s,
+    visibility 0s 0.75s;
+}
+
+.loading.is-ready .loading-bar::after {
+  animation: none;
+  transform: translateX(calc(100% + 4px));
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .loading-bar::after {
+    animation: none;
+    transform: translateX(50%);
+  }
+
+  .loading.is-ready {
+    transition: none;
+  }
+}

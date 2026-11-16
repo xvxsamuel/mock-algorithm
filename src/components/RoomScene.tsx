@@ -4,11 +4,14 @@ import { useFeed } from "../hooks/useFeed";
 import { useHutScene, type Look } from "../hooks/useHutScene";
 import { useLinks } from "../hooks/useLinks";
 import { useMedia } from "../hooks/useMedia";
+import { useReveal } from "../hooks/useReveal";
 import { useSession } from "../hooks/useSession";
 import { PHONE, PHONE_PIXELS } from "../scene/layout";
 import AlgorithmPanel from "./AlgorithmPanel";
 import ChainCard from "./ChainCard";
 import LinkLayer from "./LinkLayer";
+import LoadingScreen from "./LoadingScreen";
+import PauseCover from "./PauseCover";
 import PhoneFeed from "./PhoneFeed";
 import PlanBreak from "./PlanBreak";
 import SessionEnd from "./SessionEnd";
@@ -77,13 +80,22 @@ function clampLook(look: Look): Look {
  */
 function RoomScene() {
   const feed = useFeed();
-  // Lines from the phone to whatever part of the panel just changed.
-  const { links, feedArea, trackPress, pathOf, removeLink } = useLinks(feed);
-  const session = useSession(feed);
+
+  // Nothing runs until the hut has been drawn: then it all starts at once.
+  const [ready, setReady] = useState(false);
+  const session = useSession(feed, !ready);
+  // At first only the phone: the machine comes in as you scroll.
+  const reveal = useReveal(feed);
   // Wide screens: the panel floats beside the phone, until you put it away.
   const wide = useMedia("(min-width: 901px)");
   const [panelShown, setPanelShown] = useState(true);
-  const aside = wide && panelShown;
+  const aside = wide && panelShown && reveal.panel;
+  // Lines from the phone to whatever part of the panel just changed. None
+  // while the panel is away: they would point at nothing over the hut.
+  const { links, clear, feedArea, trackPress, pathOf, removeLink } = useLinks(
+    feed,
+    reveal.panel && (panelShown || !wide),
+  );
   const [view, setView] = useState<View>("phone");
   // Set once you drag; a view button takes over again.
   const [free, setFree] = useState<Look | null>(null);
@@ -107,6 +119,7 @@ function RoomScene() {
     videos: feed.history.length,
     glow: CATEGORY_COLORS[feed.current.video.category][1],
     aside,
+    onReady: () => setReady(true),
   });
 
   function startDrag(event: PointerEvent<HTMLDivElement>) {
@@ -146,15 +159,17 @@ function RoomScene() {
   }
 
   const classes = ["room"];
+  if (!ready) classes.push("is-loading");
   if (dragging) classes.push("is-dragging");
   if (!panelShown) classes.push("is-bare");
+  if (!reveal.panel) classes.push("is-alone");
 
   return (
     <main className={classes.join(" ")}>
       <div
         className="room-stage"
         ref={stage}
-        inert={feed.ended}
+        inert={feed.ended || !ready}
         onPointerDown={startDrag}
         onPointerMove={moveDrag}
         onPointerUp={endDrag}
@@ -197,6 +212,7 @@ function RoomScene() {
                   onKeep={session.keepWhy}
                 />
               )}
+              {session.paused && <PauseCover onResume={session.togglePause} />}
             </PhoneFeed>
             {/* The dots: laid over the screen this faintly, they push each
                 colour up by less than one shade, and the filter below then
@@ -241,13 +257,15 @@ function RoomScene() {
       </svg>
 
       {/* The panel's own dark glass, as a layer under it: the lines from
-          the phone run over the glass and behind the panel's cards. */}
+          the phone run over the glass and behind the panel's cards. Until
+          the first step of the reveal, both wait off the edge (is-alone):
+          the hut measures the panel from the start. */}
       <div className="room-glass" />
       <section
         id="room-panel"
         className={session.sheetOpen ? "app-panel is-open" : "app-panel"}
         aria-label="What the algorithm sees"
-        inert={feed.ended || (wide && !panelShown)}
+        inert={feed.ended || !reveal.panel || (wide && !panelShown)}
         ref={panel}
       >
         <SheetHandle
@@ -255,7 +273,13 @@ function RoomScene() {
           open={session.sheetOpen}
           onToggle={session.toggleSheet}
         />
-        <AlgorithmPanel feed={feed} onLeave={session.leave} />
+        <AlgorithmPanel
+          feed={feed}
+          reveal={reveal}
+          paused={session.paused}
+          onPause={session.togglePause}
+          onLeave={session.leave}
+        />
       </section>
       <button
         type="button"
@@ -263,8 +287,11 @@ function RoomScene() {
         aria-expanded={panelShown}
         aria-controls="room-panel"
         aria-label={panelShown ? "Hide the algorithm" : undefined}
-        inert={feed.ended}
-        onClick={() => setPanelShown(!panelShown)}
+        inert={feed.ended || !reveal.panel}
+        onClick={() => {
+          if (panelShown) clear();
+          setPanelShown(!panelShown);
+        }}
       >
         {panelShown ? (
           <span aria-hidden="true">›</span>
@@ -276,7 +303,7 @@ function RoomScene() {
       </button>
       <LinkLayer links={links} onDone={removeLink} pathOf={pathOf} />
 
-      <div className="room-looks" inert={feed.ended}>
+      <div className="room-looks" inert={feed.ended || !reveal.panel}>
         <div className="levers" role="group" aria-label="Where you look">
           {VIEWS.map((name) => (
             <button
@@ -293,6 +320,8 @@ function RoomScene() {
           ))}
         </div>
       </div>
+
+      <LoadingScreen ready={ready} />
 
       {feed.ended && (
         <SessionEnd
