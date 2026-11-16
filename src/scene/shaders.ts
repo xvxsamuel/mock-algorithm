@@ -273,6 +273,12 @@ float logAcross(float y) {
   return fract(y / LOG) * 2.0 - 1.0;
 }
 
+// Whether a height is in the chinking: one square either side of a seam.
+float chinkAt(float y) {
+  float t = logAcross(y);
+  return 1.0 - step(TEXEL * 2.0 / LOG, 1.0 - abs(t));
+}
+
 vec3 wallColor(vec2 uv, float id) {
   float row = floor(uv.y / LOG);
   float t = logAcross(uv.y);
@@ -314,9 +320,24 @@ vec3 wallColor(vec2 uv, float id) {
   float lip = smoothstep(peelAt - 0.035, peelAt, flake) * (1.0 - peel);
   color = mix(color * (1.0 - 0.3 * lip), wood, peel);
 
-  // The chinking between two logs: a dark line of mortar that crumbles.
-  float chink = 1.0 - step(TEXEL * (1.1 + 0.6 * uDecay) / LOG * 2.0, 1.0 - abs(t));
-  color = mix(color, vec3(0.16, 0.13, 0.1), chink * (0.75 + 0.2 * uDecay));
+  // The chinking between two logs: one square of mortar either side of the
+  // seam, always the same width. It is grey-brown and blotchy, darkest in
+  // the upper half where the log above overhangs it, and as the hut decays
+  // single squares of it fall out into black holes rather than the whole
+  // line swelling.
+  float chink = chinkAt(uv.y);
+  if (chink > 0.0) {
+    float cell = hash12(floor(uv / TEXEL) + id * 17.0);
+    float clump = noise(vec2(uv.x * 0.03, row * 5.7 + id));
+    vec3 mortar = mix(vec3(0.42, 0.38, 0.32), vec3(0.3, 0.27, 0.22), clump);
+    mortar *= 0.88 + 0.2 * cell;
+    mortar = mix(mortar, vec3(0.24, 0.24, 0.2), uDecay * 0.5);
+    // Above the seam is the underside of the upper log's shadow.
+    mortar *= t < 0.0 ? 0.55 : 1.0;
+    float hole = step(1.0 - 0.35 * smoothstep(0.3, 1.0, uDecay), cell);
+    mortar = mix(mortar, vec3(0.05, 0.04, 0.035), hole);
+    color = mortar;
+  }
   // Where two lengths of log meet end to end.
   float butt = 1.0 - step(TEXEL, joint);
   color = mix(color, vec3(0.2, 0.15, 0.11), butt * 0.6);
@@ -324,12 +345,13 @@ vec3 wallColor(vec2 uv, float id) {
 }
 
 // The way a spot on a log faces: a flat wall's facing, turned up at the top
-// of the log and down at the bottom, as if it were round. In a few steps,
-// so it stays pixel art.
+// of the log and down at the bottom, as if it were a cylinder. In a few
+// steps, so it stays pixel art. The mortar between logs faces straight out.
 vec3 logNormal(vec3 face, float y) {
-  float t = logAcross(y);
-  t = floor(t * 4.0 + 0.5) / 4.0;
-  return normalize(face * sqrt(max(1.0 - t * t * 0.4, 0.0)) + vec3(0.0, t * 0.6, 0.0));
+  if (chinkAt(y) > 0.0) return face;
+  float t = logAcross(y) * 0.92;
+  t = floor(t * 5.0 + 0.5) / 5.0;
+  return normalize(face * sqrt(max(1.0 - t * t, 0.0)) + vec3(0.0, t, 0.0));
 }
 
 // The round log falls away into shadow near its top and bottom, deepest
@@ -575,7 +597,8 @@ vec3 lightAt(vec3 at, vec3 normal, float shade, bool object) {
 
   // On objects, sides and undersides are darker than real, so every shape
   // reads clearly. The walls keep their light.
-  float up = object ? 0.6 + 0.4 * normal.y : 0.82 + 0.18 * normal.y;
+  float up = object ? 0.6 + 0.4 * normal.y
+    : vMaterial == M_WALL ? 0.7 + 0.3 * normal.y : 0.82 + 0.18 * normal.y;
   vec3 light = uAmbient * up * shade;
 
   float facing = max(dot(normal, window), 0.0);
