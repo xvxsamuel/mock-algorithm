@@ -120,7 +120,7 @@
    phone over to make room for it (useHutScene). */
 @media (min-width: 901px) {
   .room {
-    --panel-width: clamp(460px, 48vw, 660px);
+    --panel-width: clamp(530px, 50vw, 660px);
     --panel-gap: 8px;
   }
 

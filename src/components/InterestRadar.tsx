@@ -15,6 +15,8 @@ const RADIUS = 92;
 const SIDE = 46;
 /** The labels' smallest size on screen, in px, however small it is drawn. */
 const LABEL_PX = 12;
+/** Departure Mono's width per letter, as a share of the font size. */
+const CHAR_EM = 350 / 550;
 
 type InterestRadarProps = {
   topics: { name: Category; score: number }[];
@@ -108,7 +110,7 @@ function InterestRadar({ topics, current, notes }: InterestRadarProps) {
           </text>
         );
       })}
-      {/* Over the topic's own name, so it reads "more cooking". Drawn here,
+      {/* By the topic's own name, so it reads "more cooking". Drawn here,
           not by the line, so it is always right where the name is. */}
       {notes.map((note) => {
         const i = CATEGORIES.findIndex(
@@ -116,8 +118,33 @@ function InterestRadar({ topics, current, notes }: InterestRadarProps) {
         );
         if (i < 0) return null;
         const label = polar(i, 1.2);
-        // Under the names on the bottom half, so it stays in the picture.
-        const below = label.y > CENTER + 8;
+        const side = anchor(label.x);
+        // Where the name's middle is: the labels hang off their anchor.
+        const width = (name: string) => name.length * labelSize * CHAR_EM;
+        const nameWidth = width(CATEGORIES[i]);
+        const middle =
+          side === "start"
+            ? label.x + nameWidth / 2
+            : side === "end"
+              ? label.x - nameWidth / 2
+              : label.x;
+        let x: number;
+        let y: number;
+        let noteAnchor: "start" | "middle";
+        if (side === "middle") {
+          // Top and bottom names: no room above or below, so it sits after
+          // the name on the same line.
+          x = middle + nameWidth / 2 + labelSize * 0.6;
+          y = label.y;
+          noteAnchor = "start";
+        } else {
+          // Side names: centred over the name, or under it on the bottom
+          // half, and never past the edge of the picture.
+          const half = width(note.label) / 2;
+          x = Math.min(Math.max(middle, -SIDE + half), SIZE + SIDE - half);
+          y = label.y + (label.y > CENTER + 8 ? 1 : -1) * labelSize * 1.15;
+          noteAnchor = "middle";
+        }
         return (
           <text
             key={note.id}
@@ -127,9 +154,9 @@ function InterestRadar({ topics, current, notes }: InterestRadarProps) {
               animationDelay: `${note.delay}ms`,
               animationDuration: `${note.duration - note.delay}ms`,
             }}
-            x={label.x}
-            y={label.y + (below ? 1 : -1) * labelSize * 1.15}
-            textAnchor={anchor(label.x)}
+            x={x}
+            y={y}
+            textAnchor={noteAnchor}
             dominantBaseline="middle"
           >
             {note.label}

@@ -419,10 +419,12 @@ export function buildHut(mesh: Mesh): void {
   );
 
   // Cobwebs, which only show once they have grown (see the shader).
-  web(mesh, [-W, EAVE - 34, -D], [300, -70, 0], [0, -70, 300]);
-  web(mesh, [W, EAVE - 34, -D], [-300, -70, 0], [0, -70, 300]);
-  web(mesh, [-W, EAVE - 30, -300], [280, 0, 0], [0, -280, 0]);
-  web(mesh, [W, EAVE - 30, -300], [-280, 0, 0], [0, -280, 0]);
+  // Kept about as big as the window's: the shader draws every web with the
+  // same number of squares, so a bigger one gets fat, blocky threads.
+  web(mesh, [-W, EAVE - 34, -D], [150, -35, 0], [0, -35, 150]);
+  web(mesh, [W, EAVE - 34, -D], [-150, -35, 0], [0, -35, 150]);
+  web(mesh, [-W, EAVE - 30, -300], [150, 0, 0], [0, -150, 0]);
+  web(mesh, [W, EAVE - 30, -300], [-150, 0, 0], [0, -150, 0]);
   // In the top right corner of the window, inside its frame, just in front
   // of the glass: held by the frame on two sides, the glass behind it.
   web(mesh, [x1, y1, -D - 15], [-120, 0, 0], [0, -120, 0]);
