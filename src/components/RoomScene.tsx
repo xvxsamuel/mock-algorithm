@@ -21,6 +21,9 @@ import "./RoomScene.css";
 /** Degrees the view turns for each px you drag. */
 const LOOK_SPEED = 0.12;
 
+/** Coins in the hut's jar for each euro a thousand views of you sell for. */
+const COINS_PER_EURO = 1;
+
 /** The phone is laid out at this size; the hut shrinks it into your hand. */
 const PHONE_WIDTH = (PHONE_PIXELS * PHONE.width) / PHONE.height;
 
@@ -117,6 +120,15 @@ function RoomScene() {
     // over the video.
     running: feed.started && !feed.ended && !feed.held,
     videos: feed.history.length,
+    files: feed.traits.map((trait) => trait.confidence),
+    // A view sells for a thousandth of the winning bid.
+    coins: feed.market.sales.reduce(
+      (sum, sale) => sum + Math.round(sale.price * 1000 * COINS_PER_EURO),
+      0,
+    ),
+    leaflets: feed.influence.pushed.map(
+      ({ video }) => CATEGORY_COLORS[video.category][1],
+    ),
     glow: CATEGORY_COLORS[feed.current.video.category][1],
     aside,
     onReady: () => setReady(true),

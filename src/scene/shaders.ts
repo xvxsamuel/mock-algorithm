@@ -43,6 +43,10 @@ export const MATERIAL = {
   /** Its own colour, lit, for something thin that lies flat on something
       else: a scratch in the wall, a hand on the clock's face. */
   mark: 15,
+  /** Glass. You see its edges, where you look along it. Through the rest
+      you see what is in it, the way an old console did it: most of its
+      pixels are left out. */
+  jar: 16,
 } as const;
 
 const MATERIAL_NAMES = Object.entries(MATERIAL)
@@ -735,6 +739,10 @@ vec4 surface() {
   } else if (vMaterial == M_WEB) {
     if (webAt(squares(vExtra, vec2(48.0))) < 0.5) discard;
     color = vec3(0.86, 0.86, 0.84);
+  } else if (vMaterial == M_JAR) {
+    ivec2 pixel = ivec2(gl_FragCoord.xy);
+    float along = abs(dot(normal, normalize(uEye - vWorld)));
+    if (along > 0.5 && ((pixel.x | pixel.y) & 1) != 0) discard;
   } else if (vMaterial == M_GLASS) {
     // Dirt on the panes: most in the corners of each one.
     vec2 uv = squares(vExtra, vec2(44.0));

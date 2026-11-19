@@ -72,6 +72,40 @@ const NAIL: Vec3 = [-W, 790, -260];
 /** The door's hinges: the edge of the door nearest you. */
 const HINGE: Vec3 = [W - 2, 0, -210];
 
+/** The top of the shelf on the wall to your left. */
+const SHELF = 636;
+/** The books you brought, from the far end of the shelf. */
+const BOOKS = 5;
+/** Where the row of files starts, after the books. */
+const FILES_FROM = -640;
+/** A file stands on the shelf once it is this sure of the guess in it. */
+const SURE = 0.5;
+/** The strip on each file's back: one colour for each guess. */
+const FILE_LABELS: readonly Vec3[] = [
+  [0.9, 0.3, 0.22],
+  [0.95, 0.76, 0.26],
+  [0.36, 0.72, 0.68],
+  [0.9, 0.88, 0.8],
+];
+/** The jar at the near end of the shelf: the middle of its foot. */
+const JAR: Vec3 = [-W + 46, SHELF, -514];
+/** How thick a coin is, and how many fit in the jar. */
+const COIN = 3.5;
+const JAR_HOLDS = 16;
+/** The coins that do not fit go in stacks beside it: where, how many in
+    each, and how many coins the shelf shows at most. */
+const STACKS: readonly (readonly [number, number])[] = [
+  [-W + 34, -478],
+  [-W + 74, -482],
+];
+const STACK_HOLDS = 10;
+const COINS_MOST = JAR_HOLDS + STACKS.length * STACK_HOLDS;
+/** The places on the floor inside the door where leaflets lie, two across
+    and three along it, in the order they fill up. */
+const LEAFLET_ORDER = [2, 5, 0, 3, 4, 1] as const;
+/** The most leaflets that lie there. */
+const LEAFLETS_MOST = LEAFLET_ORDER.length * 2;
+
 /** A number from 0 to 1 that is always the same for the same `seed`. */
 function random(seed: number): number {
   const x = Math.sin(seed * 127.1 + 311.7) * 43758.5453;
@@ -316,9 +350,10 @@ export function buildHut(mesh: Mesh): void {
   addDrum(mesh, [sx + 44, 314, sz + 36], 36, 32, 22, enamel);
   addBox(mesh, [sx + 40, 350, sz + 32], [sx + 48, 360, sz + 40], enamel);
 
-  // A shelf of books on the wall to your left.
+  // A shelf on the wall to your left, with a few books at its far end. The
+  // rest of it fills up by itself (see buildProps).
   const shelf = wood([0.56, 0.38, 0.24]);
-  addBox(mesh, [-W, 620, -790], [-W + 96, 636, -460], shelf);
+  addBox(mesh, [-W, 620, -790], [-W + 96, SHELF, -460], shelf);
   for (const z of [-770, -486]) {
     addBox(mesh, [-W, 560, z], [-W + 70, 620, z + 12], shelf);
   }
@@ -331,20 +366,23 @@ export function buildHut(mesh: Mesh): void {
     [0.56, 0.26, 0.4],
   ];
   let spine = -778;
-  for (let i = 0; i < 9; i++) {
+  for (let i = 0; i < BOOKS; i++) {
     const thick = 18 + random(i + 20) * 16;
     const tall = 84 + random(i + 30) * 50;
     const deep = 58 + random(i + 40) * 22;
     addBox(
       mesh,
-      [-W + 4, 636, spine],
-      [-W + 4 + deep, 636 + tall, spine + thick],
+      [-W + 4, SHELF, spine],
+      [-W + 4 + deep, SHELF + tall, spine + thick],
       dusty(covers[i % covers.length]),
     );
     spine += thick + 1.5;
   }
-  // And a jar at the end of the row.
-  addDrum(mesh, [-W + 46, 636, -500], 56, 24, 20, dusty([0.8, 0.62, 0.36]));
+  // And a glass jar at the near end, empty when you sat down.
+  addDrum(mesh, JAR, 62, 19, 19, {
+    color: [0.8, 0.9, 0.86],
+    material: MATERIAL.jar,
+  });
 
   // A rug where the sun falls.
   addQuad(
@@ -455,11 +493,19 @@ export type PropsState = {
   hour: number;
   /** Videos you have swiped past: one mark on the wall each. */
   videos: number;
+  /** How sure it is of each thing it has guessed about you, 0 to 1. Each
+      guess it is sure enough of is a file on the shelf. */
+  files: readonly number[];
+  /** Coins in the jar on the shelf: what your views were sold for. */
+  coins: number;
+  /** A leaflet inside the door for each video that was pushed at you, in
+      the colour of the topic it was dressed up as. */
+  leaflets: readonly Vec3[];
 };
 
 /** The things in the hut that change shape as the time goes. */
 export function buildProps(mesh: Mesh, state: PropsState): void {
-  const { decay, hour, videos } = state;
+  const { decay, hour, videos, files, coins, leaflets } = state;
 
   // The tally scratched in the wall: four strokes and one across. A stroke
   // is as wide as a pixel of the hut is at that wall, and so is the gap to
@@ -607,6 +653,97 @@ export function buildProps(mesh: Mesh, state: PropsState): void {
       );
     },
   );
+
+  // The files it keeps on you, in a row after your books: all alike, each
+  // with its own strip, and thicker the surer it is of what is in it.
+  const covers = [plain([0.2, 0.22, 0.28]), plain([0.16, 0.17, 0.22])];
+  const back = -W + 66;
+  let spine = FILES_FROM;
+  files.forEach((sure, i) => {
+    if (sure < SURE) return;
+    const thick = lerp(10, 22, (sure - SURE) / (1 - SURE));
+    addBox(
+      mesh,
+      [-W + 4, SHELF, spine],
+      [back, SHELF + 116, spine + thick],
+      covers[i % 2],
+    );
+    addQuad(
+      mesh,
+      [back + 0.8, SHELF + 64, spine + thick - 2],
+      [back + 0.8, SHELF + 64, spine + 2],
+      [back + 0.8, SHELF + 104, spine + 2],
+      [back + 0.8, SHELF + 104, spine + thick - 2],
+      mark(FILE_LABELS[i % FILE_LABELS.length]),
+    );
+    spine += thick + 1.5;
+  });
+
+  // The coins: in the jar until it is full, then in stacks beside it. No
+  // coin lies quite straight on the one under it.
+  // Brighter than a colour can be: gold shines, even in the shade.
+  const gold = [plain([1.3, 1, 0.25]), plain([1.05, 0.75, 0.15])];
+  const shown = Math.min(coins, COINS_MOST);
+  for (let i = 0; i < shown; i++) {
+    const beside = i - JAR_HOLDS;
+    const [x, z] =
+      beside < 0 ? [JAR[0], JAR[2]] : STACKS[Math.floor(beside / STACK_HOLDS)];
+    const level = beside < 0 ? i : beside % STACK_HOLDS;
+    addDrum(
+      mesh,
+      [
+        x + (random(i + 60) - 0.5) * 3,
+        SHELF + 0.5 + level * COIN,
+        z + (random(i + 70) - 0.5) * 3,
+      ],
+      COIN,
+      14,
+      14,
+      gold[i % 2],
+      gold[0],
+    );
+  }
+
+  // The leaflets, pushed in under the door: paper, with a block of the
+  // topic's colour and two lines of print. A leaflet is made of strips side
+  // by side, not of print lying on paper: at this distance, two things that
+  // close to each other show through one another.
+  const paper = mark([0.9, 0.87, 0.78]);
+  const print = mark([0.3, 0.28, 0.26]);
+  leaflets.slice(0, LEAFLETS_MOST).forEach((color, i) => {
+    // Six places on the floor, and then a second leaflet on each.
+    const place = LEAFLET_ORDER[i % LEAFLET_ORDER.length];
+    const at: Vec3 = [
+      W - 75 - (place % 2) * 105 + (random(i + 81) - 0.5) * 16,
+      i < LEAFLET_ORDER.length ? 1.5 : 5.5,
+      -385 + (Math.floor(place / 2) - 1) * 112 + (random(i + 82) - 0.5) * 16,
+    ];
+    const turn = radians((random(i + 80) - 0.5) * 40);
+    const strips: readonly (readonly [number, Paint])[] = [
+      [-48, paper],
+      [-36, print],
+      [-30, paper],
+      [-22, print],
+      [-16, paper],
+      [-6, mark(color)],
+      [40, paper],
+      [48, paper],
+    ];
+    withTransform(mesh, multiply(translation(at), rotationY(turn)), () => {
+      for (let strip = 0; strip < strips.length - 1; strip++) {
+        const [x0, paint] = strips[strip];
+        const x1 = strips[strip + 1][0];
+        addQuad(
+          mesh,
+          [x0, 0, 34],
+          [x1, 0, 34],
+          [x1, 0, -34],
+          [x0, 0, -34],
+          paint,
+        );
+      }
+    });
+  });
 
   // The door comes open. Nobody opened it.
   const ajar = radians(26) * smoothstep(0.55, 1, decay);

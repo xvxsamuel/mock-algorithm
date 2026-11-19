@@ -48,6 +48,12 @@ type HutInput = {
   running: boolean;
   /** Videos you have swiped past. */
   videos: number;
+  /** How sure it is of each thing it has guessed about you, 0 to 1. */
+  files: readonly number[];
+  /** Coins your views were sold for. */
+  coins: number;
+  /** The colour of each video that was pushed at you. */
+  leaflets: readonly string[];
   /** The colour of the video on screen, like "#ff8a00". */
   glow: string;
   /** The panel is open beside the phone: the view moves over for it. */
@@ -333,7 +339,14 @@ export function useHutScene(
         view,
         shift,
         phone: held,
-        props: { decay, hour: hourAfter(seconds), videos: want.videos },
+        props: {
+          decay,
+          hour: hourAfter(seconds),
+          videos: want.videos,
+          files: want.files,
+          coins: want.coins,
+          leaflets: want.leaflets.map(colorOf),
+        },
         hand: { turned: smoothstep(0.3, 1, decay), press, tip },
         glow,
         time: beat,
