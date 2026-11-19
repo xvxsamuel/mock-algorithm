@@ -338,7 +338,7 @@ export function createHutRenderer(
   buildGlass(glassMesh);
   const hut = createLayer(gl, hutMesh, false);
   const glass = createLayer(gl, glassMesh, false);
-  const props = createLayer(gl, createMesh(2500), true);
+  const props = createLayer(gl, createMesh(4500), true);
   const hand = createLayer(gl, createMesh(6000), true);
   // The second program draws one triangle it makes up itself.
   const nothing = gl.createVertexArray();
@@ -377,8 +377,15 @@ export function createHutRenderer(
       if (target === null) return;
     }
 
-    const { decay, hour, videos } = frame.props;
-    const nextProps = `${videos} ${Math.floor(hour * 60)} ${Math.round(decay * 500)}`;
+    const { decay, hour, videos, files, coins, leaflets } = frame.props;
+    const nextProps = [
+      videos,
+      Math.floor(hour * 60),
+      Math.round(decay * 500),
+      files.map((sure) => Math.round(sure * 100)).join(),
+      coins,
+      leaflets.join(),
+    ].join(" ");
     if (nextProps !== propsKey) {
       propsKey = nextProps;
       clearMesh(props.mesh);
