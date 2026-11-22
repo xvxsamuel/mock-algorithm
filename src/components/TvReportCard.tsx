@@ -42,6 +42,7 @@ function TvReportCard({
       onPointerDown={(event) => event.stopPropagation()}
     >
       <div className="tv-card-head">
+        <span className="tv-card-station">CH 4 NEWS</span>
         <span className="tv-card-tag">{report.tag}</span>
         <span className="tv-card-desk">{report.desk}</span>
         <div className="tv-card-nav" role="group" aria-label="Broadcasts">
@@ -82,6 +83,7 @@ function TvReportCard({
 
       <div className="tv-card-foot">
         <span className="tv-card-sources">
+          <span className="tv-card-sources-label">Sources: </span>
           {report.sources.map((source, i) => (
             <span key={`${source.name}-${source.url}`}>
               {i > 0 && " · "}

@@ -49,44 +49,47 @@ type Finger = {
   radii: readonly [number, number, number, number];
 };
 
-/** The four fingers come from behind the phone, round its left edge, and
-    turn up along it, with their tips against its side. */
+/** The four fingers lie flat against the back of the phone, come round its
+    left edge, and hook back in, so the pads of their tips press on the edge
+    where the side meets the glass, nails towards you. They lie against each
+    other, rise a little towards their tips, and get shorter towards the
+    little finger, which tucks in lowest. */
 const FINGERS: readonly Finger[] = [
   {
     joints: [
-      [-1, 1, -8.2],
-      [-13.2, 3.4, -7.8],
-      [-18.8, 4.6, -4.6],
-      [-17.6, 8.6, 0.8],
+      [-1, 2, -8.2],
+      [-17.4, 4.5, -6.1],
+      [-19.9, 7.1, -1.6],
+      [-17.5, 9.3, 1.3],
     ],
-    radii: [3.5, 3.2, 3, 2.7],
+    radii: [3.7, 3.45, 3.25, 3.05],
   },
   {
     joints: [
-      [-2, -7.5, -8.6],
-      [-13.4, -6.6, -8],
-      [-19, -5.6, -4.7],
-      [-17.7, -1.6, 0.9],
+      [-2, -6, -8.4],
+      [-17.6, -3.5, -6.2],
+      [-20.1, -0.8, -1.6],
+      [-17.6, 1.5, 1.4],
     ],
-    radii: [3.6, 3.3, 3.1, 2.8],
+    radii: [3.8, 3.55, 3.35, 3.15],
   },
   {
     joints: [
-      [-2, -16, -8.6],
-      [-13.2, -15.9, -7.9],
-      [-18.7, -15.2, -4.6],
-      [-17.5, -11.4, 0.8],
+      [-2, -13.5, -8.3],
+      [-17.3, -11, -6.1],
+      [-19.8, -8.4, -1.7],
+      [-17.4, -6.2, 1.2],
     ],
-    radii: [3.4, 3.1, 2.9, 2.6],
+    radii: [3.6, 3.35, 3.15, 2.95],
   },
   {
     joints: [
-      [-1, -24, -8.2],
-      [-12.6, -24.8, -7.4],
-      [-17.8, -24.6, -4.2],
-      [-17, -21.4, 0.5],
+      [-1, -20.5, -8],
+      [-16.7, -18.2, -5.8],
+      [-19.3, -15.8, -1.9],
+      [-17.2, -13.8, 0.7],
     ],
-    radii: [2.9, 2.6, 2.4, 2.2],
+    radii: [3.1, 2.9, 2.7, 2.55],
   },
 ];
 
@@ -94,9 +97,9 @@ const FINGERS: readonly Finger[] = [
     comes down on the glass, with its tip where it touches. */
 const THUMB: Joints = [
   [12, -31, -9],
-  [20.4, -27, -3],
-  [19.2, -19.5, 0.2],
-  [18.4, -11.5, 0.9],
+  [20.1, -27, -3],
+  [18.8, -19.5, 0.2],
+  [18.1, -11.5, 0.9],
 ];
 const THUMB_RADII = [5.2, 4.5, 4, 3.5] as const;
 /** How far the tip can reach from the root of the thumb. A tap further
@@ -189,8 +192,14 @@ function addFinger(
   nail: Paint,
 ): void {
   const points = [...joints];
-  // The last bone stretches as the hand turns.
-  points[3] = add(points[3], scale(sub(points[3], points[2]), 0.7 * turned));
+  // The last bone stretches as the hand turns: forwards and along the
+  // phone, but not further in across it, so that it grows past the edge
+  // and not over the glass.
+  const [reachX, reachY, reachZ] = sub(points[3], points[2]);
+  points[3] = add(
+    points[3],
+    scale([Math.min(reachX, 0), reachY, reachZ], 0.7 * turned),
+  );
   const thin = 1 - 0.3 * turned;
   for (let i = 0; i < 3; i++) {
     addRoundCone(
@@ -258,7 +267,7 @@ export function buildHand(mesh: Mesh, { turned, press, tip }: HandState): void {
       mesh,
       finger.joints,
       finger.radii,
-      [-0.7, 0, 0.7],
+      [-0.45, 0, 0.9],
       turned,
       skin,
       nail,
@@ -268,14 +277,14 @@ export function buildHand(mesh: Mesh, { turned, press, tip }: HandState): void {
     mesh,
     thumbAt(press, tip),
     THUMB_RADII,
-    [0.6, 0, 0.8],
+    [0.3, 0, 0.95],
     turned * 0.7,
     skin,
     nail,
   );
 
   // The palm behind the phone, the ball of the thumb, and the heel.
-  addEllipsoid(mesh, [7, -14, -9.4], [14, 19, 5], skin);
+  addEllipsoid(mesh, [7, -14, -8.3], [14, 19, 5], skin);
   addEllipsoid(mesh, [16.5, -28, -6.2], [6, 8.5, 5], skin);
   addEllipsoid(mesh, [9, -32, -8.6], [11, 6, 5.4], skin);
   // The wrist and forearm, down towards you, into a sleeve.

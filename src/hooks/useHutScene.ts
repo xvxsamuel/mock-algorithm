@@ -31,7 +31,7 @@ import {
   type HutLoader,
   type HutRenderer,
 } from "../scene/renderer";
-import { decayAfter, hourAfter } from "../scene/time";
+import { clockAfter, decayAfter, hourAfter } from "../scene/time";
 
 /** Where your head is turned, in degrees. */
 export type Look = {
@@ -389,7 +389,7 @@ export function useHutScene(
         phone: held,
         props: {
           decay,
-          hour: hourAfter(want.videos),
+          hour: clockAfter(want.videos),
           videos: want.videos,
           files: want.files,
           coins: want.coins,

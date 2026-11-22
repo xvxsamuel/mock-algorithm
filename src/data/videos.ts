@@ -19,6 +19,8 @@ export type Video = {
   likes: number;
   /** 0 = calm and harmless, 1 = as extreme or sensational as it gets. */
   intensity: number;
+  /** Shows TikTok's "Contains AI-generated media" tag under the caption. */
+  aiGenerated?: boolean;
 };
 
 export const VIDEOS: readonly Video[] = [

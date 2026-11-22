@@ -10,21 +10,23 @@ import {
   type Vec3,
 } from "./math";
 
-/* Renders the hut's CRT news broadcast onto a crisp 640x480 2D canvas that
-   WebGL uploads and samples at native display resolution through the CRT glass
-   pass. Features a deadpan carp news anchor in a tailored suit at the desk,
-   bold broadcast typography, animated data graphics, a lower-third chyron,
-   and a scrolling breaking-news ticker. */
+/* Renders the hut's CRT news broadcast onto a 640x480 2D canvas that WebGL
+   uploads and samples at native display resolution through the CRT glass pass.
+   A classic 4:3 news broadcast: the deadpan carp anchor behind a news desk,
+   an over-the-shoulder graphic with one big figure, a white headline plate
+   and a slim crawl. The TV is read from across the room, so nothing on it is
+   set small; the card beside the TV carries the details. */
 
 export const TV_WIDTH = 640;
 export const TV_HEIGHT = 480;
 
-const FONT_STACK =
-  '"Departure Mono", "White Rabbit Pixel", ui-monospace, SFMono-Regular, Menlo, monospace';
+const FONT_DISPLAY =
+  '"Arial Narrow", "Franklin Gothic Medium", "Helvetica Neue", Arial, sans-serif';
+const FONT_NEWS = '"Helvetica Neue", "Segoe UI", Arial, Helvetica, sans-serif';
 
 export type TvFrameInput = {
   report: NewsReport;
-  /** Seconds since the page opened, for the ticker, anchor speech, and LIVE blink. */
+  /** Seconds since the page opened, for the ticker, anchor speech, and source cycling. */
   time: number;
   /** 0 to 1: brief static burst right after a channel/report cut. */
   glitch: number;
@@ -37,6 +39,97 @@ export type TvScreen = {
   render: (input: TvFrameInput) => void;
 };
 
+type BroadcastTheme = {
+  wallTop: string;
+  wallBot: string;
+  wallGlow: string;
+  windowTint: string;
+  deskTop: string;
+  deskFront: string;
+  deskTrim: string;
+  otsHeaderBg: string;
+  otsStatBg: string;
+  otsAccent: string;
+  kickerBg: string;
+  kickerText: string;
+  tickerBg: string;
+  tickerRule: string;
+  tieColor: string;
+  rimTint: string;
+};
+
+function themeFor(report: NewsReport): BroadcastTheme {
+  const sev = report.severity;
+  const isBreaking =
+    report.tag === "BREAKING" || report.tag === "CRISIS DESK" || sev >= 0.7;
+  const isSpecial =
+    report.tag === "SPECIAL REPORT" ||
+    report.tag === "INVESTIGATION" ||
+    report.tag === "ATTENTION" ||
+    report.tag === "TECH ALERT";
+
+  if (sev >= 0.7) {
+    return {
+      wallTop: "#141828",
+      wallBot: "#24111a",
+      wallGlow: "rgba(186, 46, 58, 0.24)",
+      windowTint: "#121829",
+      deskTop: "#493022",
+      deskFront: "#151a28",
+      deskTrim: "#c8963e",
+      otsHeaderBg: "#7d1720",
+      otsStatBg: "#1b1019",
+      otsAccent: "#d42b35",
+      kickerBg: "#c41822",
+      kickerText: "#ffffff",
+      tickerBg: "#8f131b",
+      tickerRule: "#e2b23b",
+      tieColor: "#9c1b24",
+      rimTint: "#d95b66",
+    };
+  }
+
+  if (sev >= 0.34) {
+    return {
+      wallTop: "#132440",
+      wallBot: "#1c2c48",
+      wallGlow: "rgba(218, 160, 62, 0.16)",
+      windowTint: "#10203a",
+      deskTop: "#563826",
+      deskFront: "#13223a",
+      deskTrim: "#d2a03c",
+      otsHeaderBg: isBreaking ? "#8c1a22" : "#18335c",
+      otsStatBg: "#10203b",
+      otsAccent: isBreaking ? "#cf232c" : "#d69c28",
+      kickerBg: isBreaking ? "#c41822" : "#cf8e18",
+      kickerText: isBreaking ? "#ffffff" : "#10151e",
+      tickerBg: "#941820",
+      tickerRule: "#e3b43c",
+      tieColor: "#8f222a",
+      rimTint: "#e2b462",
+    };
+  }
+
+  return {
+    wallTop: "#15325c",
+    wallBot: "#0f2342",
+    wallGlow: "rgba(116, 174, 236, 0.18)",
+    windowTint: "#0e2240",
+    deskTop: "#5c3c28",
+    deskFront: "#132542",
+    deskTrim: "#d4a442",
+    otsHeaderBg: "#163868",
+    otsStatBg: "#102442",
+    otsAccent: "#c92028",
+    kickerBg: isSpecial ? "#c41a22" : "#194a8a",
+    kickerText: "#ffffff",
+    tickerBg: "#19355c",
+    tickerRule: "#c92028",
+    tieColor: "#9c222a",
+    rimTint: "#9cc2eb",
+  };
+}
+
 /**
  * Light the CRT screen casts into the hut: subtle in daylight, then growing
  * dominant and harsher as night falls and the news worsens until it is the
@@ -48,22 +141,20 @@ export function tvLightFor(
   night: number,
   time: number,
 ): Vec3 {
-  const cold: Vec3 = [0.52, 0.88, 1.12];
-  const bleak: Vec3 = [0.54, 0.68, 1.04];
-  const alert: Vec3 = [1.18, 0.26, 0.34];
+  const cold: Vec3 = [0.64, 0.84, 1.06];
+  const bleak: Vec3 = [0.58, 0.68, 0.98];
+  const alert: Vec3 = [1.14, 0.3, 0.34];
 
   const base = mix(cold, bleak, report.severity);
   // Late-stage breaking reports breathe gently toward red with the chyron.
   const pulse =
     report.severity > 0.55
-      ? (0.5 + 0.5 * Math.sin(time * 1.4)) * (report.severity - 0.5) * 0.6
+      ? (0.5 + 0.5 * Math.sin(time * 1.4)) * (report.severity - 0.5) * 0.55
       : 0;
-  const tint = mix(base, alert, clamp(pulse, 0, 0.44));
+  const tint = mix(base, alert, clamp(pulse, 0, 0.4));
   // Subtle slow CRT drift rather than rapid strobing, so quantized walls stay calm.
   const hum =
     1 + 0.012 * Math.sin(time * 1.9) + 0.008 * Math.sin(time * 3.7 + 1.4);
-  // Barely noticeable in bright afternoon sun, then swells slowly through
-  // dusk and night until the CRT owns the entire dark cabin.
   const dark = clamp(
     night * 0.72 + Math.pow(clamp(decay, 0, 1), 1.35) * 0.45,
     0,
@@ -86,190 +177,389 @@ export function createTvScreen(): TvScreen {
 
   const render = ({ report, time, glitch, decay }: TvFrameInput): void => {
     if (ctx === null) return;
-    ctx.imageSmoothingEnabled = false;
+    ctx.imageSmoothingEnabled = true;
 
-    const sev = report.severity;
-    // Studio backdrop darkens and shifts from broadcast navy to grim crimson-charcoal.
-    const bgTop = sev < 0.45 ? "#09182e" : sev < 0.78 ? "#111221" : "#1c080e";
-    const bgBot = sev < 0.45 ? "#122a4d" : sev < 0.78 ? "#1e1b30" : "#2e0d15";
-    const accent = sev < 0.3 ? "#38e8ff" : sev < 0.65 ? "#ffae2b" : "#ff334f";
+    const theme = themeFor(report);
 
-    const grad = ctx.createLinearGradient(0, 0, 0, TV_HEIGHT);
-    grad.addColorStop(0, bgTop);
-    grad.addColorStop(1, bgBot);
-    ctx.fillStyle = grad;
-    ctx.fillRect(0, 0, TV_WIDTH, TV_HEIGHT);
+    // 1. Full-bleed broadcast studio backdrop (no top app bar, no sci-fi grid).
+    drawStudioBackdrop(ctx, theme, report.severity);
 
-    // Subtle broadcast grid behind the stage.
-    ctx.strokeStyle = "rgba(180, 220, 255, 0.08)";
-    ctx.lineWidth = 2;
-    for (let x = 28; x < TV_WIDTH; x += 48) {
-      ctx.beginPath();
-      ctx.moveTo(x, 58);
-      ctx.lineTo(x, 270);
-      ctx.stroke();
-    }
-    for (let y = 76; y < 270; y += 44) {
-      ctx.beginPath();
-      ctx.moveTo(0, y);
-      ctx.lineTo(TV_WIDTH, y);
-      ctx.stroke();
-    }
+    // 2. Carp news anchor seated naturally in the studio on the left, behind the desk.
+    drawCarpAnchor(ctx, 168, 250, theme, report.severity, time);
 
-    // --- Top broadcast bar (overscan-safe padding) ---
-    ctx.fillStyle = "rgba(5, 8, 15, 0.92)";
-    ctx.fillRect(0, 0, TV_WIDTH, 56);
-    ctx.fillStyle = "rgba(255, 255, 255, 0.14)";
-    ctx.fillRect(0, 54, TV_WIDTH, 2);
+    // 3. Full-width physical studio news desk spanning across the foreground.
+    drawStudioDesk(ctx, 250, 168, theme);
 
-    // Category/alert badge
-    ctx.font = `bold 19px ${FONT_STACK}`;
-    const tagWidth = Math.min(
-      Math.max(Math.ceil(ctx.measureText(report.tag).width) + 26, 132),
-      230,
-    );
-    ctx.fillStyle = accent;
-    ctx.fillRect(20, 11, tagWidth, 34);
-    ctx.fillStyle = sev < 0.65 ? "#060c14" : "#ffffff";
-    ctx.textBaseline = "middle";
-    ctx.fillText(report.tag, 33, 29);
+    // 4. Over-the-shoulder (OTS) broadcast graphic slate on the right side of the studio.
+    drawOtsSlate(ctx, report, theme, time);
 
-    // Desk label
-    ctx.fillStyle = "#dce8f8";
-    ctx.font = `bold 19px ${FONT_STACK}`;
-    ctx.fillText(report.desk, 20 + tagWidth + 16, 29);
+    // 5. Channel bug, kicker flag, headline plate and news crawl.
+    drawLowerThird(ctx, report, theme, time);
 
-    // Pulsing LIVE dot on top right
-    const blink = Math.floor(time * 2) % 2 === 0;
-    ctx.fillStyle = blink ? "#ff2e47" : "#6a1420";
-    ctx.fillRect(TV_WIDTH - 108, 20, 14, 14);
-    ctx.fillStyle = "#f4f8ff";
-    ctx.font = `bold 19px ${FONT_STACK}`;
-    ctx.fillText("LIVE", TV_WIDTH - 86, 29);
-
-    // --- Main broadcast stage: Carp anchor in suit (left) + Hero stat & graphic (right) ---
-    drawCarpAnchor(ctx, 20, 66, 234, 196, accent, sev, time);
-
-    // Right-hand broadcast data card
-    const dataX = 266;
-    const dataW = TV_WIDTH - dataX - 20;
-    const graphicW = 132;
-    const graphicH = 114;
-    const graphicX = dataX + dataW - graphicW;
-    const graphicY = 68;
-    const statMaxWidth = graphicX - dataX - 14;
-
-    // Big hero stat, auto-fitted so both short figures and words stay razor crisp.
-    let statSize = 68;
-    ctx.font = `bold ${statSize}px ${FONT_STACK}`;
-    while (statSize > 38 && ctx.measureText(report.stat).width > statMaxWidth) {
-      statSize -= 4;
-      ctx.font = `bold ${statSize}px ${FONT_STACK}`;
-    }
-    ctx.textBaseline = "alphabetic";
-    ctx.fillStyle = "rgba(0, 0, 0, 0.68)";
-    ctx.fillText(report.stat, dataX + 3, 146);
-    ctx.fillStyle = "#ffffff";
-    ctx.fillText(report.stat, dataX, 143);
-
-    ctx.fillStyle = accent;
-    ctx.fillRect(dataX, 158, statMaxWidth, 6);
-
-    // Framed animated OTS broadcast graphic beside the hero figure
-    drawGraphic(
-      ctx,
-      report.graphic,
-      graphicX,
-      graphicY,
-      graphicW,
-      graphicH,
-      accent,
-      time,
-    );
-
-    // Full-width subtitle below stat + graphic so it stays large and effortless to read
-    ctx.fillStyle = "#e8f2ff";
-    ctx.font = `bold 21px ${FONT_STACK}`;
-    drawWrapped(ctx, report.statSub, dataX, 212, dataW, 27, 2);
-
-    // --- Lower-third news chyron ---
-    ctx.fillStyle = "#080c14";
-    ctx.fillRect(0, 272, TV_WIDTH, 144);
-    ctx.fillStyle = accent;
-    ctx.fillRect(0, 272, 16, 144);
-    ctx.fillRect(0, 272, TV_WIDTH, 5);
-
-    const headlineX = 32;
-    const headlineWidth = TV_WIDTH - headlineX - 24;
-    const headlineSize = fitWrappedSize(
-      ctx,
-      report.headline,
-      headlineWidth,
-      2,
-      32,
-      24,
-    );
-    ctx.font = `bold ${headlineSize}px ${FONT_STACK}`;
-    ctx.textBaseline = "alphabetic";
-    const headlineStep = Math.round(headlineSize * 1.24);
-    ctx.fillStyle = "rgba(0, 0, 0, 0.65)";
-    drawWrapped(
-      ctx,
-      report.headline,
-      headlineX + 2,
-      320,
-      headlineWidth,
-      headlineStep,
-      2,
-    );
-    ctx.fillStyle = "#ffffff";
-    drawWrapped(
-      ctx,
-      report.headline,
-      headlineX,
-      318,
-      headlineWidth,
-      headlineStep,
-      2,
-    );
-
-    const sourceLabel = report.sources.map((s) => s.name).join(" / ");
-    ctx.fillStyle = "#a9c2de";
-    ctx.font = `bold 16px ${FONT_STACK}`;
-    ctx.fillText(
-      `SRC: ${sourceLabel.toUpperCase()}`,
-      headlineX,
-      398,
-      headlineWidth,
-    );
-
-    // --- Bottom scrolling breaking news ticker ---
-    ctx.fillStyle = sev > 0.65 ? "#8b0e20" : sev > 0.35 ? "#573208" : "#122949";
-    ctx.fillRect(0, 416, TV_WIDTH, 64);
-    ctx.fillStyle = accent;
-    ctx.fillRect(0, 416, TV_WIDTH, 3);
-
-    ctx.fillStyle = "#ffffff";
-    ctx.font = `bold 21px ${FONT_STACK}`;
-    ctx.textBaseline = "middle";
-    const marquee = `${report.ticker}   ///   ${report.ticker}   ///   `;
-    const span = Math.max(ctx.measureText(marquee).width / 2, 1);
-    const offset = ((time * 74) % span) | 0;
-    ctx.save();
-    ctx.beginPath();
-    ctx.rect(18, 420, TV_WIDTH - 36, 56);
-    ctx.clip();
-    ctx.fillText(marquee, 18 - offset, 448);
-    ctx.restore();
-
-    // --- Brief CRT static / interference on report cuts and faint deep-decay drift ---
-    const noiseAmount = clamp(glitch + decay * 0.06, 0, 1);
+    // 6. Brief analog CRT static on channel/report cuts and faint late-night snow.
+    const noiseAmount = clamp(glitch + decay * 0.05, 0, 1);
     if (noiseAmount > 0.05) {
       drawStatic(ctx, noiseAmount, time);
     }
   };
 
   return { canvas, render };
+}
+
+/**
+ * Draws a physical-feeling television news studio set: studio cyclorama wall,
+ * soft vertical studio sconces, frosted glass newsroom partition with muted
+ * background desks/monitors, subtle world-map wash, and overhead key light.
+ */
+function drawStudioBackdrop(
+  ctx: CanvasRenderingContext2D,
+  theme: BroadcastTheme,
+  severity: number,
+): void {
+  const grad = ctx.createLinearGradient(0, 0, 0, 290);
+  grad.addColorStop(0, theme.wallTop);
+  grad.addColorStop(1, theme.wallBot);
+  ctx.fillStyle = grad;
+  ctx.fillRect(0, 0, TV_WIDTH, 292);
+
+  // Soft studio spotlight glow behind the anchor seat.
+  const spot = ctx.createRadialGradient(170, 130, 18, 170, 135, 220);
+  spot.addColorStop(0, theme.wallGlow);
+  spot.addColorStop(1, "rgba(0, 0, 0, 0)");
+  ctx.fillStyle = spot;
+  ctx.fillRect(0, 0, TV_WIDTH, 260);
+
+  // Architectural studio wall paneling & subtle frosted newsroom window band.
+  ctx.fillStyle = theme.windowTint;
+  ctx.fillRect(0, 68, TV_WIDTH, 168);
+
+  // Faint horizontal architectural blinds/trim bars behind glass.
+  ctx.fillStyle = "rgba(255, 255, 255, 0.05)";
+  ctx.fillRect(0, 68, TV_WIDTH, 3);
+  ctx.fillRect(0, 234, TV_WIDTH, 3);
+  for (let y = 94; y < 230; y += 26) {
+    ctx.fillStyle = "rgba(255, 255, 255, 0.035)";
+    ctx.fillRect(0, y, TV_WIDTH, 2);
+  }
+
+  // Soft out-of-focus newsroom silhouettes behind the frosted studio glass:
+  // distant studio monitors and warm tungsten desk lamps.
+  const monitors = [
+    [34, 110, 44, 28],
+    [254, 102, 50, 32],
+    [262, 152, 38, 24],
+    [420, 108, 48, 30],
+    [548, 114, 42, 26],
+  ] as const;
+  for (const [mx, my, mw, mh] of monitors) {
+    ctx.fillStyle =
+      severity > 0.7 ? "rgba(180, 95, 102, 0.14)" : "rgba(130, 178, 232, 0.16)";
+    ctx.fillRect(mx, my, mw, mh);
+    ctx.fillStyle = "rgba(255, 255, 255, 0.08)";
+    ctx.fillRect(mx + 4, my + 5, mw - 8, 5);
+  }
+
+  // Subtle warm tungsten newsroom desk lamp pools in the background.
+  const lamps = [
+    [58, 188],
+    [282, 194],
+  ] as const;
+  for (const [lx, ly] of lamps) {
+    const lamp = ctx.createRadialGradient(lx, ly, 2, lx, ly, 42);
+    lamp.addColorStop(
+      0,
+      severity > 0.7 ? "rgba(218, 134, 72, 0.18)" : "rgba(244, 198, 118, 0.24)",
+    );
+    lamp.addColorStop(1, "rgba(244, 198, 118, 0)");
+    ctx.fillStyle = lamp;
+    ctx.fillRect(lx - 44, ly - 44, 88, 88);
+  }
+
+  // Softly brushed vertical studio columns framing the anchor area.
+  const columns = [
+    [0, 26],
+    [290, 20],
+  ] as const;
+  for (const [cx, cw] of columns) {
+    ctx.fillStyle = "rgba(7, 13, 24, 0.45)";
+    ctx.fillRect(cx, 0, cw, 252);
+    ctx.fillStyle = "rgba(255, 255, 255, 0.07)";
+    ctx.fillRect(cx + cw - 2, 0, 2, 252);
+  }
+
+  // Faint classic broadcast world-map silhouette behind the anchor.
+  ctx.fillStyle = "rgba(215, 230, 250, 0.055)";
+  const continents = [
+    [54, 104, 48, 22],
+    [76, 126, 26, 30],
+    [138, 96, 56, 20],
+    [152, 118, 34, 34],
+    [206, 102, 58, 28],
+    [232, 136, 30, 22],
+  ] as const;
+  for (const [x, y, w, h] of continents) {
+    ctx.fillRect(x, y, w, h);
+  }
+
+  // Gentle top-down studio light falloff from the lighting grid.
+  const topBeam = ctx.createLinearGradient(0, 0, 0, 96);
+  topBeam.addColorStop(0, "rgba(255, 248, 234, 0.09)");
+  topBeam.addColorStop(1, "rgba(255, 248, 234, 0)");
+  ctx.fillStyle = topBeam;
+  ctx.fillRect(30, 0, 260, 96);
+}
+
+/**
+ * Draws the physical anchor desk spanning the full width of the studio shot,
+ * with warm wood desktop, broadcast front fascia, brass trim, script pages,
+ * ceramic mug, and a low broadcast desk microphone.
+ */
+function drawStudioDesk(
+  ctx: CanvasRenderingContext2D,
+  deskY: number,
+  anchorX: number,
+  theme: BroadcastTheme,
+): void {
+  // Warm studio wood desktop surface
+  const topGrad = ctx.createLinearGradient(0, deskY, 0, deskY + 15);
+  topGrad.addColorStop(0, theme.deskTop);
+  topGrad.addColorStop(1, "#352116");
+  ctx.fillStyle = topGrad;
+  ctx.fillRect(0, deskY, TV_WIDTH, 15);
+
+  // Subtle highlight bevel along front edge of the tabletop
+  ctx.fillStyle = "rgba(255, 238, 210, 0.22)";
+  ctx.fillRect(0, deskY, TV_WIDTH, 2);
+
+  // Desk front fascia & brushed brass trim bar
+  ctx.fillStyle = theme.deskFront;
+  ctx.fillRect(0, deskY + 15, TV_WIDTH, 32);
+  ctx.fillStyle = theme.deskTrim;
+  ctx.fillRect(0, deskY + 15, TV_WIDTH, 3);
+
+  // Anchor's printed script stack on the desk (left of center)
+  ctx.fillStyle = "#e6e9ef";
+  ctx.beginPath();
+  ctx.moveTo(anchorX - 72, deskY + 3);
+  ctx.lineTo(anchorX - 16, deskY + 2);
+  ctx.lineTo(anchorX - 10, deskY + 12);
+  ctx.lineTo(anchorX - 70, deskY + 13);
+  ctx.closePath();
+  ctx.fill();
+  ctx.fillStyle = "#92a0b5";
+  ctx.fillRect(anchorX - 62, deskY + 5, 34, 2);
+  ctx.fillRect(anchorX - 60, deskY + 9, 26, 2);
+
+  // Slim broadcast desk microphone on stand
+  ctx.fillStyle = "#1a202c";
+  ctx.fillRect(anchorX + 26, deskY + 5, 20, 5);
+  ctx.strokeStyle = "#2b3445";
+  ctx.lineWidth = 3;
+  ctx.beginPath();
+  ctx.moveTo(anchorX + 36, deskY + 5);
+  ctx.lineTo(anchorX + 24, deskY - 19);
+  ctx.stroke();
+  ctx.fillStyle = "#161b24";
+  ctx.beginPath();
+  ctx.ellipse(anchorX + 21, deskY - 22, 7, 5, -0.4, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.fillStyle = "#485468";
+  ctx.fillRect(anchorX + 17, deskY - 24, 4, 2);
+
+  // Ceramic broadcast studio mug on the desk
+  const mugX = anchorX + 66;
+  ctx.fillStyle = "#dfe5ee";
+  ctx.fillRect(mugX, deskY - 14, 18, 20);
+  ctx.fillStyle = "#b4c0d2";
+  ctx.fillRect(mugX + 10, deskY - 14, 8, 20);
+  ctx.fillStyle = "#b4c0d2";
+  ctx.fillRect(mugX + 18, deskY - 10, 5, 3);
+  ctx.fillRect(mugX + 21, deskY - 10, 3, 10);
+  ctx.fillRect(mugX + 18, deskY - 2, 5, 3);
+  ctx.fillStyle = "#b81820";
+  ctx.fillRect(mugX, deskY - 7, 18, 5);
+}
+
+/**
+ * Draws the over-the-shoulder (OTS) graphic on the right of the studio: a
+ * picture of the story over one big figure. The TV sits across the room, so
+ * nothing on it is smaller than the figure's caption would need to be; the
+ * card beside the TV carries the words.
+ */
+function drawOtsSlate(
+  ctx: CanvasRenderingContext2D,
+  report: NewsReport,
+  theme: BroadcastTheme,
+  time: number,
+): void {
+  const x = 330;
+  const y = 30;
+  const w = 278;
+  const h = 214;
+  const stripH = 10;
+  const chartH = 104;
+  const statY = y + stripH + chartH;
+  const statH = h - stripH - chartH;
+
+  ctx.fillStyle = "rgba(0, 0, 0, 0.46)";
+  ctx.fillRect(x + 6, y + 6, w, h);
+
+  // Coloured desk strip along the top, in place of a written desk title.
+  ctx.fillStyle = theme.otsHeaderBg;
+  ctx.fillRect(x, y, w, stripH);
+  ctx.fillStyle = theme.deskTrim;
+  ctx.fillRect(x, y + stripH - 3, w, 3);
+
+  drawBroadcastGraphic(
+    ctx,
+    report.graphic,
+    x,
+    y + stripH,
+    w,
+    chartH,
+    theme,
+    time,
+  );
+
+  ctx.fillStyle = theme.otsStatBg;
+  ctx.fillRect(x, statY, w, statH);
+  ctx.fillStyle = theme.otsAccent;
+  ctx.fillRect(x, statY, w, 4);
+
+  // The figure, as large as the plate lets it be.
+  const statMaxW = w - 32;
+  let statSize = 80;
+  ctx.font = `800 ${statSize}px ${FONT_DISPLAY}`;
+  while (statSize > 48 && ctx.measureText(report.stat).width > statMaxW) {
+    statSize -= 2;
+    ctx.font = `800 ${statSize}px ${FONT_DISPLAY}`;
+  }
+  const statMid = statY + 4 + (statH - 4) / 2;
+  ctx.textAlign = "center";
+  ctx.textBaseline = "middle";
+  ctx.fillStyle = "rgba(0, 0, 0, 0.6)";
+  ctx.fillText(report.stat, x + w / 2 + 3, statMid + 5);
+  ctx.fillStyle = "#ffffff";
+  ctx.fillText(report.stat, x + w / 2, statMid + 2);
+
+  ctx.strokeStyle = "#b9c6d8";
+  ctx.lineWidth = 3;
+  ctx.strokeRect(x + 1.5, y + 1.5, w - 3, h - 3);
+}
+
+/**
+ * Draws the lower third: the kicker flag, a broad white headline plate in big
+ * heavy type, and a slim news crawl. The left side of the picture keeps a
+ * channel bug in the studio instead of a column of small labels.
+ */
+function drawLowerThird(
+  ctx: CanvasRenderingContext2D,
+  report: NewsReport,
+  theme: BroadcastTheme,
+  time: number,
+): void {
+  const safeLeft = 34;
+  const safeRight = 606;
+  const bannerY = 292;
+  const bannerH = 126;
+  const tickerY = bannerY + bannerH; // 422; the tube's rim hides the last rows
+  const tickerTextY = tickerY + 25;
+
+  // --- Channel bug, top left of the studio ---
+  ctx.fillStyle = "rgba(0, 0, 0, 0.4)";
+  ctx.fillRect(safeLeft + 3, 33, 82, 38);
+  ctx.fillStyle = "#c81d25";
+  ctx.fillRect(safeLeft, 30, 82, 38);
+  ctx.fillStyle = "#e3b43c";
+  ctx.fillRect(safeLeft, 64, 82, 4);
+  ctx.fillStyle = "#ffffff";
+  ctx.font = `900 28px ${FONT_DISPLAY}`;
+  ctx.textAlign = "center";
+  ctx.textBaseline = "middle";
+  ctx.fillText("CH 4", safeLeft + 41, 48);
+
+  // --- Kicker flag perched on the headline plate ---
+  ctx.font = `800 28px ${FONT_DISPLAY}`;
+  const flagW = Math.ceil(ctx.measureText(report.tag).width) + 40;
+  const flagH = 40;
+  const flagX = safeLeft;
+  const flagY = bannerY - flagH;
+
+  ctx.fillStyle = "rgba(0, 0, 0, 0.42)";
+  ctx.beginPath();
+  ctx.moveTo(flagX + 4, flagY + 4);
+  ctx.lineTo(flagX + flagW - 10, flagY + 4);
+  ctx.lineTo(flagX + flagW + 6, bannerY);
+  ctx.lineTo(flagX + 4, bannerY);
+  ctx.closePath();
+  ctx.fill();
+
+  ctx.fillStyle = theme.kickerBg;
+  ctx.beginPath();
+  ctx.moveTo(flagX, flagY);
+  ctx.lineTo(flagX + flagW - 14, flagY);
+  ctx.lineTo(flagX + flagW + 2, bannerY);
+  ctx.lineTo(flagX, bannerY);
+  ctx.closePath();
+  ctx.fill();
+
+  ctx.fillStyle = theme.kickerText;
+  ctx.textAlign = "left";
+  ctx.textBaseline = "middle";
+  ctx.fillText(report.tag, flagX + 16, flagY + flagH / 2 + 1);
+
+  ctx.fillStyle = "rgba(0, 0, 0, 0.45)";
+  ctx.fillRect(0, bannerY - 4, TV_WIDTH, 4);
+
+  // --- Headline plate ---
+  const plateGrad = ctx.createLinearGradient(0, bannerY, 0, bannerY + bannerH);
+  plateGrad.addColorStop(0, "#f4f6f9");
+  plateGrad.addColorStop(1, "#dfe4ec");
+  ctx.fillStyle = plateGrad;
+  ctx.fillRect(0, bannerY, TV_WIDTH, bannerH);
+  ctx.fillStyle = theme.kickerBg;
+  ctx.fillRect(0, bannerY, safeLeft - 12, bannerH);
+
+  const headlineX = safeLeft;
+  const headlineWidth = safeRight - headlineX;
+  const headlineSize = fitWrappedSize(
+    ctx,
+    report.headline,
+    headlineWidth,
+    2,
+    54,
+    38,
+    FONT_DISPLAY,
+    "800",
+  );
+  ctx.font = `800 ${headlineSize}px ${FONT_DISPLAY}`;
+  const headlineLines = wrapLines(ctx, report.headline, headlineWidth, 2);
+  const lineStep = Math.round(headlineSize * 1.04);
+  const totalTextH = headlineSize + (headlineLines.length - 1) * lineStep;
+  const firstBaseline =
+    bannerY + Math.round((bannerH - totalTextH) / 2 + headlineSize * 0.82);
+
+  ctx.textAlign = "left";
+  ctx.textBaseline = "alphabetic";
+  ctx.fillStyle = "#0a0f17";
+  headlineLines.forEach((line, i) => {
+    ctx.fillText(line, headlineX, firstBaseline + i * lineStep);
+  });
+
+  // --- Slim news crawl ---
+  ctx.fillStyle = theme.tickerBg;
+  ctx.fillRect(0, tickerY, TV_WIDTH, TV_HEIGHT - tickerY);
+  ctx.fillStyle = theme.tickerRule;
+  ctx.fillRect(0, tickerY, TV_WIDTH, 3);
+
+  ctx.fillStyle = "#ffffff";
+  ctx.font = `700 30px ${FONT_NEWS}`;
+  ctx.textAlign = "left";
+  ctx.textBaseline = "middle";
+  const marquee = `${report.ticker}   ▪   ${report.ticker}   ▪   `;
+  const span = Math.max(ctx.measureText(marquee).width / 2, 1);
+  const offset = ((time * 70) % span) | 0;
+  ctx.fillText(marquee, -offset, tickerTextY);
 }
 
 type Pt = readonly [number, number];
@@ -281,11 +571,12 @@ const CARP_SKIN: readonly (readonly string[])[] = [
   ["#1c211d", "#38423a", "#58665a", "#7e8c7c", "#a6b09c"], // sickly grey-green
 ];
 const CARP_LIP = ["#4a1c14", "#7a3224", "#a8503a", "#d27a5c", "#eea688"];
-const SUIT = ["#0b0f17", "#141a26", "#1e2636", "#2c374c"];
+const SUIT = ["#0c111b", "#151d2c", "#202b40", "#2f3d58"];
 const CARP_LIGHT = normalize([-0.55, 0.6, 0.62]);
 const CARP_LIP_BAND = 6;
 const CARP_SEGMENTS = 9;
 const CARP_DEPTH = 0.86;
+const CARP_SCALE = 1.15;
 
 /** Head silhouette as [height, radius] rings, from inside the collar up to the lips. */
 function carpProfile(mouthOpen: number): readonly Pt[] {
@@ -304,25 +595,22 @@ function carpProfile(mouthOpen: number): readonly Pt[] {
 }
 
 /**
- * Draws the anchor: a carp head pointing straight up out of a suit collar,
- * gulping its lines at the ceiling. The head is a tiny low-poly lathe model
- * flat-shaded into a few colour steps, so it reads like the hut's PSX props
- * once the CRT glass dithers it.
+ * Draws the anchor: a deadpan carp head pointing straight up out of a tailored
+ * news-anchor suit collar, seated naturally behind the studio desk with no
+ * UI frame around him. Flat-shaded into stepped PSX tones so he fits the hut.
  */
 function drawCarpAnchor(
   ctx: CanvasRenderingContext2D,
-  x: number,
-  y: number,
-  w: number,
-  h: number,
-  accent: string,
+  cx: number,
+  deskY: number,
+  theme: BroadcastTheme,
   severity: number,
   time: number,
 ): void {
   const trace = (points: readonly Pt[], dx = 0, dy = 0): void => {
     points.forEach(([px, py], i) => {
-      if (i === 0) ctx.moveTo(x + px + dx, y + py + dy);
-      else ctx.lineTo(x + px + dx, y + py + dy);
+      if (i === 0) ctx.moveTo(px + dx, py + dy);
+      else ctx.lineTo(px + dx, py + dy);
     });
     ctx.closePath();
   };
@@ -345,45 +633,11 @@ function drawCarpAnchor(
 
   ctx.save();
   ctx.beginPath();
-  ctx.rect(x, y, w, h);
+  ctx.rect(0, 0, TV_WIDTH, deskY + 2);
   ctx.clip();
 
-  const cx = Math.round(w / 2);
-  const bob = Math.sin(time * 2.2) * 1.5;
-  const collarY = 118 + bob;
-  const deskY = 162;
-
-  // --- Studio wall with a stepped, banded key light behind the anchor ---
-  const wall =
-    severity > 0.7
-      ? ["#14060b", "#1e0a12", "#2a0f19", "#371522"]
-      : severity > 0.4
-        ? ["#0b0d19", "#121626", "#1a1f34", "#232a44"]
-        : ["#08142a", "#0d1d3a", "#14294d", "#1c3762"];
-  box(0, 0, w, h, wall[0]);
-  for (let band = 1; band <= 3; band++) {
-    const r = 128 - band * 30;
-    const ring: Pt[] = [];
-    for (let i = 0; i < 8; i++) {
-      const a = (i / 8) * Math.PI * 2 + Math.PI / 8;
-      ring.push([cx - 26 + Math.cos(a) * r * 1.2, 54 + Math.sin(a) * r]);
-    }
-    poly(ring, wall[band]);
-  }
-  // Slanted window-blind shadows across the key light.
-  for (let i = 0; i < 4; i++) {
-    const sy = 8 + i * 26;
-    poly(
-      [
-        [0, sy + 30],
-        [w, sy],
-        [w, sy + 9],
-        [0, sy + 39],
-      ],
-      "rgba(0, 0, 0, 0.22)",
-    );
-  }
-  box(12, 12, 10, 8, Math.floor(time * 2) % 2 === 0 ? "#ff334f" : "#5a1420");
+  const bob = Math.sin(time * 2.2) * 1.6;
+  const collarY = 198 + bob;
 
   // --- Carp head model: yaw sway plus a backward tilt so the open mouth shows ---
   const gulp = Math.sin(time * 9) * Math.sin(time * 3.1 + 0.5);
@@ -403,7 +657,10 @@ function drawCarpAnchor(
       v[1] * sinPitch + z1 * cosPitch,
     ];
   };
-  const toScreen = (v: Vec3): Pt => [cx + v[0], collarY - v[1]];
+  const toScreen = (v: Vec3): Pt => [
+    cx + v[0] * CARP_SCALE,
+    collarY - v[1] * CARP_SCALE,
+  ];
   const surface = (height: number, radius: number, angle: number): Vec3 => [
     radius * Math.sin(angle),
     height,
@@ -430,7 +687,7 @@ function drawCarpAnchor(
       ];
       const n = normalize(cross(sub(quad[1], quad[0]), sub(quad[3], quad[0])));
       if (n[2] <= 0) continue;
-      const light = 0.12 + 0.88 * Math.max(dot(n, CARP_LIGHT), 0);
+      const light = 0.14 + 0.86 * Math.max(dot(n, CARP_LIGHT), 0);
       const palette = band >= CARP_LIP_BAND ? CARP_LIP : skin;
       faces.push({
         pts: quad.map(toScreen),
@@ -443,21 +700,21 @@ function drawCarpAnchor(
   faces.sort((a, b) => a.depth - b.depth);
 
   const shoulders: Pt[] = [
-    [cx - 84, deskY],
-    [cx - 76, collarY + 18],
-    [cx - 56, collarY + 6],
-    [cx - 28, collarY - 2],
-    [cx + 28, collarY - 2],
-    [cx + 56, collarY + 6],
-    [cx + 76, collarY + 18],
-    [cx + 84, deskY],
+    [cx - 96, deskY + 2],
+    [cx - 88, collarY + 21],
+    [cx - 64, collarY + 7],
+    [cx - 32, collarY - 2],
+    [cx + 32, collarY - 2],
+    [cx + 64, collarY + 7],
+    [cx + 88, collarY + 21],
+    [cx + 96, deskY + 2],
   ];
 
-  // One cast shadow for head and shoulders, thrown down-right by the key light.
-  ctx.fillStyle = "rgba(0, 0, 0, 0.34)";
+  // Soft studio key-light shadow thrown gently down-right behind the anchor.
+  ctx.fillStyle = "rgba(0, 0, 0, 0.28)";
   ctx.beginPath();
-  for (const face of faces) trace(face.pts, 12, 7);
-  trace(shoulders, 12, 7);
+  for (const face of faces) trace(face.pts, 14, 8);
+  trace(shoulders, 14, 8);
   ctx.fill();
 
   // --- Faceted suit: lit from the left, falling into shadow on the right ---
@@ -465,36 +722,35 @@ function drawCarpAnchor(
   for (const side of [-1, 1]) {
     poly(
       [
-        [cx + side * 84, deskY],
-        [cx + side * 76, collarY + 18],
-        [cx + side * 56, collarY + 6],
-        [cx + side * 40, collarY + 14],
-        [cx + side * 50, deskY],
+        [cx + side * 96, deskY + 2],
+        [cx + side * 88, collarY + 21],
+        [cx + side * 64, collarY + 7],
+        [cx + side * 46, collarY + 16],
+        [cx + side * 58, deskY + 2],
       ],
       side < 0 ? SUIT[2] : SUIT[0],
     );
     poly(
       [
-        [cx + side * 56, collarY + 6],
-        [cx + side * 28, collarY - 2],
-        [cx + side * 20, collarY + 12],
-        [cx + side * 40, collarY + 14],
+        [cx + side * 64, collarY + 7],
+        [cx + side * 32, collarY - 2],
+        [cx + side * 23, collarY + 14],
+        [cx + side * 46, collarY + 16],
       ],
       side < 0 ? SUIT[3] : SUIT[2],
     );
   }
 
-  // --- The head itself, clipped at the collar so it grows out of the shirt ---
+  // --- The head itself, clipped at the collar so it rises out of the shirt ---
   ctx.save();
   ctx.beginPath();
-  ctx.rect(x, y, w, collarY + 6);
+  ctx.rect(0, 0, TV_WIDTH, collarY + 7);
   ctx.clip();
   for (const face of faces) {
     poly(face.pts, face.color);
     if (face.rim) {
-      // Accent-coloured studio backlight catching the shadow-side facets.
-      ctx.globalAlpha = 0.28;
-      poly(face.pts, accent);
+      ctx.globalAlpha = 0.2;
+      poly(face.pts, theme.rimTint);
       ctx.globalAlpha = 1;
     }
   }
@@ -508,7 +764,7 @@ function drawCarpAnchor(
   poly(hole, "#14060a");
 
   // Gill covers: a ")"-shaped seam up each cheek, behind the eyes.
-  ctx.lineWidth = 2.5;
+  ctx.lineWidth = 2.8;
   ctx.lineJoin = "round";
   ctx.strokeStyle = skin[0];
   for (const side of [-1, 1]) {
@@ -523,8 +779,8 @@ function drawCarpAnchor(
         continue;
       }
       const [px, py] = toScreen(rot(surface(height, 33.4, angle)));
-      if (drawing) ctx.lineTo(x + px, y + py);
-      else ctx.moveTo(x + px, y + py);
+      if (drawing) ctx.lineTo(px, py);
+      else ctx.moveTo(px, py);
       drawing = true;
     }
     ctx.stroke();
@@ -533,20 +789,20 @@ function drawCarpAnchor(
   // Barbels droop from the corners of the lips.
   const twitch = Math.sin(time * 5) * 2;
   ctx.strokeStyle = skin[1];
-  ctx.lineWidth = 3;
+  ctx.lineWidth = 3.2;
   for (const angle of [-1.1, -0.55, 0.55, 1.1]) {
     if (!facesViewer(angle, 0.1)) continue;
     const [bx, by] = toScreen(rot(surface(93, 12.5, angle)));
     const dir = Math.sign(angle);
     const reach = Math.abs(angle) > 1 ? 1 : 0.6;
     ctx.beginPath();
-    ctx.moveTo(x + bx, y + by);
-    ctx.lineTo(x + bx + dir * 9 * reach, y + by + 6 * reach);
-    ctx.lineTo(x + bx + dir * (12 + twitch) * reach, y + by + 18 * reach);
+    ctx.moveTo(bx, by);
+    ctx.lineTo(bx + dir * 10 * reach, by + 7 * reach);
+    ctx.lineTo(bx + dir * (13 + twitch) * reach, by + 20 * reach);
     ctx.stroke();
   }
 
-  // Bulging eyes on the sides of the head, staring at nothing.
+  // Bulging eyes on the sides of the head, staring blankly at the teleprompter.
   const blinking = (time * 0.3) % 1 > 0.94;
   for (const side of [-1, 1]) {
     const angle = side * 0.86;
@@ -587,7 +843,6 @@ function drawCarpAnchor(
       ],
       "#ffffff",
     );
-    // The lids sag as the news gets bleaker.
     if (severity > 0.4) {
       const cut = Math.asin(severity > 0.7 ? 0.05 : 0.45);
       poly(disc(11.2, 4.8, cut, Math.PI - cut), skin[1]);
@@ -595,108 +850,399 @@ function drawCarpAnchor(
   }
   ctx.restore();
 
-  // --- Shirt, collar, lapels and tie laid over the base of the neck ---
+  // --- Shirt, collar, lapels, classic broadcast tie, lapel mic and pocket square ---
   poly(
     [
-      [cx - 24, collarY],
-      [cx + 24, collarY],
-      [cx, collarY + 42],
+      [cx - 28, collarY],
+      [cx + 28, collarY],
+      [cx, collarY + 48],
     ],
     "#e9f0fb",
   );
   poly(
     [
       [cx, collarY + 2],
-      [cx + 24, collarY],
-      [cx, collarY + 42],
+      [cx + 28, collarY],
+      [cx, collarY + 48],
     ],
     "#bccbe0",
   );
   for (const side of [-1, 1]) {
     poly(
       [
-        [cx + side * 32, collarY - 4],
-        [cx + side * 6, collarY + 6],
-        [cx + side * 18, collarY + 15],
+        [cx + side * 36, collarY - 4],
+        [cx + side * 7, collarY + 7],
+        [cx + side * 20, collarY + 17],
       ],
       side < 0 ? "#f6f9ff" : "#c9d6ea",
     );
     poly(
       [
-        [cx + side * 30, collarY - 2],
-        [cx + side * 20, collarY + 12],
-        [cx + side * 4, deskY],
-        [cx + side * 16, deskY],
-        [cx + side * 34, collarY + 22],
-        [cx + side * 40, collarY + 10],
+        [cx + side * 34, collarY - 2],
+        [cx + side * 23, collarY + 14],
+        [cx + side * 5, deskY + 2],
+        [cx + side * 18, deskY + 2],
+        [cx + side * 39, collarY + 25],
+        [cx + side * 46, collarY + 12],
       ],
       side < 0 ? SUIT[3] : SUIT[1],
     );
   }
   poly(
     [
-      [cx - 6, collarY + 5],
-      [cx + 6, collarY + 5],
-      [cx + 4, collarY + 13],
-      [cx - 4, collarY + 13],
+      [cx - 7, collarY + 6],
+      [cx + 7, collarY + 6],
+      [cx + 5, collarY + 15],
+      [cx - 5, collarY + 15],
     ],
-    accent,
+    theme.tieColor,
   );
   poly(
     [
-      [cx - 4, collarY + 13],
-      [cx + 4, collarY + 13],
-      [cx + 8, collarY + 36],
-      [cx, collarY + 44],
-      [cx - 8, collarY + 36],
+      [cx - 5, collarY + 15],
+      [cx + 5, collarY + 15],
+      [cx + 9, collarY + 42],
+      [cx, collarY + 51],
+      [cx - 9, collarY + 42],
     ],
-    accent,
+    theme.tieColor,
+  );
+  // Subtle diagonal gold stripe on the news anchor's silk tie
+  poly(
+    [
+      [cx - 6, collarY + 25],
+      [cx + 6, collarY + 21],
+      [cx + 7, collarY + 25],
+      [cx - 7, collarY + 29],
+    ],
+    "rgba(229, 188, 92, 0.55)",
   );
   poly(
     [
-      [cx, collarY + 13],
-      [cx + 4, collarY + 13],
-      [cx + 8, collarY + 36],
-      [cx, collarY + 44],
+      [cx, collarY + 15],
+      [cx + 5, collarY + 15],
+      [cx + 9, collarY + 42],
+      [cx, collarY + 51],
     ],
-    "rgba(0, 0, 0, 0.3)",
+    "rgba(0, 0, 0, 0.28)",
   );
+  // Crisp pocket square and small clip-on lapel mic
   poly(
     [
-      [cx + 44, collarY + 26],
-      [cx + 60, collarY + 26],
-      [cx + 54, collarY + 19],
-      [cx + 49, collarY + 22],
+      [cx + 50, collarY + 29],
+      [cx + 68, collarY + 29],
+      [cx + 61, collarY + 21],
+      [cx + 56, collarY + 25],
     ],
     "#eef3fc",
   );
-  box(cx - 30, collarY + 20, 5, 5, "#05070b");
-
-  // --- Desk: lit top, dark front, accent trim, script pages and a mug ---
-  box(0, deskY, w, 10, "#1b2436");
-  box(0, deskY + 10, w, h - deskY - 10, "#0a0f19");
-  box(0, deskY + 10, w, 3, accent);
-  poly(
-    [
-      [cx - 54, deskY + 2],
-      [cx - 6, deskY + 1],
-      [cx - 2, deskY + 8],
-      [cx - 52, deskY + 9],
-    ],
-    "#dfe7f3",
-  );
-  box(cx - 46, deskY + 4, 28, 1.5, "#7b8ea8");
-  box(cx + 60, deskY - 14, 16, 19, "#cfd9ea");
-  box(cx + 69, deskY - 14, 7, 19, "#9fb0c8");
-  box(cx + 76, deskY - 10, 6, 3, "#9fb0c8");
-  box(cx + 79, deskY - 10, 3, 10, "#9fb0c8");
-  box(cx + 76, deskY - 3, 6, 3, "#9fb0c8");
-  box(cx + 60, deskY - 7, 16, 5, accent);
-
-  ctx.strokeStyle = "rgba(255, 255, 255, 0.28)";
-  ctx.lineWidth = 4;
-  ctx.strokeRect(x + 2, y + 2, w - 4, h - 4);
+  box(cx - 34, collarY + 23, 5, 6, "#06080d");
   ctx.restore();
+}
+
+/**
+ * Draws the picture inside the OTS board: plain broadcast charts and
+ * diagrams in thick strokes, with no labels too small to read across the room.
+ */
+function drawBroadcastGraphic(
+  ctx: CanvasRenderingContext2D,
+  kind: NewsGraphic,
+  x: number,
+  y: number,
+  w: number,
+  h: number,
+  theme: BroadcastTheme,
+  time: number,
+): void {
+  const isNight = kind === "static_eye";
+  ctx.fillStyle = isNight ? "#121b2e" : "#e9edf3";
+  ctx.fillRect(x, y, w, h);
+
+  const px = x + 22;
+  const py = y + 14;
+  const pw = w - 44;
+  const ph = h - 28;
+  const cx = x + w / 2;
+  const cy = y + h / 2;
+
+  const inkNavy = "#193866";
+  const inkRed = "#c41e26";
+  const inkGold = "#c48414";
+  const inkSlate = "#5d6f86";
+  const paleTrack = "#c4cedb";
+
+  switch (kind) {
+    case "crossover": {
+      // In-person time falling as screen time rises.
+      ctx.strokeStyle = inkSlate;
+      ctx.lineWidth = 3;
+      ctx.beginPath();
+      ctx.moveTo(px, py - 4);
+      ctx.lineTo(px, py + ph);
+      ctx.lineTo(px + pw, py + ph);
+      ctx.stroke();
+
+      ctx.lineWidth = 6;
+      ctx.lineJoin = "round";
+      ctx.strokeStyle = inkNavy;
+      ctx.beginPath();
+      ctx.moveTo(px + 8, py + ph - 8);
+      ctx.lineTo(px + pw * 0.42, py + ph * 0.52);
+      ctx.lineTo(px + pw - 8, py + 4);
+      ctx.stroke();
+
+      ctx.strokeStyle = inkRed;
+      ctx.beginPath();
+      ctx.moveTo(px + 8, py + 4);
+      ctx.lineTo(px + pw * 0.52, py + ph * 0.5);
+      ctx.lineTo(px + pw - 8, py + ph - 8);
+      ctx.stroke();
+
+      ctx.fillStyle = inkRed;
+      ctx.beginPath();
+      ctx.arc(px + pw - 8, py + ph - 8, 8, 0, Math.PI * 2);
+      ctx.fill();
+      break;
+    }
+
+    case "bars_down": {
+      // Falling bars, the last two in red.
+      ctx.strokeStyle = inkSlate;
+      ctx.lineWidth = 3;
+      ctx.beginPath();
+      ctx.moveTo(px, py + ph);
+      ctx.lineTo(px + pw, py + ph);
+      ctx.stroke();
+
+      const bars = [0.98, 0.84, 0.68, 0.52, 0.36, 0.24];
+      const gap = 10;
+      const bw = Math.floor((pw - 12 - gap * (bars.length - 1)) / bars.length);
+      bars.forEach((v, i) => {
+        const bh = Math.round(v * (ph + 6));
+        const bx = px + 6 + i * (bw + gap);
+        ctx.fillStyle = i >= 4 ? inkRed : inkNavy;
+        ctx.fillRect(bx, py + ph - bh, bw, bh);
+      });
+      break;
+    }
+
+    case "panopticon": {
+      // A phone camera pointed at a figure.
+      ctx.fillStyle = inkNavy;
+      ctx.beginPath();
+      ctx.arc(cx - 62, cy - 20, 13, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.fillRect(cx - 76, cy - 3, 28, 38);
+
+      ctx.fillStyle = "rgba(196, 30, 38, 0.2)";
+      ctx.beginPath();
+      ctx.moveTo(cx + 38, cy - 6);
+      ctx.lineTo(cx - 38, cy - 36);
+      ctx.lineTo(cx - 38, cy + 36);
+      ctx.closePath();
+      ctx.fill();
+
+      ctx.fillStyle = "#1d2838";
+      ctx.fillRect(cx + 36, cy - 34, 42, 68);
+      ctx.fillStyle = "#cfd8e4";
+      ctx.fillRect(cx + 41, cy - 27, 32, 52);
+      ctx.fillStyle = inkNavy;
+      ctx.beginPath();
+      ctx.arc(cx + 57, cy - 6, 13, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.fillStyle = Math.floor(time * 2) % 2 === 0 ? inkRed : "#7d1c22";
+      ctx.beginPath();
+      ctx.arc(cx + 57, cy - 6, 6, 0, Math.PI * 2);
+      ctx.fill();
+      break;
+    }
+
+    case "lawsuit": {
+      // A courthouse beside a red stamp.
+      const hx = cx - 46;
+      ctx.fillStyle = inkNavy;
+      ctx.beginPath();
+      ctx.moveTo(hx - 64, cy - 14);
+      ctx.lineTo(hx, cy - 38);
+      ctx.lineTo(hx + 64, cy - 14);
+      ctx.closePath();
+      ctx.fill();
+      ctx.fillRect(hx - 68, cy - 14, 136, 7);
+      for (const offset of [-52, -21, 10, 41]) {
+        ctx.fillRect(hx + offset, cy - 5, 12, 31);
+      }
+      ctx.fillRect(hx - 68, cy + 26, 136, 9);
+
+      ctx.fillStyle = inkRed;
+      ctx.fillRect(cx + 34, cy - 20, 92, 40);
+      ctx.fillStyle = "#ffffff";
+      ctx.font = `800 26px ${FONT_DISPLAY}`;
+      ctx.textAlign = "center";
+      ctx.textBaseline = "middle";
+      ctx.fillText("51 AGs", cx + 80, cy + 1);
+      break;
+    }
+
+    case "face_grid": {
+      // A face outline measured against three meters.
+      ctx.strokeStyle = inkNavy;
+      ctx.lineWidth = 5;
+      ctx.beginPath();
+      ctx.ellipse(cx - 64, cy, 26, 34, 0, 0, Math.PI * 2);
+      ctx.stroke();
+
+      ctx.strokeStyle = inkSlate;
+      ctx.lineWidth = 3;
+      for (const dy of [-20, 0, 20]) {
+        ctx.beginPath();
+        ctx.moveTo(cx - 30, cy + dy);
+        ctx.lineTo(cx - 6, cy + dy);
+        ctx.stroke();
+      }
+      const widths = [96, 66, 116];
+      widths.forEach((bw, i) => {
+        const by = cy - 27 + i * 20;
+        ctx.fillStyle = paleTrack;
+        ctx.fillRect(cx, by, 120, 14);
+        ctx.fillStyle = i === 2 ? inkRed : inkNavy;
+        ctx.fillRect(cx, by, bw, 14);
+      });
+      break;
+    }
+
+    case "stream_eye": {
+      // The waking day as one bar, more than half of it red.
+      const barY = cy - 22;
+      const barH = 44;
+      ctx.fillStyle = paleTrack;
+      ctx.fillRect(px, barY, pw, barH);
+      const fillW = Math.round(pw * 0.54);
+      ctx.fillStyle = inkRed;
+      ctx.fillRect(px, barY, fillW, barH);
+
+      ctx.strokeStyle = inkSlate;
+      ctx.lineWidth = 3;
+      for (let i = 0; i <= 4; i++) {
+        const tx = px + Math.round((pw * i) / 4);
+        ctx.beginPath();
+        ctx.moveTo(tx, barY + barH);
+        ctx.lineTo(tx, barY + barH + 10);
+        ctx.stroke();
+      }
+      break;
+    }
+
+    case "fracture": {
+      // A poll split 60 / 40, cracked where the halves meet.
+      const barY = cy - 24;
+      const barH = 48;
+      const splitX = px + Math.round(pw * 0.6);
+      ctx.fillStyle = inkRed;
+      ctx.fillRect(px, barY, splitX - px - 3, barH);
+      ctx.fillStyle = inkNavy;
+      ctx.fillRect(splitX + 3, barY, px + pw - splitX - 3, barH);
+
+      ctx.fillStyle = "#e9edf3";
+      ctx.beginPath();
+      ctx.moveTo(splitX - 2, barY - 2);
+      ctx.lineTo(splitX + 5, barY + barH / 2);
+      ctx.lineTo(splitX - 3, barY + barH + 2);
+      ctx.lineTo(splitX + 3, barY + barH + 2);
+      ctx.lineTo(splitX + 9, barY + barH / 2);
+      ctx.lineTo(splitX + 3, barY - 2);
+      ctx.closePath();
+      ctx.fill();
+
+      ctx.fillStyle = "#ffffff";
+      ctx.font = `800 28px ${FONT_DISPLAY}`;
+      ctx.textAlign = "center";
+      ctx.textBaseline = "middle";
+      ctx.fillText("60%", (px + splitX) / 2, barY + barH / 2 + 1);
+      ctx.fillText("40%", (splitX + px + pw) / 2 + 2, barY + barH / 2 + 1);
+      break;
+    }
+
+    case "synthetic": {
+      // A person's message answered by a chatbot.
+      ctx.fillStyle = inkNavy;
+      ctx.fillRect(px + 4, py, 108, 34);
+      ctx.beginPath();
+      ctx.moveTo(px + 16, py + 34);
+      ctx.lineTo(px + 30, py + 34);
+      ctx.lineTo(px + 14, py + 46);
+      ctx.closePath();
+      ctx.fill();
+      ctx.fillStyle = "#e9edf3";
+      ctx.fillRect(px + 16, py + 10, 70, 5);
+      ctx.fillRect(px + 16, py + 20, 48, 5);
+
+      ctx.fillStyle = inkRed;
+      ctx.fillRect(px + pw - 116, py + 30, 112, 36);
+      ctx.beginPath();
+      ctx.moveTo(px + pw - 20, py + 66);
+      ctx.lineTo(px + pw - 34, py + 66);
+      ctx.lineTo(px + pw - 14, py + 78);
+      ctx.closePath();
+      ctx.fill();
+      ctx.fillStyle = "#ffffff";
+      for (const dx of [-84, -60, -36]) {
+        ctx.beginPath();
+        ctx.arc(px + pw + dx, py + 48, 6, 0, Math.PI * 2);
+        ctx.fill();
+      }
+      break;
+    }
+
+    case "collapse": {
+      // Trust in three institutions, every bar nearly empty.
+      for (let i = 0; i < 3; i++) {
+        const ry = py - 2 + i * 28;
+        const pct = [0.12, 0.16, 0.17][i];
+        ctx.fillStyle = paleTrack;
+        ctx.fillRect(px, ry, pw, 20);
+        ctx.fillStyle = i === 1 ? inkRed : inkGold;
+        ctx.fillRect(px, ry, Math.round(pw * pct), 20);
+      }
+      break;
+    }
+
+    case "static_eye": {
+      // A bedside clock at three in the morning beside a lit phone.
+      ctx.fillStyle = "#1c2840";
+      ctx.fillRect(px - 6, cy - 32, 140, 64);
+      ctx.strokeStyle = "#485d80";
+      ctx.lineWidth = 3;
+      ctx.strokeRect(px - 6, cy - 32, 140, 64);
+
+      ctx.fillStyle = Math.floor(time * 1.5) % 2 === 0 ? "#ff4650" : "#c22e38";
+      ctx.font = `800 44px ${FONT_DISPLAY}`;
+      ctx.textAlign = "center";
+      ctx.textBaseline = "middle";
+      ctx.fillText("03:00", px + 64, cy + 2);
+
+      const glow = ctx.createRadialGradient(
+        px + pw - 30,
+        cy,
+        6,
+        px + pw - 30,
+        cy,
+        46,
+      );
+      glow.addColorStop(0, "rgba(182, 214, 255, 0.4)");
+      glow.addColorStop(1, "rgba(182, 214, 255, 0)");
+      ctx.fillStyle = glow;
+      ctx.fillRect(px + pw - 78, y + 4, 96, h - 8);
+
+      ctx.fillStyle = "#0b111c";
+      ctx.fillRect(px + pw - 50, cy - 30, 40, 60);
+      ctx.fillStyle = "#d9e8ff";
+      ctx.fillRect(px + pw - 45, cy - 24, 30, 48);
+      ctx.fillStyle = theme.otsAccent;
+      ctx.fillRect(px + pw - 40, cy - 10, 20, 6);
+      ctx.fillRect(px + pw - 40, cy + 1, 14, 6);
+      break;
+    }
+  }
 }
 
 function fitWrappedSize(
@@ -706,255 +1252,41 @@ function fitWrappedSize(
   maxLines: number,
   startSize: number,
   minSize: number,
+  fontFamily: string,
+  weight: string,
 ): number {
   for (let size = startSize; size >= minSize; size -= 2) {
-    ctx.font = `bold ${size}px ${FONT_STACK}`;
-    if (countWrappedLines(ctx, text, maxWidth) <= maxLines) return size;
+    ctx.font = `${weight} ${size}px ${fontFamily}`;
+    if (wrapLines(ctx, text, maxWidth, maxLines + 1).length <= maxLines) {
+      return size;
+    }
   }
   return minSize;
 }
 
-function countWrappedLines(
+function wrapLines(
   ctx: CanvasRenderingContext2D,
   text: string,
   maxWidth: number,
-): number {
-  const words = text.split(" ");
-  let line = "";
-  let rows = 1;
-  for (const word of words) {
-    const next = line === "" ? word : `${line} ${word}`;
-    if (ctx.measureText(next).width > maxWidth && line !== "") {
-      rows += 1;
-      line = word;
-    } else {
-      line = next;
-    }
-  }
-  return rows;
-}
-
-function drawWrapped(
-  ctx: CanvasRenderingContext2D,
-  text: string,
-  x: number,
-  y: number,
-  maxWidth: number,
-  lineHeight: number,
   maxLines: number,
-): void {
+): string[] {
   const words = text.split(" ");
+  const lines: string[] = [];
   let line = "";
-  let row = 0;
   for (const word of words) {
     const next = line === "" ? word : `${line} ${word}`;
     if (ctx.measureText(next).width > maxWidth && line !== "") {
-      ctx.fillText(line, x, y + row * lineHeight);
-      row += 1;
-      if (row >= maxLines) return;
+      lines.push(line);
+      if (lines.length >= maxLines) return lines;
       line = word;
     } else {
       line = next;
     }
   }
-  if (line !== "" && row < maxLines) {
-    ctx.fillText(line, x, y + row * lineHeight);
+  if (line !== "" && lines.length < maxLines) {
+    lines.push(line);
   }
-}
-
-function drawGraphic(
-  ctx: CanvasRenderingContext2D,
-  kind: NewsGraphic,
-  x: number,
-  y: number,
-  w: number,
-  h: number,
-  accent: string,
-  time: number,
-): void {
-  // Inner frame
-  ctx.fillStyle = "rgba(4, 7, 13, 0.85)";
-  ctx.fillRect(x, y, w, h);
-  ctx.strokeStyle = "rgba(255, 255, 255, 0.28)";
-  ctx.lineWidth = 3;
-  ctx.strokeRect(x + 1.5, y + 1.5, w - 3, h - 3);
-
-  const px = x + 14;
-  const py = y + 14;
-  const pw = w - 28;
-  const ph = h - 28;
-  const cx = x + w / 2;
-  const cy = y + h / 2;
-
-  switch (kind) {
-    case "crossover": {
-      ctx.strokeStyle = "#38e8ff";
-      ctx.lineWidth = 5;
-      ctx.beginPath();
-      ctx.moveTo(px, py + ph - 6);
-      ctx.lineTo(px + pw, py + 6);
-      ctx.stroke();
-
-      ctx.strokeStyle = "#ff4e64";
-      ctx.beginPath();
-      ctx.moveTo(px, py + 10);
-      ctx.lineTo(px + pw, py + ph - 6);
-      ctx.stroke();
-
-      ctx.fillStyle = "#ffffff";
-      ctx.fillRect(cx - 5, cy - 5, 10, 10);
-      break;
-    }
-    case "bars_down": {
-      const bars = [0.92, 0.78, 0.62, 0.45, 0.34, 0.28];
-      const gap = 5;
-      const bw = Math.floor((pw - gap * (bars.length - 1)) / bars.length);
-      bars.forEach((v, i) => {
-        const bh = Math.round(v * ph);
-        ctx.fillStyle = i >= 4 ? "#ff3854" : accent;
-        ctx.fillRect(px + i * (bw + gap), py + ph - bh, bw, bh);
-      });
-      break;
-    }
-    case "panopticon": {
-      ctx.strokeStyle = accent;
-      ctx.lineWidth = 4;
-      ctx.beginPath();
-      ctx.ellipse(cx, cy, 42, 24, 0, 0, Math.PI * 2);
-      ctx.stroke();
-      const lookX = Math.sin(time * 1.4) * 9;
-      ctx.fillStyle = "#ff2d46";
-      ctx.beginPath();
-      ctx.arc(cx + lookX, cy, 13, 0, Math.PI * 2);
-      ctx.fill();
-      ctx.fillStyle = "#ffffff";
-      ctx.fillRect(cx + lookX - 4, cy - 4, 5, 5);
-      ctx.fillStyle = "#ffffff";
-      ctx.fillRect(px, py, 12, 3);
-      ctx.fillRect(px, py, 3, 12);
-      ctx.fillRect(px + pw - 12, py, 12, 3);
-      ctx.fillRect(px + pw - 3, py, 3, 12);
-      ctx.fillRect(px, py + ph - 3, 12, 3);
-      ctx.fillRect(px, py + ph - 12, 3, 12);
-      ctx.fillRect(px + pw - 12, py + ph - 3, 12, 3);
-      ctx.fillRect(px + pw - 3, py + ph - 12, 3, 12);
-      break;
-    }
-    case "lawsuit": {
-      ctx.strokeStyle = "#38e8ff";
-      ctx.lineWidth = 4;
-      ctx.strokeRect(cx - 24, cy - 30, 48, 60);
-      ctx.fillStyle = accent;
-      ctx.fillRect(cx - 16, cy - 19, 32, 8);
-      ctx.fillRect(cx - 16, cy - 4, 32, 8);
-      ctx.fillRect(cx - 16, cy + 11, 32, 8);
-      ctx.strokeStyle = "#ff2e44";
-      ctx.lineWidth = 5;
-      ctx.beginPath();
-      ctx.moveTo(px + 6, py + ph - 4);
-      ctx.lineTo(px + pw - 6, py + 4);
-      ctx.stroke();
-      break;
-    }
-    case "face_grid": {
-      ctx.strokeStyle = "#5ee7ff";
-      ctx.lineWidth = 3;
-      ctx.beginPath();
-      ctx.ellipse(cx, cy, 26, 34, 0, 0, Math.PI * 2);
-      ctx.stroke();
-      ctx.strokeStyle = accent;
-      ctx.lineWidth = 2;
-      ctx.beginPath();
-      ctx.moveTo(cx - 38, cy - 6);
-      ctx.lineTo(cx + 38, cy - 6);
-      ctx.moveTo(cx - 32, cy + 14);
-      ctx.lineTo(cx + 32, cy + 14);
-      ctx.moveTo(cx, cy - 38);
-      ctx.lineTo(cx, cy + 38);
-      ctx.stroke();
-      const scanY = py + ((time * 34) % ph);
-      ctx.fillStyle = "rgba(255, 64, 96, 0.85)";
-      ctx.fillRect(px, scanY, pw, 3);
-      break;
-    }
-    case "stream_eye": {
-      ctx.fillStyle = "#ff2e44";
-      ctx.fillRect(px + 2, py + 2, 62, 20);
-      ctx.fillStyle = "#ffffff";
-      ctx.font = `bold 13px ${FONT_STACK}`;
-      ctx.textBaseline = "middle";
-      ctx.fillText("18.4K", px + 10, py + 13);
-      ctx.strokeStyle = "rgba(255, 255, 255, 0.45)";
-      ctx.lineWidth = 3;
-      ctx.strokeRect(px + 10, py + 30, pw - 20, ph - 34);
-      ctx.fillStyle = "#38e8ff";
-      ctx.fillRect(cx - 8, py + 46, 16, 24);
-      break;
-    }
-    case "fracture": {
-      ctx.strokeStyle = "#38e8ff";
-      ctx.lineWidth = 5;
-      ctx.beginPath();
-      ctx.moveTo(px, cy);
-      ctx.lineTo(px + pw * 0.38, py + 8);
-      ctx.lineTo(px + pw * 0.44, py + ph - 8);
-      ctx.stroke();
-
-      ctx.strokeStyle = "#ff2e44";
-      ctx.beginPath();
-      ctx.moveTo(px + pw, cy);
-      ctx.lineTo(px + pw * 0.62, py + ph - 8);
-      ctx.lineTo(px + pw * 0.56, py + 8);
-      ctx.stroke();
-
-      ctx.fillStyle = "#ffffff";
-      ctx.fillRect(cx - 1.5, py + 4, 3, ph - 8);
-      break;
-    }
-    case "synthetic": {
-      for (let i = 0; i < 9; i++) {
-        const amp =
-          9 + Math.abs(Math.sin(time * 3.5 + i * 0.7)) * (i === 4 ? 30 : 20);
-        ctx.fillStyle = i % 2 === 0 ? "#38e8ff" : accent;
-        ctx.fillRect(px + i * 11.5, cy - amp, 7, amp * 2);
-      }
-      break;
-    }
-    case "collapse": {
-      ctx.strokeStyle = "#ff334f";
-      ctx.lineWidth = 5;
-      ctx.beginPath();
-      ctx.moveTo(px, py + 12);
-      ctx.lineTo(px + pw * 0.25, py + 20);
-      ctx.lineTo(px + pw * 0.5, py + 36);
-      ctx.lineTo(px + pw * 0.72, py + 60);
-      ctx.lineTo(px + pw, py + ph - 4);
-      ctx.stroke();
-      ctx.fillStyle = "rgba(255, 51, 79, 0.28)";
-      ctx.lineTo(px + pw, py + ph);
-      ctx.lineTo(px, py + ph);
-      ctx.closePath();
-      ctx.fill();
-      break;
-    }
-    case "static_eye": {
-      ctx.strokeStyle = "#ff2e44";
-      ctx.lineWidth = 4;
-      ctx.beginPath();
-      ctx.moveTo(px, cy);
-      ctx.lineTo(px + pw, cy);
-      ctx.stroke();
-      const pulse = 15 + Math.sin(time * 4) * 5;
-      ctx.strokeStyle = "rgba(255, 46, 68, 0.9)";
-      ctx.lineWidth = 3.5;
-      ctx.beginPath();
-      ctx.arc(cx, cy, pulse, 0, Math.PI * 2);
-      ctx.stroke();
-      ctx.fillStyle = "#ff2e44";
-      ctx.fillRect(cx - 5, cy - 5, 10, 10);
-      break;
-    }
-  }
+  return lines;
 }
 
 function drawStatic(
