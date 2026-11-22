@@ -29,7 +29,8 @@ export const MATERIAL = {
   screen: 7,
   /** The window panes, which gather dirt. */
   glass: 8,
-  /** A cobweb in a corner. The extra numbers run 0 to 1 from the corner. */
+  /** A cobweb in a corner. Extra runs 0 to 1 from the corner; colour carries
+      (seed, startDecay, fullDecay) for organic, staggered growth. */
   web: 9,
   /** The extra numbers run 0 to 1 across it, for these two as well. */
   rug: 10,
@@ -536,76 +537,126 @@ vec3 pictureColor(vec2 uv) {
   return stained(color, fbm(uv * 2.5 + 40.0) + 0.1, mix(1.25, 0.5, uDecay), vec3(0.6, 0.5, 0.36));
 }
 
-// Woven upholstery, chunky knit blankets, and textured linen curtains.
-vec3 fabricColor(vec3 base, vec3 at, vec3 n, float kind) {
-  vec2 raw = abs(n.y) > 0.5 ? at.xz : (abs(n.x) > 0.5 ? at.zy : at.xy);
-  vec2 uv = texels(raw, 3.5);
-  vec3 color = base;
+// Woven upholstery, chunky knit blankets, and textured linen: smooth
+// triplanar blend avoids projection seams across curved pillows and bolsters.
+float fabricWeave(vec2 raw, float kind) {
+  vec2 uv = texels(raw, 3.2);
   if (kind < 0.5) {
     // Wide-wale ribbed corduroy (red couch).
-    float wale = 0.5 + 0.5 * sin(uv.x * 0.58 + noise(uv * 0.04) * 0.5);
-    float nap = noise(uv * 0.24);
-    color *= (0.84 + 0.22 * wale) * (0.93 + 0.12 * nap);
+    float rib = 0.5 + 0.5 * sin(uv.x * 0.62 + noise(uv * 0.035) * 0.45);
+    float wale = pow(rib, 0.72);
+    float nap = noise(uv * 0.28);
+    return (0.83 + 0.24 * wale) * (0.94 + 0.1 * nap);
   } else if (kind < 1.5) {
     // Chunky herringbone / cable-knit throw blanket.
-    float col = floor(uv.x / 14.0);
+    float col = floor(uv.x / 11.0);
     float dir = mod(col, 2.0) < 0.5 ? 1.0 : -1.0;
-    float chevron = abs(fract((uv.y + uv.x * dir) / 14.0) - 0.5) * 2.0;
-    float wool = noise(uv * 0.32);
-    color *= (0.83 + 0.24 * chevron) * (0.92 + 0.14 * wool);
-  } else {
-    // Slubbed woven linen (curtains, pillows, wool coat).
-    float warp = noise(vec2(uv.x * 0.38, uv.y * 0.05));
-    float weft = noise(vec2(uv.x * 0.05, uv.y * 0.38));
-    color *= 0.88 + 0.18 * (warp * 0.55 + weft * 0.45);
+    float chevron = abs(fract((uv.y + uv.x * dir) / 11.0) - 0.5) * 2.0;
+    float stitch = smoothstep(0.12, 0.88, chevron);
+    float wool = noise(uv * 0.34);
+    return (0.83 + 0.24 * stitch) * (0.93 + 0.13 * wool);
   }
+  // Slubbed woven linen (sheets, curtains, pillows, hanging jacket).
+  float warp = noise(vec2(uv.x * 0.42, uv.y * 0.06));
+  float weft = noise(vec2(uv.x * 0.06, uv.y * 0.42));
+  float thread = 0.5 + 0.5 * sin(uv.x * 0.9) * sin(uv.y * 0.9);
+  return 0.9 + 0.13 * (warp * 0.55 + weft * 0.45) + 0.03 * thread;
+}
+
+vec3 fabricColor(vec3 base, vec3 at, vec3 n, float kind) {
+  vec3 w = pow(abs(n), vec3(4.0));
+  w /= max(w.x + w.y + w.z, 1e-4);
+  float modVal =
+    fabricWeave(at.zy, kind) * w.x +
+    fabricWeave(at.xz, kind) * w.y +
+    fabricWeave(at.xy, kind) * w.z;
+  vec3 color = base * modVal;
   float value = dot(color, vec3(0.333));
   return mix(color, vec3(value) * vec3(0.8, 0.75, 0.69), uDecay * 0.68);
 }
 
-// Patchwork diamond-stitched cabin quilt draped seamlessly over the bed.
-vec3 quiltColor(vec3 at, vec3 n) {
-  vec2 raw = abs(n.y) > 0.5
-    ? at.xz
-    : (abs(n.x) > 0.5
-      ? vec2(at.x + (224.0 - at.y) * sign(n.x), at.z)
-      : vec2(at.x, at.z + (224.0 - at.y) * sign(n.z)));
-  vec2 uv = texels(raw, 4.5);
+// Heirloom Nordic woven cabin duvet draped seamlessly over the bed using
+// continuous surface UVs (u across width + draped side, v from foot to head).
+vec3 quiltColor(vec2 uv, vec3 at) {
+  vec2 q = squares(uv, vec2(152.0, 168.0));
 
-  const float BLOCK = 84.0;
-  vec2 cell = floor(uv / BLOCK);
-  vec2 f = fract(uv / BLOCK);
+  // Harmonious cottage palette tuned to the curated 24-ink table.
+  vec3 cream = vec3(0.95, 0.9, 0.81);
+  vec3 oat = vec3(0.88, 0.81, 0.69);
+  vec3 sageLight = vec3(0.62, 0.75, 0.64);
+  vec3 sageDeep = vec3(0.41, 0.57, 0.47);
+  vec3 terra = vec3(0.82, 0.41, 0.29);
+  vec3 gold = vec3(0.9, 0.74, 0.36);
+  vec3 indigo = vec3(0.28, 0.41, 0.56);
 
-  // Structured Nordic-cabin patchwork palette so adjacent squares contrast cleanly.
-  int parity = int(mod(cell.x + cell.y, 2.0) + 0.5);
-  float pick = hash12(cell * 1.7 + 13.0);
-  vec3 patchCol;
-  if (parity == 0) {
-    patchCol = pick < 0.42
-      ? vec3(0.92, 0.87, 0.76)   // warm ivory linen
-      : (pick < 0.74 ? vec3(0.87, 0.65, 0.24) : vec3(0.41, 0.57, 0.43)); // ochre / sage
-  } else {
-    patchCol = pick < 0.46
-      ? vec3(0.22, 0.35, 0.52)   // faded denim indigo
-      : (pick < 0.8 ? vec3(0.76, 0.31, 0.22) : vec3(0.3, 0.48, 0.46));   // rust / teal
+  // Soft woven cabin plaid / gingham check in the interior field.
+  vec2 plaid = q * vec2(5.5, 6.0);
+  vec2 pf = fract(plaid);
+  float bx = smoothstep(0.16, 0.2, pf.x) * (1.0 - smoothstep(0.54, 0.58, pf.x));
+  float by = smoothstep(0.16, 0.2, pf.y) * (1.0 - smoothstep(0.54, 0.58, pf.y));
+  vec3 color = mix(cream, sageLight, clamp(bx + by, 0.0, 1.0) * 0.62);
+  color = mix(color, sageDeep, bx * by * 0.68);
+
+  // Delicate terracotta & antique-gold woven windowpane pinstripes.
+  float pinX = 1.0 - smoothstep(0.014, 0.032, abs(pf.x - 0.79));
+  float pinY = 1.0 - smoothstep(0.014, 0.032, abs(pf.y - 0.79));
+  color = mix(color, terra, max(pinX, pinY) * 0.52);
+  float fineX = 1.0 - smoothstep(0.008, 0.02, abs(pf.x - 0.37));
+  float fineY = 1.0 - smoothstep(0.008, 0.02, abs(pf.y - 0.37));
+  color = mix(color, gold, max(fineX, fineY) * 0.36);
+
+  // Framed Nordic folkloric border along the draped side hem & top/bottom edges.
+  float edgeDist = min(min(1.0 - q.x, q.y), 1.0 - q.y);
+  float outerHem = 1.0 - smoothstep(0.018, 0.026, edgeDist);
+  float borderBand = smoothstep(0.03, 0.038, edgeDist) * (1.0 - smoothstep(0.095, 0.104, edgeDist));
+  float innerTrim = smoothstep(0.112, 0.118, edgeDist) * (1.0 - smoothstep(0.128, 0.135, edgeDist));
+
+  color = mix(color, oat, outerHem * 0.85);
+  color = mix(color, indigo, innerTrim * 0.58);
+  if (borderBand > 0.01) {
+    // Repeating cream & gold woven Nordic diamond motifs inside the terracotta band.
+    float along = (1.0 - q.x < min(q.y, 1.0 - q.y)) ? q.y : q.x;
+    float mid = (edgeDist - 0.034) / 0.066 - 0.5;
+    float rep = fract(along * 22.0) - 0.5;
+    float star = 1.0 - step(0.32, abs(rep) + abs(mid) * 1.15);
+    float core = 1.0 - step(0.14, abs(rep) + abs(mid) * 1.15);
+    vec3 bandCol = mix(terra, cream, star * 0.88);
+    bandCol = mix(bandCol, gold, core * 0.8);
+    color = mix(color, bandCol, borderBand * 0.88);
   }
 
-  // Tiny woven check inside each patch + stitched border seam.
-  float linen = noise(uv * 0.22);
-  patchCol *= 0.91 + 0.14 * linen;
-  float seam = min(min(f.x, 1.0 - f.x), min(f.y, 1.0 - f.y));
-  patchCol *= mix(0.74, 1.0, smoothstep(0.0, 0.055, seam));
+  // Heirloom diamond quilting: gentle pillowy loft puffing & stitched seams.
+  vec2 qGrid = q * vec2(11.0, 13.0);
+  float d1 = abs(fract(qGrid.x + qGrid.y) - 0.5) * 2.0;
+  float d2 = abs(fract(qGrid.x - qGrid.y) - 0.5) * 2.0;
+  float dMin = min(d1, d2);
+  float stitch = 1.0 - smoothstep(0.0, 0.09, dMin);
+  float puff = 0.94 + 0.09 * smoothstep(0.0, 0.55, dMin);
+  color *= puff;
+  color = mix(color, color * 0.82, stitch * 0.52);
 
-  // Diagonal quilted diamond stitching & gentle loft puffing.
-  float d1 = abs(fract((uv.x + uv.y) / 42.0) - 0.5) * 2.0;
-  float d2 = abs(fract((uv.x - uv.y) / 42.0) - 0.5) * 2.0;
-  float stitch = 1.0 - smoothstep(0.0, 0.11, min(d1, d2));
-  float puff = 0.94 + 0.09 * min(d1, d2);
-  vec3 color = patchCol * puff;
-  color = mix(color, color * 0.72, stitch * 0.55);
+  // Fine woven linen slub texture.
+  float warp = noise(vec2(q.x * 190.0, q.y * 34.0));
+  float weft = noise(vec2(q.x * 34.0, q.y * 190.0));
+  color *= 0.94 + 0.1 * (warp * 0.5 + weft * 0.5);
 
+  // Subtle fading & damp patina as scrolling drags on.
   float value = dot(color, vec3(0.333));
-  return mix(color, vec3(value) * vec3(0.8, 0.75, 0.68), uDecay * 0.68);
+  color = mix(color, vec3(value) * vec3(0.81, 0.76, 0.69), uDecay * 0.66);
+  return stained(color, fbm(at.xz * 0.005 + 42.0), mix(1.24, 0.5, uDecay), vec3(0.68, 0.6, 0.48));
+}
+
+// Gentle quilted diamond puff relief so window light & firelight graze the loft.
+vec3 quiltNormal(vec3 face, vec2 uv) {
+  vec2 qGrid = squares(uv, vec2(152.0, 168.0)) * vec2(11.0, 13.0);
+  float p1 = fract(qGrid.x + qGrid.y) * 2.0 - 1.0;
+  float p2 = fract(qGrid.x - qGrid.y) * 2.0 - 1.0;
+  float gx = sin(p1 * 3.14159) + sin(p2 * 3.14159);
+  float gz = sin(p1 * 3.14159) - sin(p2 * 3.14159);
+  vec3 helper = abs(face.y) < 0.9 ? vec3(0.0, 1.0, 0.0) : vec3(1.0, 0.0, 0.0);
+  vec3 t1 = normalize(cross(helper, face));
+  vec3 t2 = cross(face, t1);
+  return normalize(face + t1 * (gx * 0.08) + t2 * (gz * 0.08));
 }
 
 // Running-bond kiln-fired brick chimney breast & heat shield with soot patina.
@@ -695,18 +746,84 @@ vec3 metalColor(vec3 base, vec3 at, float kind) {
   return mix(color, vec3(value) * vec3(0.76, 0.74, 0.72), uDecay * (kind < 1.5 ? 0.45 : 0.55));
 }
 
-// How much of a cobweb is at this spot: threads out from the corner, and
-// sagging threads between them. It grows from the corner.
-float webAt(vec2 uv) {
-  float r = length(uv);
-  float turn = atan(uv.y, uv.x) / 1.5708 * 6.0;
-  float off = abs(fract(turn + 0.5) - 0.5);
-  float spoke = off / 6.0 * 1.5708 * r;
-  float sagged = r + 0.028 * (1.0 - 4.0 * off * off);
-  float ring = abs(fract(sagged * 8.0 + 0.5) - 0.5) / 8.0;
-  float thread = 1.0 - step(0.013, min(spoke, ring));
-  float grown = smoothstep(0.2, 0.85, uDecay) * 1.02;
-  return thread * step(r, grown) * step(0.03, r);
+// How much cobweb silk is at this spot (0 = empty, up to 1 = thick anchor).
+// meta carries per-web (seed, startDecay, fullDecay) so webs colonize the
+// room asynchronously with unique spoke angles, sagging spiral strands,
+// occasional outer breaks, and a concave hammock outline that stays strictly
+// inside the two anchor edges.
+float webAt(vec2 uv, vec3 meta) {
+  float seed = meta.x;
+  float growth = smoothstep(meta.y, meta.z, uDecay);
+  if (growth <= 0.001) return 0.0;
+
+  // Mild per-web arm asymmetry while keeping the entire web inside [0, 1]^2.
+  vec2 arm = vec2(
+    mix(0.86, 1.0, hash12(vec2(seed * 37.0, 1.3))),
+    mix(0.86, 1.0, hash12(vec2(seed * 41.0, 2.9)))
+  );
+  vec2 p = uv / arm;
+
+  // Concave corner coordinate: 1 at both anchor tips (1, 0) & (0, 1), pulling
+  // inward along the diagonal like silk tensioned across a real corner.
+  float sum = p.x + p.y;
+  float sum2 = max(sum * sum, 0.0001);
+  float pinch = (4.0 * p.x * p.y) / sum2;
+  float sagDepth = 0.22 + 0.14 * hash12(vec2(seed * 53.0, 3.7));
+  float reach = sum * (1.0 + sagDepth * pinch);
+  if (reach > 1.02) return 0.0;
+
+  // Normalized angle across the 90-degree corner, gently bent & unevenly
+  // spaced per web so spokes feel hand-spun rather than geometric.
+  float ang = atan(p.y, p.x) / 1.5707963;
+  float bend = (noise(vec2(ang * 4.5 + seed * 19.0, reach * 3.0)) - 0.5) * 0.045 * reach;
+  float angW = clamp(ang + bend, 0.0, 1.0);
+  float angInset = (angW - 0.025) / 0.95;
+  float warp = sin(clamp(angInset, 0.0, 1.0) * 3.14159265) * (
+    0.042 * sin(angW * 6.2831853 + seed * 17.3) +
+    0.022 * cos(angW * 9.424778 + seed * 29.1)
+  );
+  float spokes = 5.0 + floor(hash12(vec2(seed * 71.0, 4.1)) * 2.0);
+  float sCoord = (angInset + warp) * spokes;
+
+  // Primary radial anchor spokes spin out first, with slight per-spoke reach
+  // variation so bridge threads lead ahead of the capture spiral.
+  float nearestSpoke = clamp(floor(sCoord + 0.5), 0.0, spokes);
+  float spokeDist = abs(sCoord - nearestSpoke) / spokes * 1.4922565 * length(p) * min(arm.x, arm.y);
+  float spokeJitter = 0.88 + 0.18 * hash12(vec2(nearestSpoke + 3.1, seed * 43.0));
+  float spokeMax = min(pow(growth, 0.72) * 1.04 * spokeJitter, 1.0);
+  float spoke = step(spokeDist, 0.0114) * step(reach, spokeMax) * step(0.02, reach);
+
+  // Continuous sagging capture spiral between spokes: tighter near the corner
+  // hub, wider further out, weaving sector-by-sector behind the spoke tips.
+  float inFan = step(0.0, sCoord) * step(sCoord, spokes);
+  float sector = floor(clamp(sCoord, 0.0, spokes - 0.0001));
+  float fSec = fract(clamp(sCoord, 0.0, spokes - 0.0001));
+  float cat = 4.0 * fSec * (1.0 - fSec);
+  float catSag = (0.045 + 0.055 * reach) * (0.75 + 0.5 * hash12(vec2(sector + 7.0, seed * 61.0)));
+  float sagged = reach + catSag * cat;
+
+  float ringCount = 6.5 + 2.5 * hash12(vec2(seed * 83.0, 5.9));
+  float ringPhase = pow(max(sagged, 0.0001), 0.8) * ringCount + sCoord * 0.18;
+  float ringIdx = floor(ringPhase + 0.5);
+  float ringSlope = 0.8 * ringCount * pow(max(sagged, 0.025), -0.2);
+  vec2 gradReach = (vec2(1.0) + (4.0 * sagDepth) * (p.yx * p.yx) / sum2) / arm;
+  float ringDist = abs(fract(ringPhase + 0.5) - 0.5) / (ringSlope * length(gradReach));
+
+  float ringProgress = smoothstep(0.08, 1.0, growth);
+  float ringTip = min(ringProgress * 0.94, 0.95) -
+    0.055 * (sCoord / spokes) * (1.0 - ringProgress * 0.45);
+  float tear = hash12(vec2(sector * 13.7 + ringIdx * 5.3, seed * 97.0));
+  float intact = step(0.14 * smoothstep(0.35, 0.9, reach), tear);
+  float ring = inFan * step(ringDist, 0.0108) * step(sagged, ringTip) *
+    step(0.055, reach) * intact;
+
+  // Fine dusty silk matting that gathers deep in the crook of mature webs.
+  float hubReach = 0.21 * smoothstep(0.28, 1.0, growth);
+  float hubWisp = fbm(p * 24.0 + seed * 31.0);
+  float hubDust = inFan * step(reach, hubReach * (0.62 + 0.72 * hubWisp)) *
+    step(0.45, hash12(floor(uv * 64.0) + seed * 11.0));
+
+  return max(max(spoke * 0.95, ring * 0.8), hubDust * 0.62);
 }
 
 // What you see through the window. Nothing in it moves: it is only lit
@@ -783,11 +900,12 @@ float cornerShade(vec3 at) {
 
 // --- Shadows ---
 
-// Whether the way from a spot towards a light runs into one of the shadow
-// casters: 0 if it does, 1 if it gets through. A box does not shade itself.
-float clearTowards(vec3 at, vec3 way, float far) {
+// How far along the way from a spot towards a light the nearest shadow
+// caster sits, or far if nothing is in the way. A box does not shade itself.
+float nearestBlock(vec3 at, vec3 way, float far) {
   // Nudged off zero, so no part of the way divides by nothing.
   vec3 inverse = 1.0 / (way + vec3(1e-5));
+  float nearest = far;
   for (int i = 0; i < CASTERS; i++) {
     vec3 a = (CASTER_MIN[i] - at) * inverse;
     vec3 b = (CASTER_MAX[i] - at) * inverse;
@@ -795,22 +913,70 @@ float clearTowards(vec3 at, vec3 way, float far) {
     vec3 farther = max(a, b);
     float enter = max(max(near.x, near.y), near.z);
     float leave = min(min(farther.x, farther.y), farther.z);
-    if (enter < leave && enter > 2.0 && enter < far) return 0.0;
+    if (enter < leave && enter > 2.0) nearest = min(nearest, enter);
   }
-  return 1.0;
+  return nearest;
+}
+
+// Whether the way from a spot towards a light runs into one of the shadow
+// casters: 0 if it does, 1 if it gets through.
+float clearTowards(vec3 at, vec3 way, float far) {
+  return nearestBlock(at, way, far) < far ? 0.0 : 1.0;
+}
+
+// The window is a wide pane of light, not a point: a thing close to the spot
+// it shades throws a crisp shadow, but the further the shadow reaches from
+// the thing (compared with how far the thing is from the window), the more
+// light comes round it, until it fades out. So nothing low throws a long
+// streak across the floor.
+float windowOpen(vec3 at, vec3 way, float far) {
+  float block = nearestBlock(at, way, far);
+  if (block >= far) return 1.0;
+  float spread = block / max(far - block, 1.0);
+  return smoothstep(0.15, 0.7, spread);
+}
+
+// What a caster covers seen from above (lowest x and z, then highest). A
+// thing standing close to a wall shades all the way to it, so no thin lit
+// strip shows between them.
+vec4 footprint(int i) {
+  vec2 lo = CASTER_MIN[i].xz;
+  vec2 hi = CASTER_MAX[i].xz;
+  vec2 wall = uRoom.xz + 10.0;
+  lo = mix(lo, -wall, step(lo, -uRoom.xz + 40.0));
+  hi = mix(hi, wall, step(uRoom.xz - 40.0, hi));
+  return vec4(lo, hi);
 }
 
 // The dark patch right under each caster, on the floor: hard edged, with a
 // lighter rim, and fainter under what stands higher. 1 is no shadow.
 float underShade(vec3 at) {
-  if (at.y > 2.0) return 1.0;
   float shade = 1.0;
+  if (at.y > 2.0) {
+    // Off the floor: right under a thing (a shelf on the wall, a table top)
+    // it is dark at once, fading out a little way down. The light comes
+    // down from the window, so the shadow leans away from it as it falls.
+    float lean = sign(at.x - uWindowAt.x) * 0.7;
+    float slack = vMaterial == M_WALL ? TEXEL * 0.5 : 0.0;
+    for (int i = 0; i < CASTERS; i++) {
+      // Walls are lit at the middle of each of their squares, so the row of
+      // squares that meets the underside can have its middle just above it.
+      float gap = CASTER_MIN[i].y - at.y;
+      if (gap < -slack) continue;
+      gap = max(gap, 0.0);
+      vec2 src = at.xz - vec2(gap * lean, 0.0);
+      vec4 box = footprint(i);
+      vec2 out2 = max(max(box.xy - 4.0 - src, src - box.zw - 4.0), 0.0);
+      if (max(out2.x, out2.y) > 0.0) continue;
+      shade = min(shade, mix(0.5, 1.0, smoothstep(0.0, 150.0, gap)));
+    }
+    return shade;
+  }
   for (int i = 0; i < CASTERS; i++) {
     float high = CASTER_MIN[i].y;
     float rim = 10.0 + high * 0.1;
-    vec2 lo = CASTER_MIN[i].xz;
-    vec2 hi = CASTER_MAX[i].xz;
-    vec2 out2 = max(max(lo - at.xz, at.xz - hi), 0.0);
+    vec4 box = footprint(i);
+    vec2 out2 = max(max(box.xy - at.xz, at.xz - box.zw), 0.0);
     float away = max(out2.x, out2.y);
     float dark = mix(0.3, 0.55, smoothstep(0.0, 400.0, high));
     if (away <= 0.0) shade = min(shade, dark);
@@ -847,7 +1013,10 @@ vec3 lightAt(vec3 at, vec3 normal, float shade, bool object) {
   // Everything that stands between a spot and the window throws a hard,
   // dark shadow over it, darker than real on purpose, like the drawn
   // shadows of an old game. And right under each thing it is darker still.
-  float open = clearTowards(at + normal * 2.0, window, far);
+  float open = windowOpen(at + normal * 2.0, window, far);
+  // A surface the window's light only skims, like the wall the window is
+  // in, gets no shadow from it: there is no light there to block.
+  open = mix(1.0, open, smoothstep(0.0, 0.3, dot(normal, window)));
   shade *= mix(0.4, 1.0, open) * underShade(at);
 
   // On objects, sides and undersides are darker than real, so every shape
@@ -981,10 +1150,22 @@ vec4 surface() {
     return vec4(vColor * pulse, 1.0);
   }
   if (vMaterial == M_FIRE) {
-    vec2 uv = squares(vExtra, vec2(10.0));
-    float flame = noise(vec2(uv.x * 4.0, uv.y * 3.0 - uTime * 1.6)) * (1.25 - uv.y);
-    vec3 burning = mix(vec3(0.85, 0.2, 0.04), vec3(1.0, 0.86, 0.36), smoothstep(0.25, 0.7, flame));
-    return vec4(mix(vec3(0.035, 0.03, 0.03), burning, uFlame), 1.0);
+    vec2 uv = squares(vExtra, vec2(16.0, 18.0));
+    float sway = sin(uv.y * 5.0 - uTime * 3.4) * 0.08 * uv.y;
+    float edge = 1.0 - smoothstep(0.32, 0.52, abs(uv.x - 0.5 + sway));
+    float emberBed = 1.0 - smoothstep(0.08, 0.28, uv.y);
+    float coal = 0.55 + 0.45 * noise(vec2(uv.x * 11.0, uv.y * 8.0 + uTime * 0.45));
+    float tongueA = noise(vec2((uv.x + sway) * 5.2, uv.y * 3.4 - uTime * 1.9));
+    float tongueB = noise(vec2((uv.x - sway * 0.7) * 9.5 + 3.1, uv.y * 5.5 - uTime * 2.8));
+    float flame = (tongueA * 0.65 + tongueB * 0.35) * (1.28 - uv.y * 1.08) * (0.45 + 0.55 * edge);
+    vec3 firebox = vec3(0.11, 0.035, 0.02) * (1.15 - uv.y * 0.65);
+    vec3 embers = mix(vec3(0.55, 0.08, 0.02), vec3(1.0, 0.42, 0.08), coal);
+    vec3 fireCol = mix(firebox, vec3(0.92, 0.24, 0.04), smoothstep(0.22, 0.46, flame));
+    fireCol = mix(fireCol, vec3(1.0, 0.68, 0.16), smoothstep(0.44, 0.68, flame));
+    fireCol = mix(fireCol, vec3(1.0, 0.94, 0.52), smoothstep(0.68, 0.86, flame));
+    fireCol = mix(fireCol, embers, emberBed * 0.85);
+    vec3 dying = mix(vec3(0.035, 0.03, 0.03), vec3(0.32, 0.06, 0.02) * coal, emberBed * 0.6);
+    return vec4(mix(dying, fireCol, uFlame), 1.0);
   }
 
   vec3 normal = normalize(vNormal);
@@ -1024,7 +1205,8 @@ vec4 surface() {
   } else if (vMaterial == M_FABRIC) {
     color = fabricColor(vColor, vLocal, normal, vExtra.x);
   } else if (vMaterial == M_QUILT) {
-    color = quiltColor(vLocal, normal);
+    color = quiltColor(vExtra, vLocal);
+    normal = quiltNormal(normal, vExtra);
   } else if (vMaterial == M_BRICK) {
     color = brickColor(vLocal, normal);
     normal = brickNormal(normal, vLocal);
@@ -1054,8 +1236,10 @@ vec4 surface() {
   } else if (vMaterial == M_PICTURE) {
     color = pictureColor(squares(vExtra, vec2(48.0, 36.0)));
   } else if (vMaterial == M_WEB) {
-    if (webAt(squares(vExtra, vec2(48.0))) < 0.5) discard;
-    color = vec3(0.86, 0.86, 0.84);
+    float strand = webAt(squares(vExtra, vec2(64.0)), vColor);
+    if (strand < 0.1) discard;
+    color = mix(vec3(0.62, 0.61, 0.58), vec3(0.84, 0.83, 0.79), strand);
+    shade = cornerShade(at) * 0.65 + 0.35;
   } else if (vMaterial == M_JAR) {
     ivec2 pixel = ivec2(gl_FragCoord.xy);
     float along = abs(dot(normal, normalize(uEye - vWorld)));
@@ -1398,7 +1582,19 @@ vec3 renderTvGlass(vec2 sceneSize) {
     max(textureGrad(uTvScreen, clamp(uv + vec2(0.0, haloStep.y), 0.0, 1.0), dUvDx, dUvDy).rgb - 0.55, 0.0) +
     max(textureGrad(uTvScreen, clamp(uv - vec2(0.0, haloStep.y), 0.0, 1.0), dUvDx, dUvDy).rgb - 0.55, 0.0)
   ) * 0.25;
-  tv = clamp(tv + halo * (0.28 + 0.14 * uNight), 0.0, 1.0);
+  tv = clamp(tv + halo * (0.14 + 0.12 * uNight), 0.0, 1.0);
+
+  // Sharpen against the neighbours one screen pixel away, so the type keeps
+  // hard edges after the texture is shrunk down to the size of the set.
+  vec3 around = (
+    textureGrad(uTvScreen, clamp(uv + dUvDx, 0.0, 1.0), dUvDx, dUvDy).rgb +
+    textureGrad(uTvScreen, clamp(uv - dUvDx, 0.0, 1.0), dUvDx, dUvDy).rgb +
+    textureGrad(uTvScreen, clamp(uv + dUvDy, 0.0, 1.0), dUvDx, dUvDy).rgb +
+    textureGrad(uTvScreen, clamp(uv - dUvDy, 0.0, 1.0), dUvDx, dUvDy).rgb
+  ) * 0.25;
+  tv = clamp(tv + (tv - around) * 0.55, 0.0, 1.0);
+  // A little more contrast, so the white plate and dark type pull apart.
+  tv = mix(tv, tv * tv * (3.0 - 2.0 * tv), 0.3);
 
   // Glass-locked 4x4 Bayer dithering & stepped broadcast colour depth so the
   // TV shares the hut's retro shader language instead of looking flat/clean.
@@ -1410,8 +1606,8 @@ vec3 renderTvGlass(vec2 sceneSize) {
     (0.035 + 0.09 * uGrime + 0.08 * uGlitch);
   float tvLum = luma(tv);
   float textProtect = smoothstep(0.65, 0.92, tvLum);
-  float tvSteps = mix(11.0, 8.0, uGrime);
-  vec3 dithered = floor(clamp(tv + (tvBayer * 0.75 + tvSnow) / tvSteps, 0.0, 1.0) * tvSteps + 0.5) / tvSteps;
+  float tvSteps = mix(14.0, 10.0, uGrime);
+  vec3 dithered = floor(clamp(tv + (tvBayer * 0.5 + tvSnow) / tvSteps, 0.0, 1.0) * tvSteps + 0.5) / tvSteps;
   tv = mix(dithered, tv, textProtect * 0.65);
 
   // Subtle shadow-tone cohesion with the cabin's mood (cools the studio darks
@@ -1425,12 +1621,18 @@ vec3 renderTvGlass(vec2 sceneSize) {
   tv = mix(tv, mix(uInk, uPaper, luma(tv)), uMono * 0.32);
 
   // CRT phosphor scanlines + RGB aperture grille locked to the glass plane.
-  float scan = 0.87 + 0.13 * sin(curved.y * 192.0 * 3.14159);
+  // Both fade down once a line is thinner than a few screen pixels: finer
+  // than that they only beat against the pixels and smear the type.
+  float scanPx = 1.0 / max(192.0 * length(vec2(dUvDx.y, dUvDy.y)), 1e-4);
+  float triadPx = 1.0 / max(260.0 * length(vec2(dUvDx.x, dUvDy.x)), 1e-4);
+  float scanDepth = mix(0.04, 0.13, smoothstep(1.6, 3.5, scanPx));
+  float grilleDepth = mix(0.0, 0.06, smoothstep(1.6, 3.5, triadPx));
+  float scan = 1.0 - scanDepth + scanDepth * sin(curved.y * 192.0 * 3.14159);
   float triadPhase = curved.x * 260.0 * 6.28318;
   vec3 grille = vec3(
-    0.94 + 0.06 * cos(triadPhase),
-    0.94 + 0.06 * cos(triadPhase - 2.0944),
-    0.94 + 0.06 * cos(triadPhase + 2.0944)
+    1.0 - grilleDepth + grilleDepth * cos(triadPhase),
+    1.0 - grilleDepth + grilleDepth * cos(triadPhase - 2.0944),
+    1.0 - grilleDepth + grilleDepth * cos(triadPhase + 2.0944)
   );
   tv *= scan * grille;
 
@@ -1448,7 +1650,7 @@ vec3 renderTvGlass(vec2 sceneSize) {
   vec3 glassTint = mix(vec3(0.84, 0.93, 1.0), vec3(1.0, 0.55, 0.62), uSeverity * 0.35);
 
   // Ground the CRT black floor into the cabin's inky shadow palette.
-  vec3 shown = mix(uInk * 1.5, tv * tubeVignette, 0.94) * (0.12 + 0.94 * tubeMask) +
+  vec3 shown = mix(uInk * 1.5, tv * tubeVignette, 0.97) * (0.12 + 0.94 * tubeMask) +
     glassTint * (glassSheen + hum) * tubeMask;
   return clamp(shown, 0.0, 1.0);
 }

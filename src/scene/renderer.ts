@@ -74,6 +74,10 @@ const FIRE: Vec3 = [1.05, 0.56, 0.2];
 /** The two colours a ruined hut ends up between: shadow and bone. */
 const INK: Vec3 = [0.015, 0.02, 0.03];
 const PAPER: Vec3 = [0.86, 0.8, 0.64];
+/** How long a leaflet takes from under the door to the floor, and how long
+    after the one before it the next one comes, in seconds. */
+const LEAFLET_FLIGHT = 1.2;
+const LEAFLET_GAP = 0.35;
 
 /** How the page is cut into the hut's pixels. The page is drawn on `sharp`
     times as sharp as CSS counts, up to a limit, and each pixel of the hut
@@ -448,6 +452,9 @@ function createRendererHandle(
   let lastFrameTime = -1;
   let currentTvLight: Vec3 | null = null;
   let currentSeverity = 0;
+  // When each leaflet started on its way in under the door, in seconds.
+  const leafletPushedAt: number[] = [];
+  let leafletsSeen = -1;
 
   const draw = (frame: HutFrame): void => {
     if (gl.isContextLost()) return;
@@ -470,6 +477,23 @@ function createRendererHandle(
     }
 
     const { decay, hour, videos, files, coins, leaflets } = frame.props;
+    // New leaflets fly in one after another; the ones there when the hut
+    // first opens, and all of them while it holds still, are already down.
+    if (leafletsSeen < 0 || frame.time === 0) {
+      leafletPushedAt.length = 0;
+      for (let i = 0; i < leaflets.length; i++) leafletPushedAt.push(-1e9);
+    } else if (leaflets.length < leafletPushedAt.length) {
+      leafletPushedAt.length = leaflets.length;
+    } else {
+      while (leafletPushedAt.length < leaflets.length) {
+        const previous = leafletPushedAt[leafletPushedAt.length - 1] ?? -1e9;
+        leafletPushedAt.push(Math.max(frame.time, previous + LEAFLET_GAP));
+      }
+    }
+    leafletsSeen = leaflets.length;
+    const flights = leafletPushedAt.map((pushedAt) =>
+      clamp((frame.time - pushedAt) / LEAFLET_FLIGHT, 0, 1),
+    );
     const nextProps = [
       videos,
       Math.floor(hour * 60),
@@ -477,11 +501,12 @@ function createRendererHandle(
       files.map((sure) => Math.round(sure * 100)).join(),
       coins,
       leaflets.join(),
+      flights.map((flight) => Math.round(flight * 120)).join(),
     ].join(" ");
     if (nextProps !== propsKey) {
       propsKey = nextProps;
       clearMesh(props.mesh);
-      buildProps(props.mesh, frame.props);
+      buildProps(props.mesh, frame.props, flights);
       refresh(gl, props);
     }
     const { turned, press, tip } = frame.hand;

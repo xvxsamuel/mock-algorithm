@@ -118,7 +118,18 @@ function VideoCard({
       <div className="card-info">
         <p className="card-creator">@{video.creator}</p>
         <p className="card-caption">{video.caption}</p>
-        {sponsor !== undefined && <p className="card-sponsored">Sponsored</p>}
+        {(sponsor !== undefined || video.aiGenerated) && (
+          <div className="card-tags">
+            {sponsor !== undefined && (
+              <span className="card-tag card-sponsored">Sponsored</span>
+            )}
+            {video.aiGenerated && (
+              <span className="card-tag card-ai-label">
+                Contains AI-generated media
+              </span>
+            )}
+          </div>
+        )}
         <p className="card-sound">
           <span aria-hidden="true">♫</span>
           <span className="card-sound-window">

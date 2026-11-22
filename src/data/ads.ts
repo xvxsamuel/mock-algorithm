@@ -115,9 +115,9 @@ export function paidPostOf(video: Video): PaidPost | undefined {
 
 /** An advertiser with its ad, a 9-second video in its topic. */
 function advertiser(
-  spec: Omit<Advertiser, "ad"> & { overlay: string },
+  spec: Omit<Advertiser, "ad"> & { overlay: string; aiGenerated?: boolean },
 ): Advertiser {
-  const { overlay, ...rest } = spec;
+  const { overlay, aiGenerated, ...rest } = spec;
   return {
     ...rest,
     ad: {
@@ -131,6 +131,7 @@ function advertiser(
       durationSec: 9,
       likes: 12_400,
       intensity: 0.4,
+      ...(aiGenerated ? { aiGenerated: true } : {}),
     },
   };
 }
