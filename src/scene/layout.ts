@@ -196,9 +196,10 @@ export const SHADOW_CASTERS: readonly Box[] = [
     [STOVE[0] - 92, 0, STOVE[2] - 92],
     [STOVE[0] + 92, 326, STOVE[2] + 92],
   ],
-  // The shelf on the front wall above your phone.
+  // The board of the shelf on the front wall above your phone. The thin
+  // iron brackets under it let the light by.
   [
-    [-210, 464, -HALF_DEPTH],
+    [-210, 518, -HALF_DEPTH],
     [150, 534, -HALF_DEPTH + 94],
   ],
   // The timber bed in the back-left sleeping nook.
@@ -224,9 +225,10 @@ export const SHADOW_CASTERS: readonly Box[] = [
     [735, 0, 90],
     [956, 332, 680],
   ],
-  // Entryway bench in the front-right corner.
+  // Entryway bench in the front-right corner: only its seat. Light gets
+  // through the thin legs and the slatted rack under it.
   [
-    [710, 0, -838],
-    [945, 192, -685],
+    [712, 170, -836],
+    [942, 188, -692],
   ],
 ];

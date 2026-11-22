@@ -22,6 +22,7 @@ import {
   WINDOW_TABLE,
 } from "./layout";
 import {
+  clamp,
   lerp,
   mix,
   multiply,
@@ -31,14 +32,19 @@ import {
   rotationZ,
   smoothstep,
   translation,
+  type Mat4,
   type Vec3,
 } from "./math";
 import {
   addBox,
+  addCushion,
   addDrum,
   addEllipsoid,
+  addPillow,
   addQuad,
+  addSurface,
   addTriangle,
+  addTube,
   withTransform,
   type Mesh,
   type Paint,
@@ -227,8 +233,18 @@ function wallPanel(
   addQuad(mesh, at(u0, y0), at(u1, y0), at(u1, y1), at(u0, y1), paint);
 }
 
-/** A cobweb across a corner: from `corner` along two edges. */
-function web(mesh: Mesh, corner: Vec3, along: Vec3, down: Vec3): void {
+/** A cobweb across a corner: from `corner` along two edges.
+    `seed` varies its spokes and sag; `startAt`..`fullAt` stagger its growth
+    across `uDecay`. */
+function web(
+  mesh: Mesh,
+  corner: Vec3,
+  along: Vec3,
+  down: Vec3,
+  seed: number,
+  startAt = 0.18,
+  fullAt = 0.82,
+): void {
   const b: Vec3 = [
     corner[0] + along[0],
     corner[1] + along[1],
@@ -246,12 +262,13 @@ function web(mesh: Mesh, corner: Vec3, along: Vec3, down: Vec3): void {
     b,
     c,
     d,
-    { color: WHITE, material: MATERIAL.web },
+    { color: [seed, startAt, fullAt], material: MATERIAL.web },
     true,
   );
 }
 
-/** A gently splayed mid-century tapered furniture leg from floor up to `height`. */
+/** A gently splayed mid-century tapered furniture leg from floor up to `height`,
+    with an optional aligned brass ferrule cap at the foot. */
 function splayedLeg(
   mesh: Mesh,
   topX: number,
@@ -262,6 +279,9 @@ function splayedLeg(
   rBottom: number,
   rTop: number,
   paint: Paint,
+  ferruleHeight = 0,
+  ferrulePaint?: Paint,
+  sides = 10,
 ): void {
   withTransform(
     mesh,
@@ -269,35 +289,80 @@ function splayedLeg(
       translation([topX, height, topZ]),
       multiply(rotationZ(leanX), rotationX(leanZ)),
     ),
-    () => addDrum(mesh, [0, -height, 0], height, rBottom, rTop, paint),
+    () => {
+      if (ferruleHeight > 0 && ferrulePaint !== undefined) {
+        const split = ferruleHeight / height;
+        const rMid = lerp(rBottom, rTop, split);
+        addDrum(
+          mesh,
+          [0, -height, 0],
+          ferruleHeight,
+          rBottom + 0.4,
+          rMid + 0.5,
+          ferrulePaint,
+          ferrulePaint,
+          sides,
+        );
+        addDrum(
+          mesh,
+          [0, -height + ferruleHeight, 0],
+          height - ferruleHeight,
+          rMid,
+          rTop,
+          paint,
+          paint,
+          sides,
+        );
+      } else {
+        addDrum(
+          mesh,
+          [0, -height, 0],
+          height,
+          rBottom,
+          rTop,
+          paint,
+          paint,
+          sides,
+        );
+      }
+    },
   );
 }
 
-/** The L-shaped burgundy-red corduroy couch you sit on: ribbed woven
-    upholstery, tapered walnut legs, button-tufted back cushions, rounded
-    bolster arms, two angled pillows, and a chunky knit throw blanket. */
+/** The L-shaped burgundy-red corduroy couch you sit on: plush bevelled
+    upholstery, splayed walnut legs with aligned brass ferrules, 3D button-tufted
+    back cushions, smooth bolster armrests with piped caps, sculpted pillows,
+    and an organically draped chunky knit throw blanket. */
 function buildCouch(mesh: Mesh): void {
   const couchRed = corduroy([0.74, 0.16, 0.16]);
   const couchTop = corduroy([0.82, 0.21, 0.18]);
   const couchDark = corduroy([0.52, 0.11, 0.11]);
+  const couchPiping = corduroy([0.42, 0.08, 0.09]);
   const couchWood = wood([0.36, 0.23, 0.14]);
-  const tuftButton = wood([0.28, 0.1, 0.1]);
+  const tuftButton = wood([0.26, 0.08, 0.09]);
   const pillowGold = linen([0.89, 0.65, 0.21]);
+  const pillowGoldWelt = linen([0.66, 0.46, 0.14]);
   const pillowTeal = linen([0.2, 0.44, 0.48]);
-  const blanketCream = knit([0.9, 0.84, 0.72]);
-  const blanketStripe = knit([0.2, 0.31, 0.47]);
+  const pillowTealWelt = linen([0.13, 0.3, 0.34]);
+  const pillowCream = linen([0.92, 0.87, 0.76]);
+  const pillowRustWelt = linen([0.72, 0.28, 0.2]);
+  const blanketCream = knit([0.91, 0.85, 0.74]);
+  const blanketStripe = knit([0.2, 0.32, 0.48]);
 
   withTransform(
     mesh,
     multiply(translation(COUCH.at), rotationY(COUCH.yaw)),
     () => {
-      // Lower walnut plinth and upholstered base frame.
-      addBox(mesh, [-305, 56, -165], [335, 128, 180], couchDark);
-      addBox(mesh, [-305, 56, -355], [-125, 128, -165], couchDark);
-      addBox(mesh, [-308, 46, -168], [338, 60, 182], couchWood);
-      addBox(mesh, [-308, 46, -358], [-122, 60, -165], couchWood);
+      // Lower bevelled walnut plinth and upholstered L-shaped base apron.
+      addBox(mesh, [-308, 46, -168], [338, 62, 182], couchWood);
+      addBox(mesh, [-308, 46, -358], [-122, 62, -166], couchWood);
+      // Subtle dark shadow reveal between walnut plinth and upholstered base.
+      addBox(mesh, [-304, 62, -165], [334, 67, 179], couchPiping);
+      addBox(mesh, [-304, 62, -354], [-126, 67, -165], couchPiping);
+      addBox(mesh, [-306, 67, -166], [336, 128, 180], couchDark);
+      addBox(mesh, [-306, 67, -356], [-124, 128, -166], couchDark);
 
-      // Tapered mid-century walnut legs with brass ferrule tips.
+      // Six tapered mid-century walnut legs with seamlessly aligned brass ferrules.
       for (const [lx, lz, sx, sz] of [
         [-290, -340, 0.08, -0.08],
         [-142, -340, -0.05, -0.08],
@@ -306,146 +371,368 @@ function buildCouch(mesh: Mesh): void {
         [-290, 158, 0.08, 0.08],
         [314, 158, -0.08, 0.08],
       ] as const) {
-        splayedLeg(mesh, lx, lz, 48, sx, sz, 8, 13, couchWood);
-        addDrum(mesh, [lx, 0, lz], 12, 8.5, 9.5, AGED_BRASS);
+        splayedLeg(
+          mesh,
+          lx,
+          lz,
+          48,
+          sx,
+          sz,
+          7.5,
+          13,
+          couchWood,
+          13,
+          AGED_BRASS,
+          12,
+        );
       }
 
-      // Three plush corduroy seat cushions: left chaise, slightly sunken
-      // middle seat where you sit, and right cushion beside you.
-      addBox(mesh, [-242, 128, -362], [-126, 198, 98], couchTop);
-      addBox(mesh, [-120, 128, -172], [86, 192, 98], couchRed);
-      addBox(mesh, [92, 128, -172], [268, 198, 98], couchTop);
+      // Three plush corduroy seat cushions: deep left chaise, lived-in sunken
+      // middle seat where you sit, and plump right seat beside you.
+      addCushion(
+        mesh,
+        [-242, 126, -364],
+        [-123, 200, 102],
+        { bevel: 14, crownY: 7, steps: [6, 3, 8] },
+        couchTop,
+      );
+      addCushion(
+        mesh,
+        [-120, 126, -172],
+        [88, 195, 102],
+        { bevel: 14, crownY: 5, sinkY: -7, steps: [7, 3, 6] },
+        couchRed,
+      );
+      addCushion(
+        mesh,
+        [91, 126, -172],
+        [268, 200, 102],
+        { bevel: 14, crownY: 7, steps: [6, 3, 6] },
+        couchTop,
+      );
 
-      // Backrest frame and three reclined tufted back cushions.
-      addBox(mesh, [-305, 128, 115], [335, 422, 190], couchDark);
+      // Stitched piping trim running along the lower front apron of each seat.
+      addTube(
+        mesh,
+        [
+          [-236, 129, -360],
+          [-128, 129, -360],
+        ],
+        [3.2, 3.2],
+        couchPiping,
+        6,
+      );
+      addTube(
+        mesh,
+        [
+          [-116, 129, -168],
+          [264, 129, -168],
+        ],
+        [3.2, 3.2],
+        couchPiping,
+        6,
+      );
+
+      // Wrapped backrest shell with soft rounded crest rail along the top.
+      addBox(mesh, [-306, 128, 118], [336, 404, 188], couchDark);
+      withTransform(
+        mesh,
+        multiply(translation([-306, 404, 153]), rotationZ(-Math.PI / 2)),
+        () => addDrum(mesh, [0, 0, 0], 642, 35, 35, couchDark, couchPiping, 12),
+      );
+
+      // Three reclined plush back cushions with real 3D recessed button tufts.
       for (const [bx0, bx1, paint] of [
-        [-242, -124, couchRed],
-        [-118, 84, couchTop],
-        [90, 266, couchRed],
+        [-242, -123, couchRed],
+        [-119, 87, couchTop],
+        [91, 267, couchRed],
       ] as const) {
         withTransform(
           mesh,
-          multiply(translation([(bx0 + bx1) / 2, 198, 108]), rotationX(-0.14)),
+          multiply(translation([(bx0 + bx1) / 2, 196, 108]), rotationX(-0.14)),
           () => {
             const half = (bx1 - bx0) / 2;
-            addBox(mesh, [-half, 0, -26], [half, 212, 30], paint);
-            // Recessed button tufts for upholstery depth.
-            for (const tx of [-half * 0.45, half * 0.45]) {
-              addEllipsoid(mesh, [tx, 108, -27], [7, 7, 4], tuftButton);
+            const tufts: readonly (readonly [number, number])[] = [
+              [-0.44, 0.04],
+              [0.44, 0.04],
+            ];
+            addCushion(
+              mesh,
+              [-half, 0, -28],
+              [half, 214, 30],
+              { bevel: 15, crownFront: 9, tufts, steps: [8, 6, 3] },
+              paint,
+            );
+            // Tufted upholstery buttons nestled cleanly inside the 3D dimples.
+            for (const [tx, ty] of tufts) {
+              addEllipsoid(
+                mesh,
+                [tx * half, 107 + ty * 107, -23],
+                [6.5, 6.5, 4],
+                tuftButton,
+                10,
+                3,
+              );
             }
           },
         );
       }
 
-      // Padded armrests topped with cylindrical bolster rolls.
-      addBox(mesh, [-308, 128, -188], [-242, 286, 175], couchRed);
-      withTransform(
-        mesh,
-        multiply(translation([-275, 294, -188]), rotationX(Math.PI / 2)),
-        () => addDrum(mesh, [0, 0, 0], 364, 34, 34, couchTop, couchDark),
-      );
-      addBox(mesh, [268, 128, -176], [336, 286, 175], couchRed);
-      withTransform(
-        mesh,
-        multiply(translation([302, 294, -176]), rotationX(Math.PI / 2)),
-        () => addDrum(mesh, [0, 0, 0], 352, 34, 34, couchTop, couchDark),
-      );
+      // Sculpted padded armrests with smooth 14-sided cylindrical bolster rolls,
+      // piped front end-caps, and recessed walnut front accent strips.
+      for (const [ax0, ax1, az0, az1] of [
+        [-308, -242, -188, 178],
+        [268, 338, -176, 178],
+      ] as const) {
+        const acx = (ax0 + ax1) / 2;
+        const armRadius = (ax1 - ax0) / 2 + 1;
+        const armLen = az1 - az0;
+        addCushion(
+          mesh,
+          [ax0, 126, az0],
+          [ax1, 290, az1],
+          { bevel: 8, steps: [4, 4, 5] },
+          couchRed,
+        );
+        withTransform(
+          mesh,
+          multiply(translation([acx, 288, az0]), rotationX(Math.PI / 2)),
+          () => {
+            addDrum(
+              mesh,
+              [0, 0, 0],
+              armLen,
+              armRadius,
+              armRadius,
+              couchTop,
+              couchDark,
+              14,
+            );
+            // Recessed piped circular front bolster medallion.
+            addDrum(
+              mesh,
+              [0, -2, 0],
+              3,
+              armRadius - 5,
+              armRadius - 5,
+              couchPiping,
+              couchDark,
+              14,
+            );
+          },
+        );
+        // Subtle walnut vertical trim inlay on the front arm face.
+        addBox(
+          mesh,
+          [acx - 7, 146, az0 - 2],
+          [acx + 7, 250, az0 + 2],
+          couchWood,
+        );
+      }
 
-      // Mustard linen throw pillow slumped against the right armrest.
+      // Mustard linen throw pillow slumped warmly against the right armrest.
       withTransform(
         mesh,
         multiply(
-          translation([220, 256, 46]),
+          translation([218, 256, 44]),
           multiply(
             rotationY(radians(-28)),
-            multiply(rotationZ(radians(-18)), rotationX(radians(14))),
+            multiply(rotationZ(radians(-16)), rotationX(radians(14))),
           ),
         ),
-        () => addEllipsoid(mesh, [0, 0, 0], [46, 54, 22], pillowGold),
+        () => addPillow(mesh, 102, 108, 42, pillowGold, pillowGoldWelt),
       );
 
-      // Smaller coastal-teal accent pillow tucked in the left back corner.
+      // Coastal-teal accent pillow tucked into the left back corner.
       withTransform(
         mesh,
         multiply(
-          translation([-192, 248, 56]),
+          translation([-192, 248, 54]),
           multiply(
             rotationY(radians(24)),
             multiply(rotationZ(radians(14)), rotationX(radians(12))),
           ),
         ),
-        () => addEllipsoid(mesh, [0, 0, 0], [38, 44, 19], pillowTeal),
+        () => addPillow(mesh, 88, 94, 36, pillowTeal, pillowTealWelt),
       );
 
-      // Chunky cream-and-indigo knit throw blanket draped across the left arm.
+      // Cozy cream-linen lumbar pillow angled softly along the chaise backrest.
       withTransform(
         mesh,
-        multiply(translation([-274, 326, -18]), rotationY(radians(6))),
-        () => {
-          addBox(mesh, [-42, -2, -68], [42, 10, 68], blanketCream);
-          addBox(mesh, [-46, -102, -68], [-36, 6, 68], blanketCream);
-          addBox(mesh, [36, -74, -68], [46, 6, 68], blanketCream);
-          addBox(mesh, [-44, -2, -46], [44, 11, -30], blanketStripe);
-          addBox(mesh, [-44, -2, 30], [44, 11, 46], blanketStripe);
-        },
+        multiply(
+          translation([-148, 224, 24]),
+          multiply(
+            rotationY(radians(36)),
+            multiply(rotationZ(radians(-6)), rotationX(radians(18))),
+          ),
+        ),
+        () => addPillow(mesh, 78, 54, 30, pillowCream, pillowRustWelt),
       );
+
+      // Organically draped chunky cream-and-indigo knit throw blanket flowing
+      // smoothly over the curved left bolster arm with hanging ripples & fringe.
+      const drapeRows = 12;
+      const drapeCols = 18;
+      const armCx = -275;
+      const armCy = 288;
+      const armR = 37;
+      const couchThrowPoint = (u: number, v: number, lift = 0): Vec3 => {
+        // v in [0, 1] runs from front-side (+z = 52) to back-side (-z = -90).
+        const z = lerp(52, -90, v) + Math.sin(u * Math.PI) * 5;
+        const ripple =
+          Math.sin(v * Math.PI * 3.5 + u * 2.2) * 3.2 +
+          Math.sin(v * Math.PI * 7.0) * 1.1;
+        let x: number;
+        let y: number;
+        if (u < 0.34) {
+          // Outer hanging tail draping smoothly down the left side of the arm.
+          const t = u / 0.34;
+          const flare = (1 - t) * (1 - t);
+          x = armCx - armR - 4 - flare * 5 - ripple * flare - lift;
+          y = lerp(164 + Math.sin(v * Math.PI * 3) * 6, armCy, t);
+        } else if (u <= 0.68) {
+          // Smooth wrap arching cleanly over the cylindrical bolster roll.
+          const t = (u - 0.34) / 0.34;
+          const angle = lerp(Math.PI, 0, t);
+          const r = armR + 2.5 + lift + Math.sin(v * Math.PI * 2.5) * 1.2;
+          x = armCx + Math.cos(angle) * r;
+          y = armCy + Math.sin(angle) * r;
+        } else {
+          // Inner tail cascading down onto the chaise seat cushion.
+          const t = (u - 0.68) / 0.32;
+          const flare = t * t;
+          x = armCx + armR + 3 + flare * 8 + ripple * flare + lift;
+          y = lerp(armCy, 202 + Math.sin(v * Math.PI * 3.2) * 4, t);
+        }
+        return [x, y, z];
+      };
+
+      const throwGrid: Vec3[][] = [];
+      for (let r = 0; r <= drapeRows; r++) {
+        const v = r / drapeRows;
+        const row: Vec3[] = [];
+        for (let c = 0; c <= drapeCols; c++) {
+          row.push(couchThrowPoint(c / drapeCols, v, 0));
+        }
+        throwGrid.push(row);
+      }
+      addSurface(mesh, throwGrid, blanketCream);
+
+      // Two woven indigo knit accent stripes hugging the exact throw contour.
+      for (const [v0, v1] of [
+        [0.16, 0.27],
+        [0.73, 0.84],
+      ] as const) {
+        const stripeGrid: Vec3[][] = [];
+        for (let r = 0; r <= 2; r++) {
+          const v = lerp(v0, v1, r / 2);
+          const row: Vec3[] = [];
+          for (let c = 0; c <= drapeCols; c++) {
+            row.push(couchThrowPoint(c / drapeCols, v, 1.8));
+          }
+          stripeGrid.push(row);
+        }
+        addSurface(mesh, stripeGrid, blanketStripe);
+      }
+
+      // Knotted cream wool fringe tassels along both hanging ends of the throw.
+      for (const endU of [0, 1]) {
+        for (let t = 0; t < 7; t++) {
+          const v = lerp(0.06, 0.94, t / 6);
+          const p = couchThrowPoint(endU, v, 0);
+          addDrum(
+            mesh,
+            [p[0], p[1] - 14, p[2]],
+            15,
+            2.2,
+            1.6,
+            blanketCream,
+            blanketCream,
+            6,
+          );
+        }
+      }
     },
   );
 }
 
-/** The timber cabin bed in the back-left sleeping nook, with a built-in
-    headboard shelf, tufted mattress, sculpted patchwork quilt, folded sage
-    knit throw, plump pillows, bedside runner rug, nightstand, and arched
-    brass floor lamp. */
+/** The timber cabin bed in the back-left sleeping nook, with turned walnut
+    posts, panelled oak headboard, built-in alcove shelf, plush tufted mattress,
+    crisp rolled top sheet cuff, sculpted heirloom Nordic duvet with seamless
+    UVs, draped chunky sage knit throw, plump piped pillows, bedside runner,
+    nightstand, and arched brass reading lamp. */
 function buildBedAndSleepingNook(mesh: Mesh): void {
   const { x0, x1, z0, z1, mattressTop } = BED;
   const cx = (x0 + x1) / 2;
   const frameDark = wood([0.38, 0.24, 0.14]);
   const frameWarm = WALNUT;
-  const sheet = linen([0.94, 0.91, 0.84]);
-  const mattressSide = linen([0.88, 0.85, 0.78]);
-  const pillowLinen = linen([0.95, 0.92, 0.85]);
-  const pillowRust = linen([0.81, 0.33, 0.22]);
-  const sageThrow = knit([0.38, 0.54, 0.42]);
-  const throwStripe = knit([0.88, 0.82, 0.68]);
+  const sheetCream = linen([0.96, 0.93, 0.87]);
+  const sheetTrimSage = linen([0.46, 0.62, 0.51]);
+  const sheetTrimTerra = linen([0.82, 0.41, 0.29]);
+  const mattressSide = linen([0.9, 0.86, 0.79]);
+  const mattressWelt = linen([0.78, 0.73, 0.65]);
+  const pillowLinen = linen([0.96, 0.93, 0.87]);
+  const pillowSagePiping = linen([0.48, 0.62, 0.52]);
+  const pillowRust = linen([0.81, 0.36, 0.24]);
+  const pillowRustPiping = linen([0.58, 0.23, 0.16]);
+  const pillowOchre = linen([0.88, 0.68, 0.27]);
+  const pillowOchrePiping = linen([0.65, 0.47, 0.16]);
+  const sageThrow = knit([0.39, 0.56, 0.44]);
+  const throwStripe = knit([0.9, 0.84, 0.72]);
 
-  // Four sturdy walnut corner posts with turned brass cap finials.
+  // Four crafted walnut corner posts with turned upper necks & brass finials.
   const posts: readonly (readonly [number, number, number])[] = [
-    [x0 + 14, z0 + 14, 294],
-    [x1 - 14, z0 + 14, 294],
-    [x0 + 14, z1 - 14, 438],
-    [x1 - 14, z1 - 14, 438],
+    [x0 + 16, z0 + 16, 296],
+    [x1 - 16, z0 + 16, 296],
+    [x0 + 16, z1 - 16, 438],
+    [x1 - 16, z1 - 16, 438],
   ];
   for (const [px, pz, h] of posts) {
-    addBox(mesh, [px - 14, 0, pz - 14], [px + 14, h, pz + 14], frameDark);
-    addDrum(mesh, [px, h, pz], 12, 11, 14, AGED_BRASS);
-    addEllipsoid(mesh, [px, h + 18, pz], [13, 13, 13], AGED_BRASS);
+    // Sturdy square lower post & decorative collar block.
+    addBox(mesh, [px - 15, 0, pz - 15], [px + 15, h - 42, pz + 15], frameDark);
+    addBox(
+      mesh,
+      [px - 17, h - 44, pz - 17],
+      [px + 17, h - 32, pz + 17],
+      frameWarm,
+    );
+    // Turned tapered walnut neck + stepped brass collar + smooth brass ball finial.
+    addDrum(mesh, [px, h - 32, pz], 32, 13, 10, frameDark, frameDark, 12);
+    addDrum(mesh, [px, h, pz], 11, 10, 14, AGED_BRASS, AGED_BRASS, 12);
+    addEllipsoid(mesh, [px, h + 19, pz], [13.5, 13.5, 13.5], AGED_BRASS, 12, 4);
   }
 
-  // Side timber rails and slatted footboard.
-  addBox(mesh, [x0 + 4, 72, z0 + 24], [x0 + 24, 144, z1 - 24], frameWarm);
-  addBox(mesh, [x1 - 24, 72, z0 + 24], [x1 - 4, 144, z1 - 24], frameWarm);
-  addBox(mesh, [x0 + 24, 76, z0 + 4], [x1 - 24, 144, z0 + 22], frameWarm);
-  addBox(mesh, [x0 + 20, 242, z0 + 2], [x1 - 20, 266, z0 + 24], frameDark);
+  // Moulded side timber rails with subtle lower apron trim.
+  addBox(mesh, [x0 + 6, 74, z0 + 28], [x0 + 24, 148, z1 - 28], frameWarm);
+  addBox(mesh, [x1 - 24, 74, z0 + 28], [x1 - 6, 148, z1 - 28], frameWarm);
+  addBox(mesh, [x1 - 26, 70, z0 + 28], [x1 - 4, 82, z1 - 28], frameDark);
+
+  // Crafted slatted footboard with stepped walnut cap rail & turned spindles.
+  addBox(mesh, [x0 + 28, 76, z0 + 6], [x1 - 28, 146, z0 + 24], frameWarm);
+  addBox(mesh, [x0 + 24, 244, z0 + 4], [x1 - 24, 266, z0 + 26], frameDark);
+  addBox(mesh, [x0 + 20, 266, z0 + 2], [x1 - 20, 275, z0 + 28], frameWarm);
   for (let s = 0; s < 5; s++) {
-    const sx = lerp(x0 + 62, x1 - 62, s / 4);
-    addBox(mesh, [sx - 10, 144, z0 + 8], [sx + 10, 242, z0 + 18], frameWarm);
+    const sx = lerp(x0 + 68, x1 - 68, s / 4);
+    addDrum(mesh, [sx, 146, z0 + 15], 98, 7.5, 7.5, frameWarm, frameWarm, 10);
+    addEllipsoid(mesh, [sx, 195, z0 + 15], [11, 14, 11], frameDark, 10, 3);
   }
 
-  // Tall panelled walnut headboard with recessed oak panels & crown molding.
-  addBox(mesh, [x0 + 24, 78, z1 - 24], [x1 - 24, 408, z1 - 4], frameWarm);
-  addBox(mesh, [x0 + 16, 404, z1 - 28], [x1 - 16, 424, z1], frameDark);
+  // Architectural panelled walnut headboard with recessed framed oak panels & cornice.
+  addBox(mesh, [x0 + 28, 80, z1 - 24], [x1 - 28, 412, z1 - 6], frameWarm);
+  addBox(mesh, [x0 + 20, 408, z1 - 30], [x1 - 20, 424, z1], frameDark);
+  addBox(mesh, [x0 + 16, 424, z1 - 33], [x1 - 16, 434, z1 + 2], frameWarm);
   for (const [px0, px1] of [
-    [x0 + 44, cx - 12],
-    [cx + 12, x1 - 44],
+    [x0 + 48, cx - 14],
+    [cx + 14, x1 - 48],
   ] as const) {
-    addBox(mesh, [px0, 232, z1 - 28], [px1, 384, z1 - 22], OAK);
+    addBox(mesh, [px0 - 5, 228, z1 - 27], [px1 + 5, 390, z1 - 23], frameDark);
+    addBox(mesh, [px0, 234, z1 - 29], [px1, 384, z1 - 23], OAK);
   }
 
   // Built-in back-wall headboard shelf filling the alcove behind the bed.
   addBox(mesh, [-W + 6, 0, z1], [x1 + 6, 304, D - 4], frameDark);
   addBox(mesh, [-W + 4, 304, z1 - 4], [x1 + 10, 320, D - 2], OAK);
-  // Bedtime books, amber pillar candle, and tiny leaning photo frame on shelf.
+  // Bedtime books, brass pillar candle holder with wax candle, and leaning frame.
   for (const [bx, w, h, col] of [
     [x0 + 42, 20, 74, [0.22, 0.36, 0.5] as Vec3],
     [x0 + 65, 16, 64, [0.76, 0.28, 0.2] as Vec3],
@@ -453,8 +740,27 @@ function buildBedAndSleepingNook(mesh: Mesh): void {
   ] as const) {
     addBox(mesh, [bx, 320, z1 + 14], [bx + w, 320 + h, z1 + 74], dusty(col));
   }
-  addDrum(mesh, [cx + 42, 320, z1 + 42], 14, 20, 18, AGED_BRASS);
-  addDrum(mesh, [cx + 42, 334, z1 + 42], 42, 13, 12, dusty([0.96, 0.92, 0.8]));
+  addDrum(
+    mesh,
+    [cx + 42, 320, z1 + 42],
+    14,
+    20,
+    17,
+    AGED_BRASS,
+    AGED_BRASS,
+    12,
+  );
+  addDrum(
+    mesh,
+    [cx + 42, 334, z1 + 42],
+    42,
+    13,
+    12,
+    dusty([0.96, 0.92, 0.8]),
+    dusty([0.98, 0.95, 0.86]),
+    12,
+  );
+  addDrum(mesh, [cx + 42, 376, z1 + 42], 6, 1.5, 1, DARK_IRON, DARK_IRON, 6);
   withTransform(
     mesh,
     multiply(translation([x1 - 68, 320, z1 + 48]), rotationY(radians(-14))),
@@ -464,91 +770,250 @@ function buildBedAndSleepingNook(mesh: Mesh): void {
     },
   );
 
-  // Thick tufted cream mattress and turned-back top sheet cuff.
-  addBox(
+  // Plush bevelled mattress sitting cleanly inside the walnut bed frame rails.
+  addCushion(
     mesh,
-    [x0 + 18, 126, z0 + 20],
-    [x1 - 18, mattressTop - 4, z1 - 24],
+    [x0 + 24, 134, z0 + 28],
+    [x1 - 24, mattressTop, z1 - 29],
+    { bevel: 14, crownY: 4, steps: [6, 3, 8] },
     mattressSide,
   );
-  addBox(
+  // Crisp fitted cream sheet covering the upper bed & peeking neatly by the head.
+  addCushion(
     mesh,
-    [x0 + 16, mattressTop - 16, 488],
-    [x1 - 16, mattressTop + 6, z1 - 22],
-    sheet,
+    [x0 + 22, mattressTop - 42, 474],
+    [x1 - 21, mattressTop + 5, z1 - 29],
+    { bevel: 10, crownY: 3, steps: [6, 2, 5] },
+    sheetCream,
+  );
+  // Subtle mattress side piping welt visible near the head of the bed.
+  addTube(
+    mesh,
+    [
+      [x1 - 23, 150, 480],
+      [x1 - 23, 150, z1 - 34],
+    ],
+    [2.5, 2.5],
+    mattressWelt,
+    6,
   );
 
-  // Sculpted patchwork cabin quilt covering the bed with gentle loft waves
-  // and overhanging draped fabric skirts on the right and foot edges.
-  addBox(
-    mesh,
-    [x0 + 14, mattressTop - 6, z0 + 16],
-    [x1 - 12, mattressTop + 12, 215],
-    QUILT,
-  );
-  withTransform(
-    mesh,
-    multiply(translation([cx, mattressTop + 9, 345]), rotationX(radians(2.2))),
-    () =>
-      addBox(
-        mesh,
-        [-(x1 - x0) / 2 + 14, -10, -135],
-        [(x1 - x0) / 2 - 12, 10, 152],
-        QUILT,
-      ),
-  );
-  // Draped right-side overhang skirt (continuous quilt seams via shaders.ts).
-  addBox(mesh, [x1 - 16, 114, z0 + 16], [x1 - 2, mattressTop + 10, 494], QUILT);
-  // Foot overhang drape peeking above the footboard slats.
-  addBox(
-    mesh,
-    [x0 + 14, 166, z0 + 6],
-    [x1 - 6, mattressTop + 10, z0 + 22],
-    QUILT,
-  );
+  // Sculpted heirloom Nordic cabin duvet: a single continuous draped surface
+  // with organic pillowy loft, gentle lived-in folds, smooth rounded overhang
+  // hanging cleanly OUTSIDE the right wooden rail, and tucked behind the
+  // slatted footboard with zero clipping and seamless continuous UVs.
+  const duvetZHead = 490;
+  const duvetZFoot = z0 + 34;
+  const duvetRows = 20;
+  const duvetCols = 22;
 
-  // Folded chunky sage-green knit throw laid slightly askew across the foot.
-  withTransform(
-    mesh,
-    multiply(
-      translation([cx + 4, mattressTop + 12, z0 + 106]),
-      rotationY(radians(-4)),
-    ),
-    () => {
-      const halfW = (x1 - x0) / 2 - 10;
-      addBox(mesh, [-halfW, 0, -76], [halfW, 13, 76], sageThrow);
-      addBox(mesh, [-halfW + 4, 13, -52], [halfW - 4, 15, -36], throwStripe);
-      addBox(mesh, [-halfW + 4, 13, 36], [halfW - 4, 15, 52], throwStripe);
-      // Draped throw tail hanging down the living-room side of the bed.
-      addBox(mesh, [halfW - 10, -110, -76], [halfW + 4, 12, 76], sageThrow);
-    },
-  );
+  const duvetPoint = (u: number, v: number, extraLift = 0): Vec3 => {
+    // v runs 0 (head edge) -> 1 (foot edge).
+    const z = lerp(duvetZHead, duvetZFoot, v);
+    // Keep the right-side overhang cleanly outside the right rail, gently
+    // tucking inward only in the last few units beside the foot corner post.
+    const footClear = smoothstep(1.0, 0.94, v);
+    const shoulderX = lerp(x1 - 22, x1 - 14, footClear);
+    const shoulderR = lerp(12, 20, footClear) + extraLift;
+    const drapeX = shoulderX + shoulderR;
+    const foldWave =
+      Math.sin(v * Math.PI * 3.0 + u * 3.2) * 3.4 +
+      Math.sin(u * Math.PI * 2.4 - v * 2.6) * 2.6;
+    const pleat =
+      Math.sin(v * Math.PI * 6.5 + 0.6) * 3.8 +
+      Math.sin(v * Math.PI * 11.0) * 1.2;
 
-  // Two plump linen sleeping pillows propped against the headboard + a
-  // tilted burnt-terracotta accent pillow in front.
+    let x: number;
+    let y: number;
+    if (u < 0.06) {
+      // Soft left-side tuck inside the left rail (never touches wall or rail).
+      const t = u / 0.06;
+      x = lerp(x0 + 22, x0 + 34, t);
+      y = lerp(182, mattressTop + 11, Math.sin((t * Math.PI) / 2)) + extraLift;
+    } else if (u <= 0.74) {
+      // Plush pillowy bed top with gentle organic billows and domed loft.
+      const t = (u - 0.06) / 0.68;
+      x = lerp(x0 + 34, shoulderX, t);
+      const env = Math.sin(t * Math.PI);
+      const footTaper = lerp(1, 0.55, smoothstep(0.84, 1, v));
+      y = mattressTop + 11 + env * (9.5 + foldWave) * footTaper + extraLift;
+    } else if (u <= 0.84) {
+      // Smooth rounded blanket shoulder curving cleanly outside the right rail.
+      const t = (u - 0.74) / 0.1;
+      const angle = lerp(Math.PI / 2, 0, t);
+      x = shoulderX + Math.cos(angle) * shoulderR;
+      y = mattressTop - 5 + Math.sin(angle) * (16 + extraLift);
+    } else {
+      // Draped living-room overhang skirt hanging gracefully outside x1 - 6 rail.
+      const t = (u - 0.84) / 0.16;
+      const hemY = lerp(156, 114, footClear) + Math.sin(v * Math.PI * 5.0) * 4;
+      x = drapeX + t * (4 + pleat * footClear);
+      y = lerp(mattressTop - 5, hemY, t);
+    }
+    return [x, y, z];
+  };
+
+  const duvetGrid: Vec3[][] = [];
+  for (let r = 0; r <= duvetRows; r++) {
+    const v = r / duvetRows;
+    const row: Vec3[] = [];
+    for (let c = 0; c <= duvetCols; c++) {
+      row.push(duvetPoint(c / duvetCols, v, 0));
+    }
+    duvetGrid.push(row);
+  }
+  addSurface(mesh, duvetGrid, QUILT, true);
+
+  // Neatly folded turned-back cream top sheet cuff rolling over the duvet's
+  // top edge, with delicate sage & terracotta woven embroidery trim.
+  const cuffRows = 8;
+  const cuffCols = 22;
+  const cuffPoint = (u: number, t: number, lift = 0): Vec3 => {
+    // t in [0, 1]: rolls from tucked under pillows (z = 506) up over the duvet
+    // fold crest (z = 490) and lies neatly down onto the duvet to z = 434.
+    const z = lerp(506, 434, t);
+    const vOnDuvet = clamp((duvetZHead - z) / (duvetZHead - duvetZFoot), 0, 1);
+    const base = duvetPoint(u, vOnDuvet, 3.5 + lift);
+    const roll = Math.sin(t * Math.PI) * 5.5;
+    const backTuck = (1 - smoothstep(0, 0.25, t)) * -8;
+    const isSide = smoothstep(0.76, 0.86, u);
+    return [
+      base[0] + isSide * (2.5 + lift * 0.5),
+      base[1] + (1 - isSide) * (roll + backTuck),
+      z + Math.sin(u * Math.PI * 2.5) * 3,
+    ];
+  };
+
+  const cuffGrid: Vec3[][] = [];
+  for (let r = 0; r <= cuffRows; r++) {
+    const t = r / cuffRows;
+    const row: Vec3[] = [];
+    for (let c = 0; c <= cuffCols; c++) {
+      row.push(cuffPoint(c / cuffCols, t, 0));
+    }
+    cuffGrid.push(row);
+  }
+  addSurface(mesh, cuffGrid, sheetCream);
+
+  // Woven sage & terracotta decorative hem stripes along the turned-down cuff.
+  for (const [t0, t1, trimPaint] of [
+    [0.74, 0.82, sheetTrimSage],
+    [0.85, 0.91, sheetTrimTerra],
+  ] as const) {
+    const band: Vec3[][] = [];
+    for (let r = 0; r <= 2; r++) {
+      const t = lerp(t0, t1, r / 2);
+      const row: Vec3[] = [];
+      for (let c = 0; c <= cuffCols; c++) {
+        row.push(cuffPoint(c / cuffCols, t, 1.4));
+      }
+      band.push(row);
+    }
+    addSurface(mesh, band, trimPaint);
+  }
+
+  // Folded chunky sage-green knit throw draped slightly askew across the foot
+  // of the bed, hugging the exact duvet contour & hanging outside the drape.
+  const bedThrowRows = 10;
+  const bedThrowCols = 22;
+  const bedThrowPoint = (u: number, w: number, lift = 0): Vec3 => {
+    // w in [0, 1] spans across the throw's width (~135 units) near the foot.
+    const skew = (u - 0.5) * 26;
+    const z = lerp(z0 + 196, z0 + 62, w) + skew;
+    const vOnDuvet = clamp((duvetZHead - z) / (duvetZHead - duvetZFoot), 0, 1);
+    const p = duvetPoint(u, vOnDuvet, 6.5 + lift);
+    // Soft raised knit pillowing in the middle of the folded throw strip.
+    const thickness = Math.sin(w * Math.PI) * 5.5;
+    const isSide = smoothstep(0.76, 0.86, u);
+    const hemDrop = smoothstep(0.84, 1, u) * 14;
+    return [
+      p[0] + isSide * (2.5 + thickness * 0.35),
+      p[1] + (1 - isSide) * thickness - hemDrop,
+      z,
+    ];
+  };
+
+  const bedThrowGrid: Vec3[][] = [];
+  for (let r = 0; r <= bedThrowRows; r++) {
+    const w = r / bedThrowRows;
+    const row: Vec3[] = [];
+    for (let c = 0; c <= bedThrowCols; c++) {
+      row.push(bedThrowPoint(c / bedThrowCols, w, 0));
+    }
+    bedThrowGrid.push(row);
+  }
+  addSurface(mesh, bedThrowGrid, sageThrow);
+
+  // Cream woven stripes following the folded sage throw across the bed.
+  for (const [w0, w1] of [
+    [0.14, 0.24],
+    [0.76, 0.86],
+  ] as const) {
+    const stripe: Vec3[][] = [];
+    for (let r = 0; r <= 2; r++) {
+      const w = lerp(w0, w1, r / 2);
+      const row: Vec3[] = [];
+      for (let c = 0; c <= bedThrowCols; c++) {
+        row.push(bedThrowPoint(c / bedThrowCols, w, 1.8));
+      }
+      stripe.push(row);
+    }
+    addSurface(mesh, stripe, throwStripe);
+  }
+  // Knotted cream fringe tassels hanging along the living-room hem of the throw.
+  for (let i = 0; i < 6; i++) {
+    const w = lerp(0.08, 0.92, i / 5);
+    const p = bedThrowPoint(1, w, 0);
+    addDrum(
+      mesh,
+      [p[0], p[1] - 16, p[2]],
+      17,
+      2.3,
+      1.6,
+      throwStripe,
+      throwStripe,
+      6,
+    );
+  }
+
+  // Two plump linen sleeping pillows with sage piping, leaning back against
+  // the oak headboard panels with their lower edge sunk into the sheet, and
+  // two accent cushions leaning back on them in turn. A positive turn about
+  // x tips a pillow's top towards the headboard.
   for (const [px, yawDeg] of [
-    [cx - 104, 6],
-    [cx + 102, -8],
+    [cx - 102, 3],
+    [cx + 100, -4],
   ] as const) {
     withTransform(
       mesh,
       multiply(
-        translation([px, mattressTop + 42, z1 - 86]),
-        multiply(rotationY(radians(yawDeg)), rotationX(radians(-26))),
+        translation([px, mattressTop + 52, z1 - 64]),
+        multiply(rotationY(radians(yawDeg)), rotationX(radians(28))),
       ),
-      () => addEllipsoid(mesh, [0, 0, 0], [92, 34, 58], pillowLinen),
+      () => addPillow(mesh, 192, 118, 56, pillowLinen, pillowSagePiping),
     );
   }
   withTransform(
     mesh,
     multiply(
-      translation([cx + 62, mattressTop + 34, z1 - 162]),
+      translation([cx + 62, mattressTop + 41, z1 - 118]),
       multiply(
-        rotationY(radians(-18)),
-        multiply(rotationX(radians(-18)), rotationZ(radians(8))),
+        rotationY(radians(-10)),
+        multiply(rotationX(radians(20)), rotationZ(radians(3))),
       ),
     ),
-    () => addEllipsoid(mesh, [0, 0, 0], [56, 28, 38], pillowRust),
+    () => addPillow(mesh, 126, 90, 44, pillowRust, pillowRustPiping),
+  );
+  withTransform(
+    mesh,
+    multiply(
+      translation([cx - 70, mattressTop + 42, z1 - 116]),
+      multiply(
+        rotationY(radians(9)),
+        multiply(rotationX(radians(20)), rotationZ(radians(-3))),
+      ),
+    ),
+    () => addPillow(mesh, 102, 92, 40, pillowOchre, pillowOchrePiping),
   );
 
   // Narrow woven bedside runner rug along the right edge of the bed.
@@ -585,21 +1050,26 @@ function buildBedAndSleepingNook(mesh: Mesh): void {
           6,
           10,
           frameDark,
+          12,
+          AGED_BRASS,
+          10,
         );
       }
-      addDrum(mesh, [0, 152, 0], 78, 56, 56, frameWarm, frameWarm);
-      addDrum(mesh, [0, 228, 0], 14, 66, 68, OAK, OAK);
+      addDrum(mesh, [0, 152, 0], 78, 56, 56, frameWarm, frameWarm, 14);
+      addDrum(mesh, [0, 228, 0], 14, 66, 68, OAK, OAK, 14);
       // Small brass drawer pull facing the bed/room.
-      addEllipsoid(mesh, [0, 192, -59], [7, 7, 5], AGED_BRASS);
+      addEllipsoid(mesh, [0, 192, -59], [7, 7, 5], AGED_BRASS, 10, 3);
 
-      // Ceramic gourd-base bedside lamp with pleated cream drum shade.
+      // Ceramic gourd-base bedside lamp with pleated cream drum shade & brass finial.
       addEllipsoid(
         mesh,
         [-12, 272, 10],
         [21, 30, 21],
         enamel([0.22, 0.48, 0.47]),
+        12,
+        4,
       );
-      addDrum(mesh, [-12, 298, 10], 26, 6, 5, AGED_BRASS);
+      addDrum(mesh, [-12, 298, 10], 26, 6, 5, AGED_BRASS, AGED_BRASS, 10);
       addDrum(
         mesh,
         [-12, 314, 10],
@@ -608,9 +1078,11 @@ function buildBedAndSleepingNook(mesh: Mesh): void {
         30,
         linen([0.95, 0.9, 0.78]),
         linen([0.82, 0.76, 0.64]),
+        14,
       );
+      addEllipsoid(mesh, [-12, 384, 10], [5, 6, 5], AGED_BRASS, 10, 3);
 
-      // Small bedside paperback & mug.
+      // Small bedside paperback & mug with curved handle.
       withTransform(
         mesh,
         multiply(translation([24, 242, -16]), rotationY(radians(-22))),
@@ -625,33 +1097,57 @@ function buildBedAndSleepingNook(mesh: Mesh): void {
         14,
         enamel([0.9, 0.86, 0.76]),
         dusty([0.2, 0.12, 0.08]),
+        12,
+      );
+      addTube(
+        mesh,
+        [
+          [40, 264, 24],
+          [49, 260, 24],
+          [49, 250, 24],
+          [39, 247, 24],
+        ],
+        [2.2, 2.2, 2.2, 2.2],
+        enamel([0.9, 0.86, 0.76]),
+        6,
       );
     },
   );
 
-  // Tall burnished-brass reading floor lamp behind the nightstand.
-  addDrum(mesh, [-365, 0, 785], 16, 44, 34, DARK_IRON, AGED_BRASS);
-  addDrum(mesh, [-365, 16, 785], 580, 6.5, 5.5, AGED_BRASS);
-  withTransform(
+  // Tall burnished-brass reading floor lamp with graceful curved gooseneck arch.
+  addDrum(mesh, [-365, 0, 785], 16, 44, 34, DARK_IRON, AGED_BRASS, 14);
+  addDrum(mesh, [-365, 16, 785], 568, 6.5, 5.5, AGED_BRASS, AGED_BRASS, 10);
+  addTube(
     mesh,
-    multiply(translation([-365, 592, 785]), rotationX(radians(-28))),
-    () => addDrum(mesh, [0, 0, 0], 86, 5, 4.5, AGED_BRASS),
+    [
+      [-365, 582, 785],
+      [-365, 636, 783],
+      [-365, 678, 766],
+      [-365, 690, 742],
+      [-365, 676, 728],
+    ],
+    [5.5, 5.2, 4.8, 4.5, 4.2],
+    AGED_BRASS,
+    10,
   );
   addDrum(
     mesh,
-    [-365, 598, 742],
-    88,
-    62,
-    38,
+    [-365, 594, 728],
+    84,
+    60,
+    34,
     linen([0.94, 0.88, 0.75]),
     linen([0.78, 0.72, 0.6]),
+    14,
   );
 }
 
-/** The cast-iron wood stove / heater relocated to a proper brick chimney
-    breast and tiled hearth along the left wall, facing inward toward the
-    couch, rug, and bed. */
+/** The heirloom Scandinavian cast-iron wood stove / heater on its brick
+    chimney breast and tiled hearth along the left wall, facing inward toward
+    the couch, rug, and bed. */
 function buildStove(mesh: Mesh): void {
+  const stoveTrim = iron([0.23, 0.23, 0.25]);
+
   // Full-height running-bond brick chimney breast / heat shield on the left wall.
   addBox(mesh, [-W, 0, CHIMNEY_Z0], [-W + 30, EAVE, CHIMNEY_Z1], BRICK);
   // Stepped brick corbel & dark walnut mantle shelf above the stove.
@@ -668,10 +1164,37 @@ function buildStove(mesh: Mesh): void {
     WALNUT,
   );
   // Mantle objects: brass candlestick, glazed cobalt stoneware jug, small frame.
-  addDrum(mesh, [-W + 66, 696, -540], 12, 16, 12, AGED_BRASS);
-  addDrum(mesh, [-W + 66, 708, -540], 54, 7, 7, dusty([0.96, 0.93, 0.84]));
-  addDrum(mesh, [-W + 66, 696, -420], 46, 22, 16, enamel([0.2, 0.35, 0.56]));
-  addDrum(mesh, [-W + 66, 742, -420], 20, 12, 14, enamel([0.2, 0.35, 0.56]));
+  addDrum(mesh, [-W + 66, 696, -540], 12, 16, 12, AGED_BRASS, AGED_BRASS, 12);
+  addDrum(
+    mesh,
+    [-W + 66, 708, -540],
+    54,
+    7,
+    7,
+    dusty([0.96, 0.93, 0.84]),
+    dusty([0.96, 0.93, 0.84]),
+    10,
+  );
+  addDrum(
+    mesh,
+    [-W + 66, 696, -420],
+    46,
+    22,
+    16,
+    enamel([0.2, 0.35, 0.56]),
+    enamel([0.2, 0.35, 0.56]),
+    12,
+  );
+  addDrum(
+    mesh,
+    [-W + 66, 742, -420],
+    20,
+    12,
+    14,
+    enamel([0.2, 0.35, 0.56]),
+    plain([0.08, 0.1, 0.14]),
+    12,
+  );
   withTransform(
     mesh,
     multiply(translation([-W + 58, 696, -482]), rotationY(radians(8))),
@@ -701,95 +1224,300 @@ function buildStove(mesh: Mesh): void {
     [-681, 24, CHIMNEY_Z1 + 4],
     DARK_IRON,
   );
-  // Brass spark-fender rail standing on four tiny brass posts along hearth front.
+  // Brass spark-fender rail standing on four turned brass finial posts.
   for (const fz of [CHIMNEY_Z0 + 18, -520, -440, CHIMNEY_Z1 - 18]) {
-    addDrum(mesh, [-696, 22, fz], 34, 4, 4, AGED_BRASS);
+    addDrum(mesh, [-696, 22, fz], 34, 4.5, 4, AGED_BRASS, AGED_BRASS, 10);
+    addEllipsoid(mesh, [-696, 59, fz], [6, 6, 6], AGED_BRASS, 10, 3);
   }
-  addBox(
+  withTransform(
     mesh,
-    [-700, 48, CHIMNEY_Z0 + 14],
-    [-692, 56, CHIMNEY_Z1 - 14],
-    AGED_BRASS,
+    multiply(translation([-696, 48, CHIMNEY_Z0 + 16]), rotationX(Math.PI / 2)),
+    () =>
+      addDrum(
+        mesh,
+        [0, 0, 0],
+        CHIMNEY_Z1 - CHIMNEY_Z0 - 32,
+        3.8,
+        3.8,
+        AGED_BRASS,
+        AGED_BRASS,
+        10,
+      ),
   );
 
-  // Ribbed Scandinavian cast-iron wood stove standing on the hearth pad.
+  // Heirloom ribbed Scandinavian cast-iron wood stove standing on the hearth pad.
   withTransform(
     mesh,
     multiply(translation([STOVE[0], 22, STOVE[2]]), rotationY(STOVE_YAW)),
     () => {
-      // Four flared cast-iron feet.
-      for (const [lx, lz, sx, sz] of [
-        [-68, -64, 0.14, -0.14],
-        [68, -64, -0.14, -0.14],
-        [-68, 64, 0.14, 0.14],
-        [68, 64, -0.14, 0.14],
+      // Four curved cabriole cast-iron feet with broad floor pads.
+      for (const [sx, sz] of [
+        [-1, -1],
+        [1, -1],
+        [-1, 1],
+        [1, 1],
       ] as const) {
-        splayedLeg(mesh, lx, lz, 48, sx, sz, 9, 14, DARK_IRON);
+        addDrum(
+          mesh,
+          [sx * 76, 0, sz * 70],
+          7,
+          12.5,
+          10,
+          DARK_IRON,
+          DARK_IRON,
+          10,
+        );
+        addTube(
+          mesh,
+          [
+            [sx * 76, 5, sz * 70],
+            [sx * 74, 18, sz * 68],
+            [sx * 67, 34, sz * 62],
+            [sx * 69, 50, sz * 64],
+          ],
+          [9.5, 7.5, 9.5, 13.5],
+          DARK_IRON,
+          10,
+        );
       }
 
-      // Lower ash pan and protruding sculpted ash-catch lip.
-      addBox(mesh, [-84, 46, -78], [84, 72, 82], DARK_IRON);
-      addBox(mesh, [-74, 46, 82], [74, 62, 108], DARK_IRON);
-      addDrum(mesh, [0, 54, 108], 5, 10, 10, AGED_BRASS);
+      // Stepped lower hearth apron, protruding curved ash-catch lip, and
+      // recessed ash drawer with brass spin-wheel draft regulator.
+      addBox(mesh, [-86, 46, -80], [86, 74, 82], DARK_IRON);
+      addBox(mesh, [-82, 48, 82], [82, 62, 106], DARK_IRON);
+      // Rounded front edge on the ash-catch tray + raised catch rim.
+      withTransform(
+        mesh,
+        multiply(translation([-80, 55, 106]), rotationZ(-Math.PI / 2)),
+        () => addDrum(mesh, [0, 0, 0], 160, 7, 7, DARK_IRON, DARK_IRON, 10),
+      );
+      addBox(mesh, [-78, 62, 100], [78, 67, 108], stoveTrim);
+      // Recessed ash-drawer plate + brass rosette draft damper wheel.
+      addBox(mesh, [-44, 52, 81], [44, 71, 86], stoveTrim);
+      withTransform(
+        mesh,
+        multiply(translation([-22, 62, 85]), rotationX(Math.PI / 2)),
+        () => addDrum(mesh, [0, 0, 0], 5, 8.5, 7.5, AGED_BRASS, AGED_BRASS, 10),
+      );
+      withTransform(
+        mesh,
+        multiply(translation([22, 62, 85]), rotationX(Math.PI / 2)),
+        () => addDrum(mesh, [0, 0, 0], 5, 8.5, 7.5, AGED_BRASS, AGED_BRASS, 10),
+      );
+      addEllipsoid(mesh, [0, 62, 89], [6, 5, 5], AGED_BRASS, 10, 3);
 
-      // Main cast-iron firebox chamber + vertical radiating side fins.
-      addBox(mesh, [-80, 72, -74], [80, 290, 76], DARK_IRON);
-      for (const rz of [-52, -18, 16, 50]) {
-        addBox(mesh, [-90, 82, rz - 5], [-80, 282, rz + 5], DARK_IRON);
-        addBox(mesh, [80, 82, rz - 5], [90, 282, rz + 5], DARK_IRON);
+      // Main cast-iron firebox chamber + four fluted corner pilasters.
+      addBox(mesh, [-78, 74, -72], [78, 290, 76], DARK_IRON);
+      for (const [cxp, czp] of [
+        [-78, -72],
+        [78, -72],
+        [-78, 76],
+        [78, 76],
+      ] as const) {
+        addDrum(
+          mesh,
+          [cxp, 72, czp],
+          220,
+          10.5,
+          10.5,
+          stoveTrim,
+          stoveTrim,
+          10,
+        );
+        addDrum(mesh, [cxp, 74, czp], 14, 13, 12, DARK_IRON, DARK_IRON, 10);
+        addDrum(mesh, [cxp, 276, czp], 14, 12, 13, DARK_IRON, DARK_IRON, 10);
       }
 
-      // Stepped cast-iron crown & hotplate rim.
-      addBox(mesh, [-94, 290, -88], [94, 306, 88], DARK_IRON);
-      addBox(mesh, [-84, 306, -78], [84, 316, 78], DARK_IRON);
+      // Five sculpted vertical radiating convection fins on both sides.
+      for (const rz of [-52, -26, 0, 26, 52]) {
+        for (const side of [-1, 1] as const) {
+          addBox(
+            mesh,
+            [side < 0 ? -91 : 78, 86, rz - 4.5],
+            [side < 0 ? -78 : 91, 278, rz + 4.5],
+            stoveTrim,
+          );
+          addBox(
+            mesh,
+            [side < 0 ? -87 : 78, 78, rz - 4.5],
+            [side < 0 ? -78 : 87, 86, rz + 4.5],
+            DARK_IRON,
+          );
+          addBox(
+            mesh,
+            [side < 0 ? -87 : 78, 278, rz - 4.5],
+            [side < 0 ? -78 : 87, 286, rz + 4.5],
+            DARK_IRON,
+          );
+        }
+      }
 
-      // Framed firebox door surround, animated fire, grate bars, & brass latch.
-      const mouth = 78.6;
-      addBox(mesh, [-64, 86, 76], [64, 96, 83], DARK_IRON);
-      addBox(mesh, [-64, 212, 76], [64, 224, 83], DARK_IRON);
-      addBox(mesh, [-64, 96, 76], [-54, 212, 83], DARK_IRON);
-      addBox(mesh, [54, 96, 76], [64, 212, 83], DARK_IRON);
+      // Stepped cast-iron crown cornice, concentric hotplate rings & brass rail.
+      addBox(mesh, [-94, 290, -88], [94, 304, 88], DARK_IRON);
+      addBox(mesh, [-86, 304, -80], [86, 316, 80], stoveTrim);
+      // Two inlaid circular cast-iron hotplate cooking rings on the stove top.
+      for (const [hx, hz, hr] of [
+        [-34, 14, 34],
+        [36, 26, 34],
+      ] as const) {
+        addDrum(mesh, [hx, 315, hz], 3, hr, hr - 1, DARK_IRON, stoveTrim, 16);
+        addDrum(
+          mesh,
+          [hx, 317, hz],
+          2,
+          hr * 0.58,
+          hr * 0.54,
+          stoveTrim,
+          DARK_IRON,
+          14,
+        );
+      }
+      // Subtle burnished brass warming gallery rail along the rear & side crown.
+      addTube(
+        mesh,
+        [
+          [-84, 326, 48],
+          [-84, 326, -78],
+          [84, 326, -78],
+          [84, 326, 48],
+        ],
+        [3.2, 3.2, 3.2, 3.2],
+        AGED_BRASS,
+        8,
+      );
+      for (const [gx, gz] of [
+        [-84, 48],
+        [-84, -78],
+        [84, -78],
+        [84, 48],
+      ] as const) {
+        addDrum(mesh, [gx, 315, gz], 12, 3.2, 3.2, AGED_BRASS, AGED_BRASS, 8);
+      }
+
+      // Arched cathedral firebox door with brass barrel hinges, Gothic lattice
+      // mullions over the animated fire, and coiled brass cool-touch latch.
+      const mouth = 79.4;
+      addBox(mesh, [-66, 84, 76], [66, 98, 84], stoveTrim);
+      addBox(mesh, [-66, 214, 76], [66, 232, 84], stoveTrim);
+      addBox(mesh, [-50, 232, 76], [50, 244, 84], stoveTrim);
+      addBox(mesh, [-66, 98, 76], [-52, 214, 84], stoveTrim);
+      addBox(mesh, [52, 98, 76], [66, 214, 84], stoveTrim);
+      // Decorative arch spandrels framing the upper corners of the glass window.
+      addTriangle(
+        mesh,
+        [-52, 214, 83.2],
+        [-28, 214, 83.2],
+        [-52, 190, 83.2],
+        DARK_IRON,
+      );
+      addTriangle(
+        mesh,
+        [52, 214, 83.2],
+        [52, 190, 83.2],
+        [28, 214, 83.2],
+        DARK_IRON,
+      );
+      // Animated fire & glowing ember bed behind the arched lattice.
       addQuad(
         mesh,
-        [-54, 96, mouth],
-        [54, 96, mouth],
-        [54, 212, mouth],
-        [-54, 212, mouth],
+        [-52, 98, mouth],
+        [52, 98, mouth],
+        [52, 214, mouth],
+        [-52, 214, mouth],
         { color: WHITE, material: MATERIAL.fire },
         true,
       );
-      for (const gx of [-27, 0, 27]) {
+      // Vertical & crossed iron mullions + bottom ember guard bar.
+      for (const gx of [-22, 22]) {
         addBox(
           mesh,
-          [gx - 3.5, 96, mouth],
-          [gx + 3.5, 212, mouth + 3],
+          [gx - 3, 98, mouth],
+          [gx + 3, 214, mouth + 3.2],
           DARK_IRON,
         );
       }
-      addBox(mesh, [64, 142, 78], [74, 170, 86], AGED_BRASS);
+      addBox(mesh, [-52, 118, mouth], [52, 124, mouth + 3.5], DARK_IRON);
+      // Upper Gothic arch struts meeting at center keystone.
+      addTube(
+        mesh,
+        [
+          [-22, 192, mouth + 1.8],
+          [0, 212, mouth + 1.8],
+          [22, 192, mouth + 1.8],
+        ],
+        [3.2, 3.2, 3.2],
+        DARK_IRON,
+        6,
+      );
+      // Two brass barrel hinges on the left side of the firebox door.
+      for (const hy of [112, 194]) {
+        addDrum(mesh, [-67, hy, 82], 18, 4.5, 4.5, AGED_BRASS, AGED_BRASS, 10);
+      }
+      // Coiled brass cool-touch spring handle & latch on the right side.
+      addBox(mesh, [64, 148, 78], [74, 166, 86], DARK_IRON);
+      addDrum(mesh, [71, 134, 88], 38, 5.2, 5.2, AGED_BRASS, AGED_BRASS, 10);
+      addEllipsoid(mesh, [71, 174, 88], [6, 5, 6], AGED_BRASS, 10, 3);
+      addEllipsoid(mesh, [71, 132, 88], [6, 5, 6], AGED_BRASS, 10, 3);
 
-      // Matte-black stovepipe rising cleanly into the sloping roof with collars.
-      addDrum(mesh, [0, 314, -20], 18, 34, 28, DARK_IRON);
-      addDrum(mesh, [0, 330, -20], 640, 24, 24, DARK_IRON);
-      addDrum(mesh, [0, 922, -20], 26, 38, 36, DARK_IRON);
-
-      // Burnished copper tea kettle simmering on the front-right hotplate.
-      addDrum(mesh, [36, 316, 26], 34, 30, 22, COPPER);
-      addEllipsoid(mesh, [36, 350, 26], [22, 10, 22], COPPER);
-      addDrum(mesh, [36, 358, 26], 10, 6, 8, WALNUT);
-      // Curved kettle spout & arched bail handle.
+      // Smooth matte-black stovepipe with stepped collars & brass flue damper key.
+      addDrum(mesh, [0, 314, -20], 20, 35, 27, stoveTrim, DARK_IRON, 14);
+      addDrum(mesh, [0, 332, -20], 638, 24, 24, DARK_IRON, DARK_IRON, 14);
+      addDrum(mesh, [0, 560, -20], 10, 27, 27, stoveTrim, stoveTrim, 14);
+      addDrum(mesh, [0, 922, -20], 26, 39, 36, stoveTrim, DARK_IRON, 14);
+      // Little brass flue damper key projecting from the right side of the pipe.
       withTransform(
         mesh,
-        multiply(translation([60, 336, 32]), rotationZ(radians(-42))),
-        () => addDrum(mesh, [0, 0, 0], 30, 7, 4, COPPER),
+        multiply(translation([24, 438, -20]), rotationZ(-Math.PI / 2)),
+        () => {
+          addDrum(mesh, [0, 0, 0], 18, 3, 2.5, AGED_BRASS, AGED_BRASS, 8);
+          addEllipsoid(mesh, [0, 20, 0], [4, 7, 4], AGED_BRASS, 8, 3);
+        },
       );
-      addBox(mesh, [32, 344, 0], [40, 378, 6], DARK_IRON);
-      addBox(mesh, [32, 344, 46], [40, 378, 52], DARK_IRON);
-      addBox(mesh, [32, 374, 0], [40, 381, 52], WALNUT);
+
+      // Sculpted burnished copper tea kettle simmering on the front-right hotplate.
+      addDrum(mesh, [36, 318, 26], 20, 29, 31, COPPER, COPPER, 14);
+      addDrum(mesh, [36, 338, 26], 18, 31, 21, COPPER, COPPER, 14);
+      addEllipsoid(mesh, [36, 356, 26], [20, 9, 20], COPPER, 14, 4);
+      addDrum(mesh, [36, 363, 26], 10, 5.5, 7.5, WALNUT, WALNUT, 10);
+      // Graceful curved swan-neck copper spout.
+      addTube(
+        mesh,
+        [
+          [58, 330, 30],
+          [70, 336, 33],
+          [76, 349, 35],
+          [82, 362, 37],
+          [88, 366, 38],
+        ],
+        [7.5, 6.2, 5.2, 4.4, 3.8],
+        COPPER,
+        10,
+      );
+      // Smooth arched iron bail handle topped with a turned walnut grip.
+      addTube(
+        mesh,
+        [
+          [36, 350, 2],
+          [36, 372, 2],
+          [36, 384, 14],
+          [36, 386, 26],
+          [36, 384, 38],
+          [36, 372, 50],
+          [36, 350, 50],
+        ],
+        [2.6, 2.6, 2.6, 2.6, 2.6, 2.6, 2.6],
+        DARK_IRON,
+        8,
+      );
+      withTransform(
+        mesh,
+        multiply(translation([36, 386, 13]), rotationX(Math.PI / 2)),
+        () => addDrum(mesh, [0, 0, 0], 26, 4.8, 4.8, WALNUT, WALNUT, 10),
+      );
     },
   );
 
-  // Wrought-iron firewood cradle beside the hearth holding split birch logs.
+  // Curved wrought-iron firewood cradle beside the hearth holding split logs.
   const birchBark = dusty([0.84, 0.8, 0.72]);
   const oakBark = wood([0.36, 0.24, 0.15]);
   const splitHeart = wood([0.78, 0.62, 0.4]);
@@ -797,21 +1525,32 @@ function buildStove(mesh: Mesh): void {
     mesh,
     multiply(translation([-865, 0, -268]), rotationY(radians(8))),
     () => {
-      // Curved wrought-iron cradle sides and crossbars.
-      addBox(mesh, [-48, 0, -58], [48, 10, -48], DARK_IRON);
-      addBox(mesh, [-48, 0, 48], [48, 10, 58], DARK_IRON);
-      addBox(mesh, [-52, 8, -56], [-44, 82, -48], DARK_IRON);
-      addBox(mesh, [44, 8, -56], [52, 82, -48], DARK_IRON);
-      addBox(mesh, [-52, 8, 48], [-44, 82, 56], DARK_IRON);
-      addBox(mesh, [44, 8, 48], [52, 82, 56], DARK_IRON);
-      addBox(mesh, [-50, 10, -52], [-44, 18, 52], DARK_IRON);
-      addBox(mesh, [44, 10, -52], [50, 18, 52], DARK_IRON);
+      // Curved wrought-iron U-hoops & stretcher bars.
+      for (const hz of [-52, 52]) {
+        addTube(
+          mesh,
+          [
+            [-54, 84, hz],
+            [-52, 24, hz],
+            [-36, 8, hz],
+            [36, 8, hz],
+            [52, 24, hz],
+            [54, 84, hz],
+          ],
+          [4.2, 4.2, 4.5, 4.5, 4.2, 4.2],
+          DARK_IRON,
+          8,
+        );
+      }
+      for (const hx of [-48, 48]) {
+        addBox(mesh, [hx - 3, 12, -52], [hx + 3, 18, 52], DARK_IRON);
+      }
       for (const [lx, ly, lz, yaw, bark] of [
-        [-22, 26, 0, 5, birchBark],
-        [10, 26, 4, -4, oakBark],
-        [30, 32, -3, 7, birchBark],
-        [-8, 52, -2, -6, oakBark],
-        [18, 54, 2, 4, birchBark],
+        [-22, 27, 0, 5, birchBark],
+        [10, 27, 4, -4, oakBark],
+        [30, 33, -3, 7, birchBark],
+        [-8, 53, -2, -6, oakBark],
+        [18, 55, 2, 4, birchBark],
       ] as const) {
         withTransform(
           mesh,
@@ -819,19 +1558,24 @@ function buildStove(mesh: Mesh): void {
             translation([lx, ly, lz]),
             multiply(rotationY(radians(yaw)), rotationX(Math.PI / 2)),
           ),
-          () => addDrum(mesh, [0, -48, 0], 96, 14, 13, bark, splitHeart),
+          () => addDrum(mesh, [0, -48, 0], 96, 14, 13, bark, splitHeart, 12),
         );
       }
     },
   );
 
-  // Standing wrought-iron hearth tool rack (poker & shovel) by the hearth corner.
-  addDrum(mesh, [-735, 0, -322], 12, 24, 20, DARK_IRON);
-  addDrum(mesh, [-735, 12, -322], 136, 4.5, 4, DARK_IRON);
-  addEllipsoid(mesh, [-735, 152, -322], [7, 7, 7], AGED_BRASS);
-  addDrum(mesh, [-722, 16, -320], 120, 3, 3, DARK_IRON);
-  addDrum(mesh, [-748, 16, -324], 116, 3, 3, DARK_IRON);
-  addBox(mesh, [-756, 12, -330], [-740, 34, -318], DARK_IRON);
+  // Standing wrought-iron hearth tool rack (hooked poker, shovel & brass pommels).
+  addDrum(mesh, [-735, 0, -322], 12, 24, 20, DARK_IRON, stoveTrim, 12);
+  addDrum(mesh, [-735, 12, -322], 138, 4.5, 4, DARK_IRON, DARK_IRON, 10);
+  addEllipsoid(mesh, [-735, 154, -322], [7, 7, 7], AGED_BRASS, 10, 3);
+  addBox(mesh, [-752, 138, -325], [-718, 143, -319], DARK_IRON);
+  // Hanging hooked poker & ash shovel with turned brass handles.
+  addDrum(mesh, [-722, 16, -320], 112, 2.8, 2.8, DARK_IRON, DARK_IRON, 8);
+  addDrum(mesh, [-722, 126, -320], 14, 4.2, 3.6, AGED_BRASS, AGED_BRASS, 8);
+  addBox(mesh, [-722, 18, -322], [-710, 23, -318], DARK_IRON);
+  addDrum(mesh, [-748, 18, -324], 110, 2.8, 2.8, DARK_IRON, DARK_IRON, 8);
+  addDrum(mesh, [-748, 126, -324], 14, 4.2, 3.6, AGED_BRASS, AGED_BRASS, 8);
+  addBox(mesh, [-757, 12, -330], [-739, 34, -318], DARK_IRON);
 }
 
 /** Low walnut sideboard beneath the front wall shelf, holding vinyl records,
@@ -1434,12 +2178,16 @@ export function buildHut(mesh: Mesh): void {
         () =>
           addBox(mesh, [-34, 0, -22], [34, 12, 22], dusty([0.88, 0.8, 0.64])),
       );
-      // Cobweb tucked under the front-left corner of the window desk.
+      // Cobweb anchored under the walnut apron and hugging the splayed
+      // front-left leg so it stays completely clear of the drawer and tabletop.
       web(
         mesh,
-        [-wtHalfW + 30, wtH - 16, wtHalfD - 8],
-        [135, 0, 0],
-        [0, -135, 0],
+        [-90, wtH - 64, 55],
+        [118, 0, 0],
+        [6.7, -118, -8],
+        0.37,
+        0.3,
+        0.86,
       );
     },
   );
@@ -1912,12 +2660,48 @@ export function buildHut(mesh: Mesh): void {
     { color: WHITE, material: MATERIAL.dark },
   );
 
-  // Cobwebs in the upper corners and top-right window pane (grow with decay).
-  web(mesh, [-W, EAVE - 34, -D], [150, -35, 0], [0, -35, 150]);
-  web(mesh, [W, EAVE - 34, -D], [-150, -35, 0], [0, -35, 150]);
-  web(mesh, [-W, EAVE - 32, -300], [150, 0, 0], [0, -150, 0]);
-  web(mesh, [W, EAVE - 32, -300], [-150, 0, 0], [0, -150, 0]);
-  web(mesh, [x1, y1, -D - 15], [-120, 0, 0], [0, -120, 0]);
+  // Cobwebs in exposed architectural corners and window panes, staggered so
+  // they colonize the hut gradually without clipping into corner posts or door
+  // trim.
+  web(
+    mesh,
+    [-W + 40, EAVE + 17, -D + 3],
+    [148, 69, 0],
+    [0, -148, 0],
+    0.14,
+    0.14,
+    0.72,
+  );
+  web(
+    mesh,
+    [W - 40, EAVE + 17, -D + 3],
+    [-152, 71, 0],
+    [0, -155, 0],
+    0.58,
+    0.22,
+    0.8,
+  );
+  web(
+    mesh,
+    [-W + 3, EAVE - 32, -300],
+    [148, 0, 0],
+    [0, -148, 0],
+    0.73,
+    0.26,
+    0.84,
+  );
+  web(mesh, [18, EAVE + 22, -300], [138, 0, 0], [0, 138, 0], 0.29, 0.34, 0.9);
+  web(
+    mesh,
+    [W - 3, EAVE - 32, 250],
+    [-122, 0, 0],
+    [0, -112, 0],
+    0.84,
+    0.38,
+    0.92,
+  );
+  web(mesh, [x1, y1, -D - 15], [-120, 0, 0], [0, -120, 0], 0.46, 0.16, 0.74);
+  web(mesh, [x0, y0, -D - 15], [92, 0, 0], [0, 92, 0], 0.91, 0.42, 0.94);
 }
 
 /** The window panes, drawn last because you see through them. */
@@ -1952,8 +2736,53 @@ export type PropsState = {
   leaflets: readonly Vec3[];
 };
 
-/** The things in the hut that change shape as time goes by. */
-export function buildProps(mesh: Mesh, state: PropsState): void {
+/** Where a leaflet is on its way from under the door to where it lands
+    (`at`, turned by `turn`), `flight` of the way there. It slips out flat
+    along the floor, lifts and flutters as it glides, spins round and
+    settles. */
+function leafletInFlight(
+  at: Vec3,
+  turn: number,
+  flight: number,
+  seed: number,
+): Mat4 {
+  const landed = multiply(translation(at), rotationY(turn));
+  if (flight >= 1) return landed;
+  const t = clamp(flight, 0, 1);
+  // Fast out from under the door, slowing as it comes down.
+  const along = 1 - (1 - t) ** 3;
+  const from: Vec3 = [
+    W + 40,
+    1.5,
+    clamp(at[2] + (random(seed + 90) - 0.5) * 80, DOOR.z0 + 40, DOOR.z1 - 40),
+  ];
+  // Flat under the gap first, then up on the air and gently down.
+  const up = clamp((t - 0.12) / 0.88, 0, 1);
+  const lift = Math.sin(Math.PI * up) * (26 + random(seed + 91) * 18);
+  const position: Vec3 = [
+    lerp(from[0], at[0], along),
+    lerp(from[1], at[1], along) + lift,
+    lerp(from[2], at[2], along),
+  ];
+  const side = random(seed + 92) < 0.5 ? -1 : 1;
+  const spin = side * radians(110 + random(seed + 93) * 80) * (1 - along);
+  const flutter = (1 - t) * Math.sin(up * Math.PI * 3.5 + seed);
+  return [
+    translation(position),
+    rotationY(turn + spin),
+    rotationX(flutter * 0.45),
+    rotationZ(flutter * 0.25 * side),
+  ].reduce(multiply);
+}
+
+/** The things in the hut that change shape as time goes by. `flights` says
+    how far each leaflet is on its way in under the door, from 0 (just
+    pushed) to 1 (lying still); a leaflet without one has landed. */
+export function buildProps(
+  mesh: Mesh,
+  state: PropsState,
+  flights: readonly number[] = [],
+): void {
   const { decay, hour, videos, files, coins, leaflets } = state;
 
   // The tally scratched in the front plaster wall: four strokes and one across.
@@ -2165,6 +2994,7 @@ export function buildProps(mesh: Mesh, state: PropsState): void {
     const turn = radians(
       baseDeg + (secondLayer ? (random(i + 80) - 0.5) * 34 : 0),
     );
+    const place = leafletInFlight(at, turn, flights[i] ?? 1, i);
     const strips: readonly (readonly [number, Paint])[] = [
       [-46, paper],
       [-34, print],
@@ -2175,7 +3005,7 @@ export function buildProps(mesh: Mesh, state: PropsState): void {
       [38, paper],
       [46, paper],
     ];
-    withTransform(mesh, multiply(translation(at), rotationY(turn)), () => {
+    withTransform(mesh, place, () => {
       for (let strip = 0; strip < strips.length - 1; strip++) {
         const [x0s, paint] = strips[strip];
         const x1s = strips[strip + 1][0];

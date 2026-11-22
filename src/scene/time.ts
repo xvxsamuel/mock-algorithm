@@ -5,8 +5,11 @@ import { clamp, lerp, mix, type Vec3 } from "./math";
    the afternoon deeper into night, rots the walls a little more, and leaves
    the CRT television as the last light in the room. */
 
-/** Reel pulls that pass for one hour on the hut's clock (10 min per pull). */
+/** Reel pulls that pass for one hour of daylight (10 min per pull). */
 const PULLS_PER_HOUR = 6;
+/** Minutes the hands of the hut's clock move on with each reel pull. Kept
+    small so the hands creep rather than jump. */
+const CLOCK_MINUTES_PER_PULL = 1;
 /** The hour it is in the hut when you sit down. */
 const START_HOUR = 14;
 /** Reel pulls after which the hut is well on its way to ruin. */
@@ -17,10 +20,15 @@ function hoursPassed(pulls: number): number {
   return Math.max(pulls, 0) / PULLS_PER_HOUR;
 }
 
-/** The hour on the hut's clock: 14.5 is half past two. It keeps counting
-    past midnight. */
+/** The hour the light outside the hut is at: 14.5 is half past two. It
+    keeps counting past midnight. */
 export function hourAfter(pulls: number): number {
   return START_HOUR + hoursPassed(pulls);
+}
+
+/** The hour the hands of the hut's clock show: one minute on per reel. */
+export function clockAfter(pulls: number): number {
+  return START_HOUR + (Math.max(pulls, 0) * CLOCK_MINUTES_PER_PULL) / 60;
 }
 
 /**

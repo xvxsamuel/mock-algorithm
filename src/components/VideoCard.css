@@ -159,16 +159,36 @@
   line-height: 1.35;
 }
 
-/* An ad says it is one. (A paid post does not.) */
-.card-sponsored {
-  display: inline-block;
+/* Disclosure tags under the caption (Sponsored, Contains AI-generated media). */
+.card-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
   margin: 6px 0 0;
-  padding: 1px 6px;
+}
+
+.card-tag {
+  display: inline-block;
+  padding: 2px 6px;
   border-radius: 4px;
   background: rgb(0 0 0 / 0.35);
   font-size: 12px;
-  font-weight: 600;
+  line-height: 1.35;
   text-shadow: none;
+}
+
+/* An ad says it is one. (A paid post does not.) */
+.card-sponsored {
+  font-weight: 600;
+}
+
+/* TikTok's disclosure pill for AI-generated content. */
+.card-ai-label {
+  background: rgb(22 24 35 / 0.38);
+  color: rgb(255 255 255 / 0.92);
+  font-weight: 500;
+  -webkit-backdrop-filter: blur(4px);
+  backdrop-filter: blur(4px);
 }
 
 .card-cta {
