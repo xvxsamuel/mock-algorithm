@@ -1,5 +1,10 @@
 import { useRef, useState, type PointerEvent } from "react";
 import { CATEGORY_COLORS } from "../data/categories";
+import {
+  NEWS_REPORTS,
+  reportIndexAt,
+  unlockedReportsCount,
+} from "../data/news";
 import { useFeed } from "../hooks/useFeed";
 import { useHutScene, type Look } from "../hooks/useHutScene";
 import { notesOf, useLinks } from "../hooks/useLinks";
@@ -16,6 +21,7 @@ import PhoneFeed from "./PhoneFeed";
 import PlanBreak from "./PlanBreak";
 import SessionEnd from "./SessionEnd";
 import SheetHandle from "./SheetHandle";
+import TvReportCard from "./TvReportCard";
 import "./RoomScene.css";
 
 /** Degrees the view turns for each px you drag. */
@@ -52,24 +58,29 @@ const DOTS = `url("data:image/svg+xml,${encodeURIComponent(
 
 const CORNERS = ["tl", "tr", "br", "bl"] as const;
 
-const VIEWS = ["phone", "room"] as const;
+const VIEWS = ["phone", "tv", "room"] as const;
 type View = (typeof VIEWS)[number];
 
 const VIEW_NAMES: Record<View, string> = {
   phone: "Phone",
+  tv: "TV",
   room: "Room",
 };
 
 const VIEW_LOOKS: Record<View, Look> = {
-  // A little above the phone, so the wall behind it shows over its top.
-  phone: { yaw: 0, pitch: -20 },
-  room: { yaw: -5, pitch: 6 },
+  // Comfortably framed from the red couch: window on the left, shelf & clock
+  // above the phone, angled CRT TV to the right, lead flyers creeping in below.
+  phone: { yaw: 0, pitch: -18 },
+  // Turned right toward the angled CRT television, leaving room for the card.
+  tv: { yaw: 20, pitch: -12 },
+  // Looking up from the phone across the living room.
+  room: { yaw: 2, pitch: 2 },
 };
 
 function clampLook(look: Look): Look {
   return {
-    yaw: Math.min(Math.max(look.yaw, -100), 100),
-    pitch: Math.min(Math.max(look.pitch, -55), 40),
+    yaw: Math.min(Math.max(look.yaw, -155), 155),
+    pitch: Math.min(Math.max(look.pitch, -62), 42),
   };
 }
 
@@ -85,8 +96,20 @@ function RoomScene() {
   const feed = useFeed();
 
   // Nothing runs until the hut has been drawn: then it all starts at once.
+  const [logoReady, setLogoReady] = useState(false);
+  const [loadProgress, setLoadProgress] = useState(0);
   const [ready, setReady] = useState(false);
-  const session = useSession(feed, !ready);
+  const [view, setView] = useState<View>("phone");
+  // Set once you drag; a view button takes over again.
+  const [free, setFree] = useState<Look | null>(null);
+  const [dragging, setDragging] = useState(false);
+  const drag = useRef<{ id: number; x: number; y: number } | null>(null);
+  const look = free ?? VIEW_LOOKS[view];
+
+  // Looking at the TV or inspecting the room pauses the feed clock so taking
+  // a break to read reports or data never punishes you.
+  const lookingAway = free === null && view !== "phone";
+  const session = useSession(feed, !ready || lookingAway);
   // At first only the phone: the machine comes in as you scroll.
   const reveal = useReveal(feed);
   // Wide screens: the panel floats beside the phone, until you put it away.
@@ -99,12 +122,23 @@ function RoomScene() {
     feed,
     reveal.panel && (panelShown || !wide),
   );
-  const [view, setView] = useState<View>("phone");
-  // Set once you drag; a view button takes over again.
-  const [free, setFree] = useState<Look | null>(null);
-  const [dragging, setDragging] = useState(false);
-  const drag = useRef<{ id: number; x: number; y: number } | null>(null);
-  const look = free ?? VIEW_LOOKS[view];
+
+  // TV broadcasts unlock strictly with reel pulls. Manually browsing an older
+  // broadcast stays active until a new pull unlocks the next report.
+  const pulls = feed.history.length;
+  const latestReport = reportIndexAt(pulls);
+  const unlockedReports = unlockedReportsCount(pulls);
+  const [manualReport, setManualReport] = useState<{
+    atLatest: number;
+    index: number;
+  } | null>(null);
+  const [seenReport, setSeenReport] = useState(0);
+  const activeReportIndex =
+    manualReport !== null && manualReport.atLatest === latestReport
+      ? Math.min(manualReport.index, unlockedReports - 1)
+      : latestReport;
+  const activeReport = NEWS_REPORTS[activeReportIndex];
+  const hasUnreadReport = latestReport > seenReport && view !== "tv";
 
   const stage = useRef<HTMLDivElement>(null);
   const canvas = useRef<HTMLCanvasElement>(null);
@@ -116,10 +150,9 @@ function RoomScene() {
   useHutScene(stage, canvas, phone, panel, scrolled, {
     look,
     dragging,
-    // Like the session clock, the hut waits while a card or the sheet is
-    // over the video.
-    running: feed.started && !feed.ended && !feed.held,
-    videos: feed.history.length,
+    lowerHand: free === null && view === "tv",
+    videos: pulls,
+    reportIndex: activeReportIndex,
     files: feed.traits.map((trait) => trait.confidence),
     // A view sells for a thousandth of the winning bid.
     coins: feed.market.sales.reduce(
@@ -131,7 +164,12 @@ function RoomScene() {
     ),
     glow: CATEGORY_COLORS[feed.current.video.category][1],
     aside,
-    onReady: () => setReady(true),
+    logoReady,
+    onProgress: setLoadProgress,
+    onReady: () => {
+      setLoadProgress(1);
+      setReady(true);
+    },
   });
 
   function startDrag(event: PointerEvent<HTMLDivElement>) {
@@ -168,6 +206,7 @@ function RoomScene() {
   function show(next: View) {
     setFree(null);
     setView(next);
+    if (next === "tv") setSeenReport(latestReport);
   }
 
   const classes = ["room"];
@@ -190,7 +229,7 @@ function RoomScene() {
         {/* In your hand. The hut moves it there every frame. It keeps its
             own presses and scrolling: you only look around by dragging the
             room. */}
-        <div className="room-phone" ref={phone}>
+        <div className="room-phone" ref={phone} inert={lookingAway}>
           <section
             className="room-phone-body"
             aria-label="Video feed"
@@ -317,24 +356,44 @@ function RoomScene() {
       <LinkLayer links={links} onDone={removeLink} liveOf={liveOf} />
 
       <div className="room-looks" inert={feed.ended || !reveal.panel}>
+        {free === null && view === "tv" && (
+          <TvReportCard
+            report={activeReport}
+            index={activeReportIndex}
+            unlocked={unlockedReports}
+            pulls={pulls}
+            onSelect={(index) => {
+              setManualReport({ atLatest: latestReport, index });
+              setSeenReport(latestReport);
+            }}
+          />
+        )}
         <div className="levers" role="group" aria-label="Where you look">
-          {VIEWS.map((name) => (
-            <button
-              key={name}
-              type="button"
-              className={
-                free === null && view === name ? "lever is-on" : "lever"
-              }
-              aria-pressed={free === null && view === name}
-              onClick={() => show(name)}
-            >
-              {VIEW_NAMES[name]}
-            </button>
-          ))}
+          {VIEWS.map((name) => {
+            const active = free === null && view === name;
+            const classes = ["lever"];
+            if (active) classes.push("is-on");
+            if (name === "tv" && hasUnreadReport) classes.push("is-alert");
+            return (
+              <button
+                key={name}
+                type="button"
+                className={classes.join(" ")}
+                aria-pressed={active}
+                onClick={() => show(name)}
+              >
+                {VIEW_NAMES[name]}
+              </button>
+            );
+          })}
         </div>
       </div>
 
-      <LoadingScreen ready={ready} />
+      <LoadingScreen
+        progress={loadProgress}
+        ready={ready}
+        onLogoReady={() => setLogoReady(true)}
+      />
 
       {feed.ended && (
         <SessionEnd
