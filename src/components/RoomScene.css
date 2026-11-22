@@ -236,14 +236,17 @@
 
 /* --- Where you look --- */
 
-/* Under the phone, wherever the hut has put it. */
+/* Under the phone, wherever the hut has put it. Stacks the TV broadcast card
+   above the view switcher when watching the television. */
 .room-looks {
   position: absolute;
   right: 0;
   bottom: 16px;
   left: 0;
   display: flex;
-  justify-content: center;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
   pointer-events: none;
   transition: right 0.45s var(--ease);
 }
@@ -252,6 +255,23 @@
   background: color-mix(in srgb, var(--bg) 92%, transparent);
   box-shadow: var(--drop);
   pointer-events: auto;
+}
+
+.room-looks .lever.is-alert::after {
+  content: "";
+  display: inline-block;
+  width: 6px;
+  height: 6px;
+  margin-left: 6px;
+  vertical-align: 1px;
+  background: var(--take);
+  animation: tv-blink 1.4s steps(2, end) infinite;
+}
+
+@keyframes tv-blink {
+  50% {
+    opacity: 0.2;
+  }
 }
 
 @media (min-width: 901px) {
@@ -315,5 +335,9 @@
   .room-tab,
   .room-looks {
     transition: none;
+  }
+
+  .room-looks .lever.is-alert::after {
+    animation: none;
   }
 }

@@ -127,7 +127,7 @@ function EngineLens({ feed }: EngineLensProps) {
         </section>
 
         <section className="pane eng-tests">
-          <ExperimentField sessionMs={feed.sessionMs} />
+          <ExperimentField videosSeen={feed.history.length} />
         </section>
       </div>
     </div>

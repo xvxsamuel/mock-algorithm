@@ -1,34 +1,35 @@
 import { clamp, lerp, mix, type Vec3 } from "./math";
 
-/* Time in the hut runs on your attention: it only moves while you look at
-   the phone, and then it moves fast. A few minutes of scrolling is the whole
-   afternoon and the evening. Nothing here is animated to look fast: you look
-   up, and it is simply later. */
+/* Time in the hut runs on reel pulls, not the wall clock: stopping to read
+   the algorithm panel or watch the TV never punishes you. Every swipe pulls
+   the afternoon deeper into night, rots the walls a little more, and leaves
+   the CRT television as the last light in the room. */
 
-/** Seconds of looking at the phone that pass for one hour in the hut. */
-const SECONDS_PER_HOUR = 22;
+/** Reel pulls that pass for one hour on the hut's clock (10 min per pull). */
+const PULLS_PER_HOUR = 6;
 /** The hour it is in the hut when you sit down. */
 const START_HOUR = 14;
-/** Hours after which the hut is well on its way to ruin. */
-const DECAY_HOURS = 5.2;
+/** Reel pulls after which the hut is well on its way to ruin. */
+const DECAY_PULLS = 44;
 
-/** Hours gone by in the hut after this many seconds on the phone. */
-function hoursPassed(seconds: number): number {
-  return seconds / SECONDS_PER_HOUR;
+/** Hours gone by in the hut after this many reel pulls. */
+function hoursPassed(pulls: number): number {
+  return Math.max(pulls, 0) / PULLS_PER_HOUR;
 }
 
 /** The hour on the hut's clock: 14.5 is half past two. It keeps counting
     past midnight. */
-export function hourAfter(seconds: number): number {
-  return START_HOUR + hoursPassed(seconds);
+export function hourAfter(pulls: number): number {
+  return START_HOUR + hoursPassed(pulls);
 }
 
 /**
- * How far gone the hut is, from 0 (as you found it) to 1 (ruined). It starts
- * slowly, so the first minute still looks like a nice afternoon.
+ * How far gone the hut is, from 0 (as you found it) to 1 (ruined). Creeps
+ * very slowly over dozens of reels so you never catch a sudden jump.
  */
-export function decayAfter(seconds: number): number {
-  return 1 - Math.exp(-Math.pow(hoursPassed(seconds) / DECAY_HOURS, 1.8));
+export function decayAfter(pulls: number): number {
+  const safe = Math.max(pulls, 0);
+  return 1 - Math.exp(-Math.pow(safe / DECAY_PULLS, 1.75));
 }
 
 /** The light at one moment of the day. Colours are red, green, blue. */
@@ -37,7 +38,7 @@ export type Daylight = {
   ambient: Vec3;
   /** Extra light near the window, from the sky. */
   skyLight: Vec3;
-  /** The beam that falls through the window: the sun, later the moon. */
+  /** The beam that falls through the window: the sun, later fading moonlight. */
   beam: Vec3;
   /** The sky at the top of the window, and low over the hills. */
   skyTop: Vec3;
@@ -50,10 +51,11 @@ export type Daylight = {
 
 type Moment = Daylight & { hour: number };
 
-/** The day, as a few moments. The light between two is a blend of them. */
+/** The day, as a few moments. Late at night even the moonlight dies down so
+    that the flickering CRT TV becomes the only thing lighting the hut. */
 const MOMENTS: readonly Moment[] = [
   {
-    hour: 16.5,
+    hour: 15.2,
     ambient: [0.96, 0.85, 0.66],
     skyLight: [0.52, 0.44, 0.28],
     beam: [1.55, 1.22, 0.7],
@@ -63,48 +65,59 @@ const MOMENTS: readonly Moment[] = [
     land: 1,
   },
   {
-    hour: 18.6,
-    ambient: [0.8, 0.6, 0.44],
-    skyLight: [0.55, 0.36, 0.22],
-    beam: [1.5, 0.8, 0.3],
-    skyTop: [0.3, 0.42, 0.72],
-    skyLow: [1, 0.7, 0.42],
+    hour: 17.8,
+    ambient: [0.76, 0.57, 0.42],
+    skyLight: [0.52, 0.34, 0.2],
+    beam: [1.4, 0.74, 0.28],
+    skyTop: [0.28, 0.38, 0.68],
+    skyLow: [0.96, 0.66, 0.38],
     night: 0,
-    land: 0.8,
+    land: 0.76,
   },
   {
-    hour: 20,
-    ambient: [0.4, 0.34, 0.42],
-    skyLight: [0.34, 0.22, 0.24],
-    beam: [0.5, 0.2, 0.1],
-    skyTop: [0.13, 0.15, 0.36],
-    skyLow: [0.88, 0.4, 0.26],
-    night: 0.15,
-    land: 0.32,
+    hour: 19.6,
+    ambient: [0.34, 0.29, 0.38],
+    skyLight: [0.28, 0.19, 0.22],
+    beam: [0.42, 0.18, 0.1],
+    skyTop: [0.11, 0.13, 0.32],
+    skyLow: [0.78, 0.34, 0.24],
+    night: 0.22,
+    land: 0.28,
   },
   {
     hour: 21.4,
-    ambient: [0.3, 0.35, 0.54],
-    skyLight: [0.45, 0.55, 0.9],
-    beam: [1.05, 1.25, 1.8],
-    skyTop: [0.05, 0.075, 0.19],
-    skyLow: [0.16, 0.22, 0.42],
+    ambient: [0.16, 0.19, 0.3],
+    skyLight: [0.24, 0.3, 0.48],
+    beam: [0.48, 0.58, 0.85],
+    skyTop: [0.04, 0.06, 0.16],
+    skyLow: [0.12, 0.17, 0.32],
     night: 0.85,
-    land: 0.06,
+    land: 0.05,
   },
   {
-    hour: 23,
-    ambient: [0.28, 0.33, 0.52],
-    skyLight: [0.45, 0.55, 0.9],
-    beam: [1.05, 1.25, 1.8],
-    skyTop: [0.04, 0.06, 0.16],
-    skyLow: [0.13, 0.18, 0.36],
+    hour: 23.4,
+    ambient: [0.06, 0.07, 0.12],
+    skyLight: [0.1, 0.13, 0.22],
+    beam: [0.16, 0.2, 0.32],
+    skyTop: [0.025, 0.035, 0.09],
+    skyLow: [0.06, 0.085, 0.16],
     night: 1,
-    land: 0.035,
+    land: 0.025,
+  },
+  {
+    hour: 25.5,
+    ambient: [0.02, 0.024, 0.04],
+    skyLight: [0.035, 0.045, 0.075],
+    beam: [0.04, 0.05, 0.085],
+    skyTop: [0.014, 0.018, 0.045],
+    skyLow: [0.035, 0.045, 0.08],
+    night: 1,
+    land: 0.012,
   },
 ];
 
-/** The light at this hour on the hut's clock. After dark it stays dark. */
+/** The light at this hour on the hut's clock. Late at night the sky stays
+    black and only the TV keeps the room lit. */
 export function daylightAt(hour: number): Daylight {
   const last = MOMENTS.length - 1;
   if (hour <= MOMENTS[0].hour) return MOMENTS[0];

@@ -1,9 +1,6 @@
 import { EXPERIMENTS_RUNNING, MY_EXPERIMENTS } from "../data/experiments";
 import "./ExperimentField.css";
 
-/** How long each of your experiments stays highlighted. */
-const CYCLE_MS = 2600;
-
 /** Where your experiments sit in the field, in %. Scattered by hand. */
 const SPOTS: readonly [number, number][] = [
   [8, 34],
@@ -20,14 +17,14 @@ const SPOTS: readonly [number, number][] = [
   [93, 42],
 ];
 
-type ExperimentFieldProps = { sessionMs: number };
+type ExperimentFieldProps = { videosSeen: number };
 
 /**
  * A field of faint dots stands for every experiment running at once; the
- * bright ones are the ones running on you, one named at a time.
+ * bright ones are the ones running on you, one named at a time as you scroll.
  */
-function ExperimentField({ sessionMs }: ExperimentFieldProps) {
-  const active = Math.floor(sessionMs / CYCLE_MS) % MY_EXPERIMENTS.length;
+function ExperimentField({ videosSeen }: ExperimentFieldProps) {
+  const active = videosSeen % MY_EXPERIMENTS.length;
   const experiment = MY_EXPERIMENTS[active];
 
   return (
