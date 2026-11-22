@@ -25,8 +25,10 @@ import {
   type Mat4,
 } from "../scene/math";
 import {
+  createHutLoader,
   createHutRenderer,
   hutPixel,
+  type HutLoader,
   type HutRenderer,
 } from "../scene/renderer";
 import { decayAfter, hourAfter } from "../scene/time";
@@ -44,10 +46,12 @@ type HutInput = {
   look: Look;
   /** You are dragging the view around: it follows at once. */
   dragging: boolean;
-  /** The feed is running. Time only passes in the hut while it is. */
-  running: boolean;
-  /** Videos you have swiped past. */
+  /** Lower the hand out of the way (e.g. when looking at the TV). */
+  lowerHand: boolean;
+  /** Videos you have swiped past. Drives clock, decay, tally, and camera. */
   videos: number;
+  /** Index into NEWS_REPORTS currently shown on the CRT television. */
+  reportIndex: number;
   /** How sure it is of each thing it has guessed about you, 0 to 1. */
   files: readonly number[];
   /** Coins your views were sold for. */
@@ -58,12 +62,16 @@ type HutInput = {
   glow: string;
   /** The panel is open beside the phone: the view moves over for it. */
   aside: boolean;
+  /** Whether the loading screen's logo has decoded and is ready to paint. */
+  logoReady: boolean;
+  /** Real startup progress, from 0 to 1. */
+  onProgress: (progress: number) => void;
   /** Called once, when the hut has been drawn (or can't be). */
   onReady: () => void;
 };
 
 /** The pitch at which the phone is held up, and at which it has dropped. */
-const HELD_AT = -20;
+const HELD_AT = -18;
 const DROPPED_AT = 0;
 /** How fast the view catches up with where you look. */
 const EASE = 6;
@@ -88,6 +96,8 @@ const TIP_EASE = 45;
 /** Frames drawn before the hut counts as loaded: the first one is where the
     graphics card builds its programs, which can take seconds. */
 const READY_AFTER = 2;
+/** Never stall startup if web fonts take too long to settle. */
+const FONTS_TIMEOUT_MS = 1000;
 
 /** Turns a point upside down: the page counts down, the hut counts up. */
 const FLIP = scaling(1, -1, 1);
@@ -129,11 +139,32 @@ export function useHutScene(
     ) {
       return;
     }
-    // Set up on the second frame, not now: setting up blocks the page for
-    // a while, and the loading screen has to be on it first.
+    // Wait for the loading screen's logo and pixel fonts to paint before
+    // running WebGL setup, then advance setup one real stage per frame so the
+    // loading bar reflects actual work.
+    let loader: HutLoader | null = null;
     let renderer: HutRenderer | null = null;
-    let made = false;
+    let setupDone = false;
     let drawn = 0;
+    let logoPaintFrames = 0;
+    let lastProgress = -1;
+    const reportProgress = (value: number) => {
+      const clamped = clamp(value, 0, 1);
+      if (clamped <= lastProgress) return;
+      lastProgress = clamped;
+      latest.current.onProgress(clamped);
+    };
+
+    let fontsReady = typeof document === "undefined" || !("fonts" in document);
+    let fontTimer = 0;
+    if (!fontsReady) {
+      const markFonts = () => {
+        fontsReady = true;
+        window.clearTimeout(fontTimer);
+      };
+      fontTimer = window.setTimeout(markFonts, FONTS_TIMEOUT_MS);
+      document.fonts.ready.then(markFonts, markFonts);
+    }
     // The graphics card can drop the picture (e.g. the tab was asleep for a
     // long time). Asking to get it back means setting the hut up again.
     const onLost = (event: Event) => event.preventDefault();
@@ -171,8 +202,11 @@ export function useHutScene(
     /** How far the middle of the view is from the middle of the page, in
         page widths. Not known until the first frame. */
     let shift: number | null = null;
-    /** Seconds you have looked at the phone while the feed ran. */
-    let seconds = 0;
+    /** Smoothed reel pull count for hut clock and decay. Only advances when
+        you pull another reel; taking a break freezes the room completely. */
+    let pulls = latest.current.videos;
+    /** 0: phone held up, 1: hand dropped out of the way. */
+    let handDrop = latest.current.lowerHand ? 1 : 0;
     let glow = colorOf(latest.current.glow);
     /** The video the feed last stood still on. */
     let rested = Math.round(scrolled.current);
@@ -211,11 +245,31 @@ export function useHutScene(
 
     const frame = (now: number) => {
       request = requestAnimationFrame(frame);
-      if (!made) {
-        made = true;
-        renderer = createHutRenderer(canvasElement);
-        // No WebGL: there is nothing to wait for.
-        if (renderer === null) latest.current.onReady();
+      if (!setupDone) {
+        before = now;
+        if (!latest.current.logoReady || !fontsReady) {
+          return;
+        }
+        // Two painted frames after logo + fonts are ready so the eye logo is
+        // guaranteed on screen before any WebGL call touches the main thread.
+        if (logoPaintFrames < 2) {
+          logoPaintFrames += 1;
+          if (logoPaintFrames === 1) reportProgress(1 / 12);
+          return;
+        }
+        if (loader === null) {
+          loader = createHutLoader(canvasElement);
+        }
+        const finished = loader.step(false);
+        reportProgress(1 / 12 + loader.progress() * (9 / 12));
+        if (!finished) return;
+        setupDone = true;
+        renderer = loader.renderer();
+        if (renderer === null) {
+          // No WebGL: there is nothing to wait for.
+          reportProgress(1);
+          latest.current.onReady();
+        }
         return;
       }
       const elapsed = Math.min((now - before) / 1000, 0.1);
@@ -234,27 +288,21 @@ export function useHutScene(
           ? wantShift
           : shift + (wantShift - shift) * (1 - Math.exp(-elapsed * EASE));
 
-      // How far, in degrees, you look away from where your hand holds the
-      // phone up. Time passes while you look at it.
-      const off =
-        Math.acos(
-          clamp(
-            Math.cos(radians(yaw)) *
-              Math.cos(radians(pitch)) *
-              Math.cos(radians(HOLD_DEG)) -
-              Math.sin(radians(pitch)) * Math.sin(radians(HOLD_DEG)),
-            -1,
-            1,
-          ),
-        ) *
-        (180 / Math.PI);
-      const attention = 1 - smoothstep(6, 20, off);
-      if (want.running) seconds += elapsed * attention;
-      const decay = decayAfter(seconds);
+      // Progression is strictly driven by reel pulls, never wall-clock time.
+      // Clock hands and wall notches step per reel, while daylight and room
+      // withering glide imperceptibly slowly toward the reel count so there
+      // is never a visible pop or flash as you scroll—and stopping freezes all.
+      const driftEase = calm ? 1 : 1 - Math.exp(-elapsed * 0.75);
+      pulls += (want.videos - pulls) * driftEase;
+      if (Math.abs(want.videos - pulls) < 0.001) pulls = want.videos;
+      const decay = decayAfter(pulls);
 
-      // Look up and your hand drops, out of the way of the room.
-      const lowered = clamp((pitch - HELD_AT) / (DROPPED_AT - HELD_AT), 0, 1);
-      const dip = radians(lerp(HOLD_DEG, REST_DEG, lowered));
+      // Look up or switch to the TV and your hand drops, out of the way.
+      const wantDrop = want.lowerHand
+        ? 1
+        : clamp((pitch - HELD_AT) / (DROPPED_AT - HELD_AT), 0, 1);
+      handDrop += (wantDrop - handDrop) * ease;
+      const dip = radians(lerp(HOLD_DEG, REST_DEG, handDrop));
       // A hand is never quite still.
       const beat = calm ? 0 : now / 1000;
       const held = multiply(
@@ -309,7 +357,7 @@ export function useHutScene(
       const follow = press === 0 ? 1 : 1 - Math.exp(-elapsed * TIP_EASE);
       tip = mix2(tip, wantTip, follow);
 
-      glow = mix(glow, colorOf(want.glow), 1 - Math.exp(-elapsed * 3));
+      glow = mix(glow, colorOf(want.glow), 1 - Math.exp(-elapsed * 1.4));
 
       const view = multiply(
         rotationX(radians(-pitch)),
@@ -341,30 +389,34 @@ export function useHutScene(
         phone: held,
         props: {
           decay,
-          hour: hourAfter(seconds),
+          hour: hourAfter(want.videos),
           videos: want.videos,
           files: want.files,
           coins: want.coins,
           leaflets: want.leaflets.map(colorOf),
         },
         hand: { turned: smoothstep(0.3, 1, decay), press, tip },
+        dayHour: hourAfter(pulls),
+        reportIndex: want.reportIndex,
         glow,
         time: beat,
       });
-      drawn += 1;
-      if (drawn === READY_AFTER) latest.current.onReady();
+      if (drawn < READY_AFTER) {
+        drawn += 1;
+        reportProgress((10 + drawn) / 12);
+        if (drawn === READY_AFTER) latest.current.onReady();
+      }
     };
-    // Two frames in, so the loading screen has been painted.
-    request = requestAnimationFrame(() => {
-      request = requestAnimationFrame(frame);
-    });
+    request = requestAnimationFrame(frame);
 
     return () => {
       cancelAnimationFrame(request);
+      window.clearTimeout(fontTimer);
       observer.disconnect();
       phoneElement.removeEventListener("click", onTap, true);
       canvasElement.removeEventListener("webglcontextlost", onLost);
       canvasElement.removeEventListener("webglcontextrestored", onRestored);
+      loader?.dispose();
       renderer?.dispose();
     };
   }, [stage, canvas, phone, panel, scrolled]);

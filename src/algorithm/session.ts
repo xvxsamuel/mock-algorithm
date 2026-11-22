@@ -122,11 +122,10 @@ export function summarizeSession(
     }
   }
 
-  const minutes = Math.floor(sessionMs / 60_000);
-  if (minutes >= 10) {
+  if (count >= 24) {
     flags.push({
       code: "LONG_SESSION",
-      detail: `in the app for ${minutes} min without a break`,
+      detail: `${count} videos scrolled without a break`,
     });
   }
 

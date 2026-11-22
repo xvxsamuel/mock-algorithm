@@ -145,6 +145,8 @@ type State = {
     releasedAt: number;
     start: number;
     round: number;
+    /** True when the user clicked Release in InfluenceLens (plays swarm anim). */
+    manual: boolean;
   } | null;
   /** Weak moments it has read in you so far. It never forgets one. */
   leans: readonly Lean[];
@@ -202,18 +204,16 @@ function feedReducer(state: State, action: Action): State {
     }
 
     case "tick": {
-      // The risk also climbs while you watch (e.g. past your plan). Once it
-      // crosses the line, the engine swaps a sure hit in at once.
+      // Idling never punishes you with sudden feed swaps. Only a manually
+      // released bot campaign finishes its animation and lands into the queue.
       const next = { ...state, now: action.now };
+      if (next.network === null || !next.network.manual) return next;
       const queued = next.items[next.maxSeenIndex + 1];
       if (queued.ranking.source === "rescue") return next;
-      // A released campaign gets in line the moment it reaches you.
       const pushReady =
         queued.ranking.source !== "pushed" &&
-        pushDue(sourcesOf(next), next.network?.start ?? null, landed(next));
-      return rescueDue(next, riskOf(next).value) || pushReady
-        ? queueNextVideo(next, action.seed)
-        : next;
+        pushDue(sourcesOf(next), next.network.start, landed(next));
+      return pushReady ? queueNextVideo(next, action.seed) : next;
     }
 
     case "view": {
@@ -258,9 +258,9 @@ function feedReducer(state: State, action: Action): State {
       next.leans = [
         ...new Set([...state.leans, ...momentsOf(liveLeans(next))]),
       ];
-      // Nobody released the bots? Halfway in, someone does.
+      // Nobody released the bots? Halfway in, someone does (on reel pull).
       if (next.network === null && history.length >= RELEASES_AFTER) {
-        next.network = networkOf(next);
+        next.network = networkOf(next, false);
       }
       return queueNextVideo(next, seed);
     }
@@ -319,7 +319,10 @@ function feedReducer(state: State, action: Action): State {
       // One campaign at a time; once it has run its course, another.
       if (!state.started || campaignLeft(state) > 0) return state;
       const next = { ...state, now: action.now };
-      return queueNextVideo({ ...next, network: networkOf(next) }, action.seed);
+      return queueNextVideo(
+        { ...next, network: networkOf(next, true) },
+        action.seed,
+      );
     }
   }
 }
@@ -445,19 +448,23 @@ function queueNextVideo(state: State, seed: number): State {
 }
 
 /** A bot network released now. */
-function networkOf(state: State): NonNullable<State["network"]> {
+function networkOf(
+  state: State,
+  manual: boolean,
+): NonNullable<State["network"]> {
   return {
     releasedAt: state.now,
     start: state.maxSeenIndex + 1,
     round: state.network === null ? 0 : state.network.round + 1,
+    manual,
   };
 }
 
 /** The campaign has played out to the point where it picks you. */
 function landed(state: State): boolean {
-  return (
-    state.network !== null && state.now - state.network.releasedAt >= LANDS_MS
-  );
+  if (state.network === null) return false;
+  if (!state.network.manual) return true;
+  return state.now - state.network.releasedAt >= LANDS_MS;
 }
 
 /** The weak moments it reads in you right now. */

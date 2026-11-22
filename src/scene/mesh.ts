@@ -2,6 +2,7 @@ import {
   add,
   cross,
   IDENTITY,
+  multiply,
   normalize,
   scale,
   sub,
@@ -54,14 +55,15 @@ export function clearMesh(mesh: Mesh): void {
   mesh.transform = IDENTITY;
 }
 
-/** Adds the shapes `build` makes, moved and turned by `transform`. */
+/** Adds the shapes `build` makes, moved and turned by `transform` within the
+    current transform. */
 export function withTransform(
   mesh: Mesh,
   transform: Mat4,
   build: () => void,
 ): void {
   const before = mesh.transform;
-  mesh.transform = transform;
+  mesh.transform = multiply(before, transform);
   build();
   mesh.transform = before;
 }

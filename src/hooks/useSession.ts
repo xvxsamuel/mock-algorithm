@@ -1,8 +1,8 @@
 import { useEffect, useRef, useState } from "react";
 import type { FeedController } from "./useFeed";
 
-/** With no limit set, the break card comes this far in. */
-const OPEN_BREAK_MS = 3 * 60_000;
+/** With no limit set, the break card comes after this many reel pulls. */
+const OPEN_BREAK_PULLS = 16;
 /** Videos you watch before the "why this video" card can come. */
 const WHY_AFTER = 3;
 
@@ -23,14 +23,18 @@ export function useSession(feed: FeedController, waiting = false) {
   const [paused, setPaused] = useState(false);
   const { current } = feed;
   const live = feed.started && !feed.ended;
-  // The first video you swipe to past your plan (3 min in, with no limit)
-  // waits under what you gave so far.
+  // The first video you swipe to past your plan (or after OPEN_BREAK_PULLS
+  // reels with no limit) waits under what you gave so far.
+  const breakDue =
+    feed.intentMs === null
+      ? feed.history.length >= OPEN_BREAK_PULLS
+      : current.clockAt >= feed.intentMs;
   const planBreak =
     live &&
     !current.revisit &&
     breakAt === null &&
     whyAt !== current.index &&
-    current.clockAt >= (feed.intentMs ?? OPEN_BREAK_MS);
+    breakDue;
   // The first video it picked because of what you watched waits under why.
   const cause =
     live &&

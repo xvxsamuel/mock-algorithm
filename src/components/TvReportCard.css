@@ -1,0 +1,176 @@
+/* Compact pixel broadcast card docked above the view switcher when watching
+   the CRT television. Matches the hut's dark glass pixel window style. */
+.tv-card {
+  width: min(560px, calc(100% - 24px));
+  padding: 10px 14px;
+  border: 2px solid var(--line-strong);
+  background: var(--scan), color-mix(in srgb, var(--bg) 94%, transparent);
+  box-shadow: var(--bevel), var(--drop);
+  clip-path: var(--notch);
+  color: var(--text);
+  pointer-events: auto;
+  --tv-accent: var(--you);
+}
+
+.tv-card.is-warn {
+  --tv-accent: var(--platform);
+}
+
+.tv-card.is-bleak {
+  --tv-accent: var(--take);
+}
+
+.tv-card-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 8px;
+  font-size: 11px;
+  text-transform: uppercase;
+}
+
+.tv-card-tag {
+  padding: 2px 6px 1px;
+  background: var(--tv-accent);
+  color: #07090d;
+  font-size: 11px;
+  line-height: 1.1;
+}
+
+.tv-card.is-bleak .tv-card-tag {
+  color: #ffffff;
+}
+
+.tv-card-desk {
+  color: color-mix(in srgb, var(--muted), var(--text) 35%);
+}
+
+.tv-card-nav {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  margin-left: auto;
+}
+
+.tv-card-step {
+  width: 22px;
+  height: 22px;
+  padding: 0;
+  border: 2px solid var(--line-strong);
+  background: var(--surface-2);
+  color: var(--text);
+  font-size: 13px;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.tv-card-step:disabled {
+  opacity: 0.3;
+  cursor: default;
+}
+
+.tv-card-step:focus-visible {
+  outline: 2px solid var(--you);
+  outline-offset: 2px;
+}
+
+.tv-card-count {
+  min-width: 32px;
+  color: var(--muted);
+  text-align: center;
+  font-variant-numeric: tabular-nums;
+}
+
+.tv-card-main {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: 12px;
+  align-items: start;
+}
+
+.tv-card-stat {
+  display: grid;
+  gap: 2px;
+  min-width: 108px;
+  padding: 6px 10px;
+  border: 2px solid var(--line);
+  border-left: 4px solid var(--tv-accent);
+  background: var(--surface);
+}
+
+.tv-card-stat strong {
+  color: var(--tv-accent);
+  font-size: 22px;
+  font-weight: 400;
+  line-height: 1.05;
+  font-variant-numeric: tabular-nums;
+}
+
+.tv-card-stat span {
+  color: color-mix(in srgb, var(--muted), var(--text) 30%);
+  font-size: 11px;
+  line-height: 1.2;
+}
+
+.tv-card-copy {
+  display: grid;
+  gap: 4px;
+}
+
+.tv-card-title {
+  margin: 0;
+  color: var(--text);
+  font-size: 13px;
+  font-weight: 400;
+  line-height: 1.25;
+}
+
+.tv-card-summary {
+  margin: 0;
+  color: color-mix(in srgb, var(--muted), var(--text) 45%);
+  font-size: 11px;
+  line-height: 1.4;
+}
+
+.tv-card-foot {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 6px 14px;
+  margin-top: 8px;
+  padding-top: 7px;
+  border-top: 1px solid var(--line);
+  font-size: 11px;
+}
+
+.tv-card-sources {
+  color: var(--muted);
+}
+
+.tv-card-source {
+  color: color-mix(in srgb, var(--muted), var(--text) 40%);
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+.tv-card-source:hover {
+  color: var(--text);
+}
+
+.tv-card-next {
+  color: var(--muted);
+  text-transform: uppercase;
+  font-variant-numeric: tabular-nums;
+}
+
+@media (max-width: 600px) {
+  .tv-card-main {
+    grid-template-columns: 1fr;
+    gap: 8px;
+  }
+
+  .tv-card-stat {
+    min-width: 0;
+  }
+}

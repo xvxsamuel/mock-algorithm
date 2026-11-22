@@ -1,6 +1,5 @@
-/* A plain pixel screen, like an old console starting up. Only transform
-   and opacity move here: setting up the hut blocks the page for a while,
-   and those keep running while it does. */
+/* A plain pixel screen, like an old console starting up. Each block lights
+   up as a real piece of the hut finishes loading. */
 .loading {
   position: fixed;
   inset: 0;
@@ -15,6 +14,9 @@
 }
 
 .loading-eye {
+  display: block;
+  width: 96px;
+  height: 96px;
   image-rendering: pixelated;
 }
 
@@ -46,30 +48,15 @@
   gap: 4px;
 }
 
-/* Fills block by block, over and over, until the hut is there: a cover
-   over the blocks slides off them one block at a time. */
-.loading-bar::after {
-  content: "";
-  position: absolute;
-  inset: 4px;
-  background: var(--surface);
-  animation: loading-fill 2.4s steps(12, jump-start) infinite;
-}
-
 .loading-block {
   flex: 1;
   height: 14px;
-  background: var(--you);
-  box-shadow: var(--bevel);
+  background: transparent;
 }
 
-@keyframes loading-fill {
-  from {
-    transform: translateX(0);
-  }
-  to {
-    transform: translateX(calc(100% + 4px));
-  }
+.loading-block.is-filled {
+  background: var(--you);
+  box-shadow: var(--bevel);
 }
 
 .loading-text {
@@ -79,7 +66,7 @@
   text-transform: uppercase;
 }
 
-/* Loaded: the bar fills, and the screen goes in four steps. */
+/* Loaded: the bar is full, and the screen goes in four steps. */
 .loading.is-ready {
   visibility: hidden;
   opacity: 0;
@@ -89,17 +76,7 @@
     visibility 0s 0.75s;
 }
 
-.loading.is-ready .loading-bar::after {
-  animation: none;
-  transform: translateX(calc(100% + 4px));
-}
-
 @media (prefers-reduced-motion: reduce) {
-  .loading-bar::after {
-    animation: none;
-    transform: translateX(50%);
-  }
-
   .loading.is-ready {
     transition: none;
   }
