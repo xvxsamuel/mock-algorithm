@@ -80,6 +80,13 @@
   overflow: hidden;
 }
 
+/* A mouse swipe moves the cards by hand, so snapping waits until it lands. */
+.phone-feed.is-dragging {
+  scroll-snap-type: none;
+  cursor: grabbing;
+  user-select: none;
+}
+
 .phone-feed::-webkit-scrollbar {
   display: none;
 }
