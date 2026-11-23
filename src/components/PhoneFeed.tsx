@@ -1,4 +1,11 @@
-import { useEffect, useRef, useState, type ReactNode } from "react";
+import {
+  useEffect,
+  useRef,
+  useState,
+  type MouseEvent,
+  type PointerEvent,
+  type ReactNode,
+} from "react";
 import { advertiserOf } from "../data/ads";
 import type { FeedController } from "../hooks/useFeed";
 import CommentsSheet from "./CommentsSheet";
@@ -11,6 +18,30 @@ import "./PhoneFeed.css";
 const RENDER_DISTANCE = 2;
 /** How long a message like "Link copied" stays on screen. */
 const TOAST_MS = 1800;
+/** A mouse that moves this far while pressed, in page pixels, is swiping. */
+const DRAG_START_PX = 8;
+/** Dragging this share of a card moves to the next one when you let go. */
+const SWIPE_SHARE = 0.2;
+/** Or flicking this fast, in page pixels per millisecond. */
+const FLICK_SPEED = 0.4;
+/** How long a swipe may take to land before the cards snap again anyway. */
+const LAND_MS = 800;
+
+/** A mouse press on the feed, which may turn into a swipe. */
+type Drag = {
+  pointer: number;
+  /** The card on screen when the press began. */
+  from: number;
+  startY: number;
+  startTop: number;
+  /** Feed pixels per page pixel: the phone in the hut may be scaled. */
+  scale: number;
+  lastY: number;
+  lastTime: number;
+  /** Page pixels per millisecond; positive is down. */
+  speed: number;
+  swiping: boolean;
+};
 
 type Sheet = "comments" | "share" | null;
 
@@ -36,6 +67,11 @@ function PhoneFeed({ feed, onScrolled, children }: PhoneFeedProps) {
   // A resize changes the height: the same video should stay on screen.
   const cardHeight = useRef(0);
   const shownIndex = useRef(activeIndex);
+  // Mouse swipes: touch scrolls the feed by itself, a mouse only clicks.
+  const drag = useRef<Drag | null>(null);
+  const [dragging, setDragging] = useState(false);
+  // The click that ends a swipe is not a tap on the video.
+  const swallowClick = useRef(false);
 
   useEffect(() => {
     shownIndex.current = activeIndex;
@@ -95,6 +131,76 @@ function PhoneFeed({ feed, onScrolled, children }: PhoneFeedProps) {
     if (index !== activeIndex) view(index);
   }
 
+  function startDrag(event: PointerEvent<HTMLDivElement>) {
+    swallowClick.current = false;
+    if (event.pointerType !== "mouse" || event.button !== 0) return;
+    if (!feed.started || feed.ended || feed.held || sheet !== null) return;
+    const element = event.currentTarget;
+    const height = element.getBoundingClientRect().height;
+    drag.current = {
+      pointer: event.pointerId,
+      from: Math.round(element.scrollTop / element.clientHeight),
+      startY: event.clientY,
+      startTop: element.scrollTop,
+      scale: height > 0 ? element.clientHeight / height : 1,
+      lastY: event.clientY,
+      lastTime: event.timeStamp,
+      speed: 0,
+      swiping: false,
+    };
+  }
+
+  function moveDrag(event: PointerEvent<HTMLDivElement>) {
+    const press = drag.current;
+    if (press === null || press.pointer !== event.pointerId) return;
+    const moved = event.clientY - press.startY;
+    if (!press.swiping) {
+      if (Math.abs(moved) < DRAG_START_PX) return;
+      press.swiping = true;
+      event.currentTarget.setPointerCapture(event.pointerId);
+      window.getSelection()?.removeAllRanges();
+      setDragging(true);
+    }
+    const time = event.timeStamp - press.lastTime;
+    if (time > 0) press.speed = (event.clientY - press.lastY) / time;
+    press.lastY = event.clientY;
+    press.lastTime = event.timeStamp;
+    event.currentTarget.scrollTop = press.startTop - moved * press.scale;
+  }
+
+  function endDrag(event: PointerEvent<HTMLDivElement>) {
+    const press = drag.current;
+    if (press === null || press.pointer !== event.pointerId) return;
+    drag.current = null;
+    if (!press.swiping) return;
+    swallowClick.current = true;
+    const element = event.currentTarget;
+    // In cards, positive when the feed moved on to later videos.
+    const travel =
+      ((press.startY - event.clientY) * press.scale) / element.clientHeight;
+    let target = press.from;
+    if (travel > SWIPE_SHARE || press.speed < -FLICK_SPEED) target += 1;
+    else if (travel < -SWIPE_SHARE || press.speed > FLICK_SPEED) target -= 1;
+    target = Math.max(0, Math.min(target, items.length - 1));
+    // Snapping stays off until the feed lands, so it cannot pull the cards
+    // back half way.
+    const land = () => {
+      window.clearTimeout(fallback);
+      element.removeEventListener("scrollend", land);
+      setDragging(false);
+    };
+    const fallback = window.setTimeout(land, LAND_MS);
+    element.addEventListener("scrollend", land);
+    scrollToCard(element, target);
+  }
+
+  function swallowSwipeClick(event: MouseEvent<HTMLDivElement>) {
+    if (!swallowClick.current) return;
+    swallowClick.current = false;
+    event.stopPropagation();
+    event.preventDefault();
+  }
+
   function openComments() {
     setSheet("comments");
     feed.react("comments");
@@ -134,9 +240,21 @@ function PhoneFeed({ feed, onScrolled, children }: PhoneFeedProps) {
       </div>
 
       <div
-        className={feed.started ? "phone-feed" : "phone-feed is-locked"}
+        className={[
+          "phone-feed",
+          feed.started ? "" : "is-locked",
+          dragging ? "is-dragging" : "",
+        ]
+          .filter(Boolean)
+          .join(" ")}
         ref={scroller}
         onScroll={handleScroll}
+        onPointerDown={startDrag}
+        onPointerMove={moveDrag}
+        onPointerUp={endDrag}
+        onPointerCancel={endDrag}
+        onClickCapture={swallowSwipeClick}
+        onDragStart={(event) => event.preventDefault()}
       >
         {items.map((item, index) => (
           <div className="phone-slot" key={item.key}>
