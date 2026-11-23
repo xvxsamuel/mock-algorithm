@@ -329,10 +329,11 @@ function splayedLeg(
   );
 }
 
-/** The L-shaped burgundy-red corduroy couch you sit on: plush bevelled
-    upholstery, splayed walnut legs with aligned brass ferrules, 3D button-tufted
-    back cushions, smooth bolster armrests with piped caps, sculpted pillows,
-    and an organically draped chunky knit throw blanket. */
+/** The burgundy-red corduroy couch you sit on, built the same on both sides
+    of its middle (x = 0, where you sit): splayed walnut legs with brass
+    ferrules, two big seat cushions with a button-tufted back cushion over
+    each, bolster armrests, a pillow in each back corner, and a chunky knit
+    throw over the left arm. */
 function buildCouch(mesh: Mesh): void {
   const couchRed = corduroy([0.74, 0.16, 0.16]);
   const couchTop = corduroy([0.82, 0.21, 0.18]);
@@ -344,130 +345,115 @@ function buildCouch(mesh: Mesh): void {
   const pillowGoldWelt = linen([0.66, 0.46, 0.14]);
   const pillowTeal = linen([0.2, 0.44, 0.48]);
   const pillowTealWelt = linen([0.13, 0.3, 0.34]);
-  const pillowCream = linen([0.92, 0.87, 0.76]);
-  const pillowRustWelt = linen([0.72, 0.28, 0.2]);
   const blanketCream = knit([0.91, 0.85, 0.74]);
   const blanketStripe = knit([0.2, 0.32, 0.48]);
+
+  // Half the length of the couch, arm to arm, and how wide each arm is.
+  const end = 323;
+  const armWidth = 68;
+  // The inside face of the arms: the seats and back cushions fill between.
+  const inner = end - armWidth;
+  // Two big, equal seat cushions, a hair apart, meeting under you.
+  const seats = [
+    [-inner + 2, -2],
+    [2, inner - 2],
+  ] as const;
+  const seatBottom = 126;
+  const seatTop = 214;
+  const seatFront = -178;
+  const seatBack = 108;
+  const seatCrown = 7;
+  // The back cushions recline this far, in radians, from where they stand.
+  const recline = 0.1;
+  const backZ = 100;
+  const backDepth = 58;
 
   withTransform(
     mesh,
     multiply(translation(COUCH.at), rotationY(COUCH.yaw)),
     () => {
-      // Lower bevelled walnut plinth and upholstered L-shaped base apron.
-      addBox(mesh, [-308, 46, -168], [338, 62, 182], couchWood);
-      addBox(mesh, [-308, 46, -358], [-122, 62, -166], couchWood);
-      // Subtle dark shadow reveal between walnut plinth and upholstered base.
-      addBox(mesh, [-304, 62, -165], [334, 67, 179], couchPiping);
-      addBox(mesh, [-304, 62, -354], [-126, 67, -165], couchPiping);
-      addBox(mesh, [-306, 67, -166], [336, 128, 180], couchDark);
-      addBox(mesh, [-306, 67, -356], [-124, 128, -166], couchDark);
+      // Walnut plinth, a dark shadow reveal, and the upholstered base on top.
+      addBox(mesh, [-end, 46, -168], [end, 62, 182], couchWood);
+      addBox(mesh, [-end + 4, 62, -165], [end - 4, 67, 179], couchPiping);
+      addBox(mesh, [-end + 2, 67, -166], [end - 2, 128, 180], couchDark);
 
-      // Six tapered mid-century walnut legs with seamlessly aligned brass ferrules.
-      for (const [lx, lz, sx, sz] of [
-        [-290, -340, 0.08, -0.08],
-        [-142, -340, -0.05, -0.08],
-        [-290, -146, 0.08, 0],
-        [314, -146, -0.08, -0.06],
-        [-290, 158, 0.08, 0.08],
-        [314, 158, -0.08, 0.08],
-      ] as const) {
-        splayedLeg(
+      // Four tapered walnut legs, splayed out to the corners.
+      for (const side of [-1, 1]) {
+        for (const [lz, sz] of [
+          [-146, -0.08],
+          [158, 0.08],
+        ] as const) {
+          splayedLeg(
+            mesh,
+            side * (end - 18),
+            lz,
+            48,
+            side * -0.08,
+            sz,
+            7.5,
+            13,
+            couchWood,
+            13,
+            AGED_BRASS,
+            12,
+          );
+        }
+      }
+
+      for (const [x0, x1] of seats) {
+        addCushion(
           mesh,
-          lx,
-          lz,
-          48,
-          sx,
-          sz,
-          7.5,
-          13,
-          couchWood,
-          13,
-          AGED_BRASS,
-          12,
+          [x0, seatBottom, seatFront],
+          [x1, seatTop, seatBack],
+          { bevel: 14, crownY: seatCrown, steps: [10, 3, 6] },
+          couchTop,
         );
       }
 
-      // Three plush corduroy seat cushions: deep left chaise, lived-in sunken
-      // middle seat where you sit, and plump right seat beside you.
-      addCushion(
-        mesh,
-        [-242, 126, -364],
-        [-123, 200, 102],
-        { bevel: 14, crownY: 7, steps: [6, 3, 8] },
-        couchTop,
-      );
-      addCushion(
-        mesh,
-        [-120, 126, -172],
-        [88, 195, 102],
-        { bevel: 14, crownY: 5, sinkY: -7, steps: [7, 3, 6] },
-        couchRed,
-      );
-      addCushion(
-        mesh,
-        [91, 126, -172],
-        [268, 200, 102],
-        { bevel: 14, crownY: 7, steps: [6, 3, 6] },
-        couchTop,
-      );
-
-      // Stitched piping trim running along the lower front apron of each seat.
-      addTube(
-        mesh,
-        [
-          [-236, 129, -360],
-          [-128, 129, -360],
-        ],
-        [3.2, 3.2],
-        couchPiping,
-        6,
-      );
-      addTube(
-        mesh,
-        [
-          [-116, 129, -168],
-          [264, 129, -168],
-        ],
-        [3.2, 3.2],
-        couchPiping,
-        6,
-      );
-
-      // Wrapped backrest shell with soft rounded crest rail along the top.
-      addBox(mesh, [-306, 128, 118], [336, 404, 188], couchDark);
+      // Backrest shell with a rounded crest rail along the top.
+      addBox(mesh, [-end + 2, 128, 118], [end - 2, 404, 188], couchDark);
       withTransform(
         mesh,
-        multiply(translation([-306, 404, 153]), rotationZ(-Math.PI / 2)),
-        () => addDrum(mesh, [0, 0, 0], 642, 35, 35, couchDark, couchPiping, 12),
+        multiply(translation([-end + 2, 404, 153]), rotationZ(-Math.PI / 2)),
+        () =>
+          addDrum(
+            mesh,
+            [0, 0, 0],
+            2 * (end - 2),
+            35,
+            35,
+            couchDark,
+            couchPiping,
+            12,
+          ),
       );
 
-      // Three reclined plush back cushions with real 3D recessed button tufts.
-      for (const [bx0, bx1, paint] of [
-        [-242, -123, couchRed],
-        [-119, 87, couchTop],
-        [91, 267, couchRed],
-      ] as const) {
+      // A reclined back cushion over each seat, with button tufts.
+      for (const [x0, x1] of seats) {
         withTransform(
           mesh,
-          multiply(translation([(bx0 + bx1) / 2, 196, 108]), rotationX(-0.14)),
+          multiply(
+            translation([(x0 + x1) / 2, seatTop - 8, backZ]),
+            rotationX(recline),
+          ),
           () => {
-            const half = (bx1 - bx0) / 2;
+            const half = (x1 - x0) / 2;
             const tufts: readonly (readonly [number, number])[] = [
-              [-0.44, 0.04],
-              [0.44, 0.04],
+              [-0.55, 0.04],
+              [0, 0.04],
+              [0.55, 0.04],
             ];
             addCushion(
               mesh,
-              [-half, 0, -28],
-              [half, 214, 30],
-              { bevel: 15, crownFront: 9, tufts, steps: [8, 6, 3] },
-              paint,
+              [-half, 0, -backDepth / 2],
+              [half, 196, backDepth / 2],
+              { bevel: 15, crownFront: 9, tufts, steps: [12, 6, 3] },
+              couchRed,
             );
-            // Tufted upholstery buttons nestled cleanly inside the 3D dimples.
             for (const [tx, ty] of tufts) {
               addEllipsoid(
                 mesh,
-                [tx * half, 107 + ty * 107, -23],
+                [tx * half, 98 + ty * 98, -backDepth / 2 + 5],
                 [6.5, 6.5, 4],
                 tuftButton,
                 10,
@@ -478,37 +464,34 @@ function buildCouch(mesh: Mesh): void {
         );
       }
 
-      // Sculpted padded armrests with smooth 14-sided cylindrical bolster rolls,
-      // piped front end-caps, and recessed walnut front accent strips.
-      for (const [ax0, ax1, az0, az1] of [
-        [-308, -242, -188, 178],
-        [268, 338, -176, 178],
-      ] as const) {
-        const acx = (ax0 + ax1) / 2;
-        const armRadius = (ax1 - ax0) / 2 + 1;
-        const armLen = az1 - az0;
+      // Padded arms with a bolster roll on top, a piped front cap, and a
+      // walnut strip down the front.
+      const armRadius = armWidth / 2 + 1;
+      const armFront = -180;
+      const armBack = 178;
+      for (const side of [-1, 1]) {
+        const acx = side * (end - armWidth / 2);
         addCushion(
           mesh,
-          [ax0, 126, az0],
-          [ax1, 290, az1],
+          [acx - armWidth / 2, 126, armFront],
+          [acx + armWidth / 2, 290, armBack],
           { bevel: 8, steps: [4, 4, 5] },
           couchRed,
         );
         withTransform(
           mesh,
-          multiply(translation([acx, 288, az0]), rotationX(Math.PI / 2)),
+          multiply(translation([acx, 288, armFront]), rotationX(Math.PI / 2)),
           () => {
             addDrum(
               mesh,
               [0, 0, 0],
-              armLen,
+              armBack - armFront,
               armRadius,
               armRadius,
               couchTop,
               couchDark,
               14,
             );
-            // Recessed piped circular front bolster medallion.
             addDrum(
               mesh,
               [0, -2, 0],
@@ -521,88 +504,95 @@ function buildCouch(mesh: Mesh): void {
             );
           },
         );
-        // Subtle walnut vertical trim inlay on the front arm face.
         addBox(
           mesh,
-          [acx - 7, 146, az0 - 2],
-          [acx + 7, 250, az0 + 2],
+          [acx - 7, 146, armFront - 2],
+          [acx + 7, 250, armFront + 2],
           couchWood,
         );
       }
 
-      // Mustard linen throw pillow slumped warmly against the right armrest.
-      withTransform(
-        mesh,
-        multiply(
-          translation([218, 256, 44]),
+      // A pillow in each back corner: sat on the seat, turned across the
+      // corner, its back against both the arm and the back cushion.
+      for (const [side, paint, welt] of [
+        [-1, pillowTeal, pillowTealWelt],
+        [1, pillowGold, pillowGoldWelt],
+      ] as const) {
+        withTransform(
+          mesh,
           multiply(
-            rotationY(radians(-28)),
-            multiply(rotationZ(radians(-16)), rotationX(radians(14))),
+            translation([side * (inner - 49), seatTop + 42, 28]),
+            multiply(
+              rotationY(side * radians(40)),
+              multiply(rotationZ(side * radians(-6)), rotationX(radians(10))),
+            ),
           ),
-        ),
-        () => addPillow(mesh, 102, 108, 42, pillowGold, pillowGoldWelt),
-      );
+          () => addPillow(mesh, 100, 100, 48, paint, welt),
+        );
+      }
 
-      // Coastal-teal accent pillow tucked into the left back corner.
-      withTransform(
-        mesh,
-        multiply(
-          translation([-192, 248, 54]),
-          multiply(
-            rotationY(radians(24)),
-            multiply(rotationZ(radians(14)), rotationX(radians(12))),
-          ),
-        ),
-        () => addPillow(mesh, 88, 94, 36, pillowTeal, pillowTealWelt),
-      );
-
-      // Cozy cream-linen lumbar pillow angled softly along the chaise backrest.
-      withTransform(
-        mesh,
-        multiply(
-          translation([-148, 224, 24]),
-          multiply(
-            rotationY(radians(36)),
-            multiply(rotationZ(radians(-6)), rotationX(radians(18))),
-          ),
-        ),
-        () => addPillow(mesh, 78, 54, 30, pillowCream, pillowRustWelt),
-      );
-
-      // Organically draped chunky cream-and-indigo knit throw blanket flowing
-      // smoothly over the curved left bolster arm with hanging ripples & fringe.
+      // A chunky cream-and-indigo knit throw over the front of the left arm:
+      // hanging down outside, then down the inside of the arm and folded out
+      // flat on top of the left seat cushion, with fringe at both ends.
       const drapeRows = 12;
-      const drapeCols = 18;
-      const armCx = -275;
+      const drapeCols = 22;
+      const armCx = -(end - armWidth / 2);
       const armCy = 288;
       const armR = 37;
+      // How far the throw lies out over the seat, and how high above it.
+      const throwReach = 52;
+      const throwGap = 4;
+      // The top of the left seat cushion at (x, z), crown included, so the
+      // throw lies on it and never sinks in.
+      const [leftX0, leftX1] = seats[0];
+      const seatHalfX = (leftX1 - leftX0) / 2;
+      const seatHalfZ = (seatBack - seatFront) / 2;
+      const seatSurface = (x: number, z: number): number => {
+        const nx = (x - (leftX0 + leftX1) / 2) / seatHalfX;
+        const nz = (z - (seatFront + seatBack) / 2) / seatHalfZ;
+        const dome = Math.max(0, 1 - nx * nx) * Math.max(0, 1 - nz * nz);
+        return seatTop + seatCrown * dome;
+      };
       const couchThrowPoint = (u: number, v: number, lift = 0): Vec3 => {
-        // v in [0, 1] runs from front-side (+z = 52) to back-side (-z = -90).
-        const z = lerp(52, -90, v) + Math.sin(u * Math.PI) * 5;
+        // u runs across the arm, outside to inside; v from back to front,
+        // clear of the corner pillow.
+        const z = lerp(-28, -160, v) + Math.sin(u * Math.PI) * 5;
         const ripple =
           Math.sin(v * Math.PI * 3.5 + u * 2.2) * 3.2 +
           Math.sin(v * Math.PI * 7.0) * 1.1;
+        // Where the inside of the bolster roll ends and the throw drops.
+        const insideX =
+          armCx + armR + 2.5 + Math.sin(v * Math.PI * 2.5) * 1.2 + lift;
+        const foldY = seatSurface(insideX, z) + throwGap;
         let x: number;
         let y: number;
-        if (u < 0.34) {
-          // Outer hanging tail draping smoothly down the left side of the arm.
-          const t = u / 0.34;
+        if (u < 0.3) {
+          // Hanging down the outside of the arm.
+          const t = u / 0.3;
           const flare = (1 - t) * (1 - t);
           x = armCx - armR - 4 - flare * 5 - ripple * flare - lift;
           y = lerp(164 + Math.sin(v * Math.PI * 3) * 6, armCy, t);
-        } else if (u <= 0.68) {
-          // Smooth wrap arching cleanly over the cylindrical bolster roll.
-          const t = (u - 0.34) / 0.34;
+        } else if (u <= 0.6) {
+          // Over the bolster roll.
+          const t = (u - 0.3) / 0.3;
           const angle = lerp(Math.PI, 0, t);
           const r = armR + 2.5 + lift + Math.sin(v * Math.PI * 2.5) * 1.2;
           x = armCx + Math.cos(angle) * r;
           y = armCy + Math.sin(angle) * r;
+        } else if (u <= 0.72) {
+          // Straight down the inside of the arm to the seat.
+          const t = (u - 0.6) / 0.12;
+          x = insideX;
+          y = lerp(armCy, foldY, t);
         } else {
-          // Inner tail cascading down onto the chaise seat cushion.
-          const t = (u - 0.68) / 0.32;
-          const flare = t * t;
-          x = armCx + armR + 3 + flare * 8 + ripple * flare + lift;
-          y = lerp(armCy, 202 + Math.sin(v * Math.PI * 3.2) * 4, t);
+          // Folded out flat over the seat, riding on its crown.
+          const t = (u - 0.72) / 0.28;
+          x = insideX + t * throwReach;
+          y =
+            seatSurface(x, z) +
+            throwGap +
+            lift +
+            (1 + Math.sin(v * Math.PI * 3.2 + t * 2)) * 1.5 * t;
         }
         return [x, y, z];
       };
@@ -635,22 +625,40 @@ function buildCouch(mesh: Mesh): void {
         addSurface(mesh, stripeGrid, blanketStripe);
       }
 
-      // Knotted cream wool fringe tassels along both hanging ends of the throw.
-      for (const endU of [0, 1]) {
-        for (let t = 0; t < 7; t++) {
-          const v = lerp(0.06, 0.94, t / 6);
-          const p = couchThrowPoint(endU, v, 0);
-          addDrum(
-            mesh,
-            [p[0], p[1] - 14, p[2]],
-            15,
-            2.2,
-            1.6,
-            blanketCream,
-            blanketCream,
-            6,
-          );
-        }
+      // Knotted cream wool fringe at both ends: hanging down from the outside
+      // end, and lying out flat along the seat from the inside end.
+      for (let t = 0; t < 7; t++) {
+        const v = lerp(0.06, 0.94, t / 6);
+        const hanging = couchThrowPoint(0, v, 0);
+        addDrum(
+          mesh,
+          [hanging[0], hanging[1] - 14, hanging[2]],
+          15,
+          2.2,
+          1.6,
+          blanketCream,
+          blanketCream,
+          6,
+        );
+        const lying = couchThrowPoint(1, v, 0);
+        withTransform(
+          mesh,
+          multiply(
+            translation([lying[0] - 1, lying[1], lying[2]]),
+            rotationZ(-Math.PI / 2),
+          ),
+          () =>
+            addDrum(
+              mesh,
+              [0, 0, 0],
+              15,
+              2.2,
+              1.6,
+              blanketCream,
+              blanketCream,
+              6,
+            ),
+        );
       }
     },
   );

@@ -82,9 +82,10 @@ export const COFFEE_TABLE = {
   height: 168,
 } as const;
 
-/** The L-shaped red couch you are sitting on, slightly angled off the grid. */
+/** The red three-seater you are sitting on, slightly angled off the grid.
+    Its middle (x = 0 in its own space) is right under your eyes. */
 export const COUCH = {
-  at: [25, 0, 340] as Vec3,
+  at: [-21, 0, 338] as Vec3,
   yaw: radians(-3),
 } as const;
 
@@ -211,14 +212,10 @@ export const SHADOW_CASTERS: readonly Box[] = [
     [BED.x0, 52, BED.z1 - 24],
     [BED.x1, 445, BED.z1 + 92],
   ],
-  // The L-shaped red couch and chaise behind and beside you.
+  // The red couch you sit on.
   [
-    [-280, 52, 175],
-    [360, 360, 520],
-  ],
-  [
-    [-280, 52, -15],
-    [-110, 198, 175],
+    [-340, 52, 165],
+    [300, 360, 530],
   ],
   // The cabin kitchenette counter along the back-right wall.
   [
